@@ -270,7 +270,7 @@ function stepWalks(dt) {
   }
 }
 
-async function speak(a, lines, verb, cites) {
+async function speak(a, lines, verb, detail) {
   a.bubbleEl.innerHTML = "";
   const v = document.createElement("span");
   v.className = "verb";
@@ -285,13 +285,14 @@ async function speak(a, lines, verb, cites) {
     body.textContent = line;
     await wait(Math.min(4200, 1300 + line.length * 34));
   }
-  if (cites?.length) {
+  // The complaint is checked against the append-only log, on screen, live.
+  for (const d of detail ?? []) {
     const c = document.createElement("span");
-    c.className = "cite";
-    c.textContent = "cites " + cites.join(", ");
+    c.className = "cite" + (d.ok ? "" : " bad");
+    c.textContent = `${d.ok ? "✓" : "✗"} ${d.id} — ${d.summary}`;
     a.bubbleEl.append(c);
-    await wait(1500);
   }
+  if (detail?.length) await wait(2600);
   a.bubbleEl.classList.remove("on");
   await wait(200);
   a.bubble.visible = false;
@@ -379,7 +380,7 @@ async function stageBeat(b) {
   }
 
   play(a, GESTURE[b.verb] ?? "idle", true);
-  if (b.lines?.length) await speak(a, b.lines, b.verb, b.cites);
+  if (b.lines?.length) await speak(a, b.lines, b.verb, b.citeDetail);
   else await wait(700);
 
   play(a, "idle");
@@ -398,6 +399,7 @@ function connect() {
   };
   sock.onmessage = async (ev) => {
     const m = JSON.parse(ev.data);
+    if (m.t === "places") { places = m.places ?? places; return; }
     if (m.t === "hello") {
       places = m.places ?? {};
       for (const a of m.actors) await addActor(a.actor, a.at);
@@ -412,8 +414,11 @@ connect();
 const send = (t, text) => sock?.readyState === 1 && sock.send(JSON.stringify({ t, text }));
 const btn = (id) => document.getElementById(id);
 
+let visited = false;
+
 btn("btn-arrive").onclick = () => {
   send("arrive");
+  visited = true;
   btn("btn-arrive").disabled = true;
   btn("btn-side").disabled = false;
   btn("btn-leave").disabled = false;
@@ -427,6 +432,19 @@ btn("btn-leave").onclick = () => {
   btn("btn-leave").disabled = true;
   btn("btn-side").disabled = true;
   btn("btn-arrive").disabled = false;
+  // The ward keeps running while you are away; that is the point of coming back.
+  btn("btn-arrive").textContent = "Come back to the ward";
+};
+
+const mintPanel = document.getElementById("mint");
+btn("btn-mint").onclick = () => mintPanel.classList.toggle("open");
+btn("mint-cancel").onclick = () => mintPanel.classList.remove("open");
+btn("mint-go").onclick = () => {
+  const text = document.getElementById("mint-text").value.trim();
+  if (!text) return;
+  send("mint", text);
+  mintPanel.classList.remove("open");
+  note("Minting…");
 };
 
 // --- build the set, then run ------------------------------------------------

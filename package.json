@@ -11,6 +11,7 @@
     "demo": "tsx scripts/demo.ts",
     "demo:reset": "tsx scripts/demo.ts --reset",
     "world": "tsx scripts/world.ts",
+    "chat": "tsx scripts/chat.ts",
     "tick": "tsx scripts/tick.ts",
     "canon": "tsx scripts/canon.ts",
     "test": "vitest run",

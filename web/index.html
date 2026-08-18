@@ -25,8 +25,10 @@
   .bubble.on { opacity:1; transform:translateY(0); }
   .bubble .verb { display:block; font-size:10px; letter-spacing:.13em;
     text-transform:uppercase; color:var(--dim); margin-bottom:3px; }
-  .bubble .cite { display:block; margin-top:5px; font-size:10px;
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#7fc7a0; }
+  .bubble .cite { display:block; margin-top:5px; font-size:10px; line-height:1.35;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#7fc7a0;
+    border-top:1px solid rgba(127,199,160,.25); padding-top:4px; }
+  .bubble .cite.bad { color:#e08b8b; border-top-color:rgba(224,139,139,.3); }
 
   #hud { position:fixed; left:18px; top:16px; width:310px; z-index:5; }
   #hud h1 { margin:0; font-size:17px; letter-spacing:.05em; font-weight:650; }
@@ -46,6 +48,17 @@
     border:1px solid rgba(255,255,255,.16); transition:background .15s; }
   button:hover:not(:disabled) { background:rgba(60,54,46,.92); }
   button:disabled { opacity:.35; cursor:default; }
+  #mint { position:fixed; right:18px; top:52px; width:320px; z-index:5;
+    background:var(--panel); border:1px solid rgba(255,255,255,.12);
+    border-radius:11px; padding:11px; display:none; }
+  #mint.open { display:block; }
+  #mint textarea { width:100%; height:150px; resize:vertical; border-radius:8px;
+    padding:8px 9px; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;
+    color:var(--ink); background:rgba(0,0,0,.42);
+    border:1px solid rgba(255,255,255,.14); }
+  #mint .row { display:flex; gap:7px; margin-top:7px; justify-content:flex-end; }
+  #mint .hint { color:var(--dim); font-size:11px; margin:0 0 7px; }
+
   #status { position:fixed; right:18px; top:16px; z-index:5; font-size:11px;
     letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
   #status.live::before { content:"● "; color:#6fcf97; }
@@ -70,10 +83,27 @@
 
   <div id="status">offline</div>
 
+  <div id="mint">
+    <p class="hint">Paste a character sheet. Keys optional — a bare paragraph works.</p>
+    <textarea id="mint-text" spellcheck="false">Name: Halric Vaas
+Title: Wharfmaster
+Faction: The Wet Quarter
+Brief: Runs the river landing and decides which cargo rots. Keeps a ledger of favours longer than anyone's debt book.
+Goals: Control what enters the ward, Be owed by everyone
+Taboos: Never begs
+Register: clipped, riverside
+Home: wharf</textarea>
+    <div class="row">
+      <button id="mint-cancel">Cancel</button>
+      <button id="mint-go">Mint into the ward</button>
+    </div>
+  </div>
+
   <div id="panel">
     <button id="btn-arrive">Walk into the ward</button>
     <button id="btn-side" disabled>Back Okonkwo, in public</button>
     <button id="btn-leave" disabled>Leave</button>
+    <button id="btn-mint">Mint a character…</button>
   </div>
 
   <script type="module" src="/main.js"></script>

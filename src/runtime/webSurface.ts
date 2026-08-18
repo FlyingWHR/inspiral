@@ -35,8 +35,9 @@ export const WARD_PLACES: Record<string, SurfacePoint> = {
   gate: { x: 0, z: -17 },
 };
 
-export interface VisitorIntent {
-  kind: "arrive" | "act" | "leave";
+/** Anything the browser can ask the world for. `mint` carries a pasted sheet. */
+export interface SurfaceIntent {
+  kind: "arrive" | "act" | "leave" | "mint";
   text?: string;
 }
 
@@ -48,7 +49,13 @@ export interface WebSurfaceOptions {
   vendor?: string;
   places?: Record<string, SurfacePoint>;
   /** Called when the browser asks for something. May spend an invocation. */
-  onIntent?: (intent: VisitorIntent) => void | Promise<void>;
+  onIntent?: (intent: SurfaceIntent) => void | Promise<void>;
+  /**
+   * Resolve a cited event id against the log, so a complaint can be shown to
+   * be TRUE on screen rather than merely plausible. The surface never reads
+   * canon itself; the caller hands it a lookup.
+   */
+  resolveCite?: (eventId: string) => { ts: string; summary: string } | undefined;
 }
 
 type Beat =
@@ -63,6 +70,8 @@ type Beat =
       lines: string[];
       post: string | null;
       cites: string[];
+      /** Each citation, resolved against the append-only log. */
+      citeDetail: { id: string; ts: string; summary: string; ok: boolean }[];
     }
   | { t: "notice"; author: string; text: string }
   | { t: "event"; kind: string; summary: string };
@@ -97,6 +106,7 @@ export class WebSurface implements SurfaceAdapter {
   private readonly vendor: string;
   private readonly places: Record<string, SurfacePoint>;
   private readonly onIntent: WebSurfaceOptions["onIntent"];
+  private readonly resolveCite: WebSurfaceOptions["resolveCite"];
 
   private http?: Server;
   private wss?: WebSocketServer;
@@ -105,24 +115,48 @@ export class WebSurface implements SurfaceAdapter {
   /** Enough state that a browser opened on day 4 sees a populated ward. */
   private readonly actors = new Map<string, { actor: SurfaceActor; at: SurfacePoint }>();
   private readonly recent: Beat[] = [];
+  private improvised = 0;
 
   constructor(opts: WebSurfaceOptions = {}) {
     this.port = opts.port ?? 8787;
     this.root = opts.root ?? here("../../web");
     this.vendor = opts.vendor ?? here("../../node_modules/three");
-    this.places = opts.places ?? WARD_PLACES;
+    this.places = { ...(opts.places ?? WARD_PLACES) };
     this.onIntent = opts.onIntent;
+    this.resolveCite = opts.resolveCite;
   }
 
   get url(): string {
     return `http://localhost:${this.port}`;
   }
 
-  /** Resolve a canon location, an explicit point, or fall back to the plaza. */
+  /**
+   * Resolve a canon location, an explicit point, or invent a spot.
+   *
+   * A minted character names a home the ward has never heard of ("wharf"), so
+   * unknown locations are assigned a free place on a ring around the plaza and
+   * remembered. Without this every newcomer would stand inside the last one.
+   */
   private point(to: SurfacePoint | string | undefined): SurfacePoint {
     if (!to) return this.places.plaza ?? { x: 0, z: 0 };
-    if (typeof to === "string") return this.places[to] ?? this.places.plaza ?? { x: 0, z: 0 };
-    return to;
+    if (typeof to !== "string") return to;
+    const known = this.places[to];
+    if (known) return known;
+
+    const n = this.improvised++;
+    const angle = -Math.PI / 2 + (n + 1) * 2.3; // irrational-ish step, no clumps
+    const spot = {
+      x: Math.round(Math.cos(angle) * 5.6 * 10) / 10,
+      z: Math.round((Math.sin(angle) * 5.6 + 1.5) * 10) / 10,
+    };
+    this.places[to] = spot;
+    this.broadcastPlaces();
+    return spot;
+  }
+
+  private broadcastPlaces(): void {
+    const payload = JSON.stringify({ t: "places", places: this.places });
+    for (const c of this.clients) if (c.readyState === 1) c.send(payload);
   }
 
   async open(): Promise<void> {
@@ -168,11 +202,14 @@ export class WebSurface implements SurfaceAdapter {
     } catch {
       return;
     }
-    const kind = msg.t === "arrive" || msg.t === "act" || msg.t === "leave" ? msg.t : null;
+    const KINDS = ["arrive", "act", "leave", "mint"] as const;
+    const kind = KINDS.find((k) => k === msg.t);
     if (!kind || !this.onIntent) return;
     try {
       // Browser text is untrusted and is about to become a host prompt. Cap it.
-      await this.onIntent({ kind, text: msg.text?.slice(0, 200) });
+      // A pasted sheet needs more room than a one-line action.
+      const cap = kind === "mint" ? 4000 : 200;
+      await this.onIntent({ kind, text: msg.text?.slice(0, cap) });
     } catch (e) {
       log.error(`visitor intent failed: ${(e as Error).message}`);
     }
@@ -212,6 +249,12 @@ export class WebSurface implements SurfaceAdapter {
 
   spawn(actor: SurfaceActor): void {
     const at = this.point(actor.home);
+    // Idempotent: a returning visitor is already on the books, and a second
+    // spawn beat would read as a second person walking in.
+    if (this.actors.has(actor.id)) {
+      this.moveTo(actor.id, at);
+      return;
+    }
     this.actors.set(actor.id, { actor, at });
     this.emit({ t: "spawn", actor, at });
   }
@@ -229,6 +272,15 @@ export class WebSurface implements SurfaceAdapter {
   }
 
   present(b: RenderedBehavior): void {
+    const citeDetail = b.cites.map((id) => {
+      const found = this.resolveCite?.(id);
+      return {
+        id,
+        ts: found?.ts ?? "",
+        summary: found?.summary ?? "NOT IN THE LOG",
+        ok: Boolean(found),
+      };
+    });
     this.emit({
       t: "say",
       id: b.character_id,
@@ -237,6 +289,7 @@ export class WebSurface implements SurfaceAdapter {
       lines: b.lines,
       post: b.post_draft ?? null,
       cites: b.cites,
+      citeDetail,
     });
   }
 

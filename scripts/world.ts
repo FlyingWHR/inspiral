@@ -19,7 +19,8 @@ import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
 import { MockHostRuntime } from "../src/host/mock.js";
 import { runTick, onboardVisitor, visitorAction, type TickContext } from "../src/tick/runTick.js";
-import { WebSurface, WARD_PLACES } from "../src/runtime/webSurface.js";
+import { WebSurface } from "../src/runtime/webSurface.js";
+import { mintFromText } from "../src/canon/mint.js";
 import { NullSurface } from "../src/runtime/surface.js";
 import { VirtualClock, HOUR_MS } from "../src/clock.js";
 import { log } from "../src/log.js";
@@ -48,12 +49,27 @@ async function main(): Promise<void> {
 
   const surface = new WebSurface({
     port: PORT,
+    // The surface shows citations resolved. Canon stays the only reader.
+    resolveCite: (id) => {
+      const e = repo.getEvent(id);
+      if (!e) return undefined;
+      const summary = e.payload?.summary;
+      return { ts: e.ts, summary: typeof summary === "string" ? summary : e.type };
+    },
     onIntent: async (intent) => {
       if (intent.kind === "arrive") {
+        // First visit costs an onboard. A return visit is a different prompt:
+        // the cast already has standing toward this person and history to
+        // complain about, which is the whole point of the loop.
+        const returning = repo.visitorExists(VISITOR.id);
         surface.spawn({ id: VISITOR.id, name: VISITOR.name, kind: "visitor", home: "gate" });
-        surface.moveTo(VISITOR.id, "plaza");
         repo.setPresence(VISITOR.id, true);
-        await onboardVisitor(ctx, VISITOR.id, VISITOR.name);
+        surface.moveTo(VISITOR.id, "plaza");
+        if (returning) {
+          await visitorAction(ctx, VISITOR.id, "returned to the ward after days away");
+        } else {
+          await onboardVisitor(ctx, VISITOR.id, VISITOR.name);
+        }
       } else if (intent.kind === "act" && intent.text) {
         await visitorAction(ctx, VISITOR.id, intent.text);
       } else if (intent.kind === "leave") {
@@ -66,6 +82,19 @@ async function main(): Promise<void> {
           significance_hint: 0.2,
         });
         surface.despawn(VISITOR.id);
+      } else if (intent.kind === "mint" && intent.text) {
+        const { sheet } = mintFromText(repo, intent.text);
+        surface.spawn({
+          id: sheet.character_id,
+          name: sheet.name,
+          kind: "character",
+          title: sheet.title,
+          home: sheet.home_location,
+        });
+        log.info(`minted ${sheet.name} (${sheet.character_id})`);
+        // Tick immediately so the newcomer reacts to canon on camera rather
+        // than standing there until the next scheduled tick.
+        await runTick(ctx);
       }
     },
   });

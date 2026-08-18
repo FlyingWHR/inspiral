@@ -52,6 +52,7 @@ export const EventType = z.enum([
   "tick_skipped", // host unavailable; ran on last directives
   "directive_rejected", // validator refused a directive
   "world_created",
+  "character_minted", // a sheet was pasted in and became an inhabitant
 ]);
 export type EventType = z.infer<typeof EventType>;
 

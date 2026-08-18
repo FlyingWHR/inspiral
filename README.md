@@ -13,11 +13,26 @@ days of history happen without them. On day 6 they come back and an NPC greets
 them as an ally and complains, accurately, about what a rival did while they were
 gone — citing the event id, which the demo then verifies against the log.
 
+## Three commands
+
 ```bash
-npm install && npm run demo
+npm install          # once. Node 22+ required (developed on 24.19.0)
+
+npm test             # 56 tests, headless, no engine, no key
+npm run demo         # the whole loop in your terminal, ~2 seconds, exits 0
+npm run world        # the 3D ward -> http://localhost:8787
 ```
 
-No API key. No account. No network. See [SETUP.md](SETUP.md).
+No API key. No account. No network. No build step, no bundler. See
+[SETUP.md](SETUP.md), and [RUNBOOK.md](RUNBOOK.md) for the 60-second demo shot
+list.
+
+A fourth command proves the point of the architecture — with `npm run world`
+already running, open another terminal:
+
+```bash
+npm run chat         # the SAME world, same canon, same cast, rendered as text
+```
 
 ---
 
@@ -160,16 +175,20 @@ relationships by failing.
 src/
   types/         events.ts, canon.ts, directive.ts   ← the frozen contracts
   canon/         db.ts, repo.ts, seed.ts, digest.ts  ← SQLite, the only writer
+                 mint.ts         ← pasted text becomes an inhabitant
   directive/     validate.ts, apply.ts               ← two-stage validation
   host/          HostRuntime.ts  ← THE SEAM
                  mock.ts         ← default, deterministic, no network
-                 minds.ts        ← real Builder API client
+                 minds.ts        ← real Builder API client (needs a key)
                  prompt.ts, index.ts
   runtime/       character.ts    ← stateless render workers
                  surface.ts      ← engine-facing boundary (no engine code)
+                 webSurface.ts   ← three.js surface: http + websocket
+                 chatSurface.ts  ← the same world as text
   tick/          runTick.ts, scheduler.ts
-scripts/         demo.ts, tick.ts, canon.ts
-tests/           validator.test.ts, tick.test.ts     ← 48 tests
+scripts/         demo.ts, world.ts, chat.ts, tick.ts, canon.ts
+web/             index.html, main.js, assets/        ← CC0 kit, no build step
+tests/           validator.test.ts, tick.test.ts, mint.test.ts   ← 56 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 
@@ -178,9 +197,10 @@ raise. It is a property of the database, not a convention.
 
 ---
 
-## Assumptions I made
+## Assumptions about the Minds platform
 
-Flagged because I made these calls without being able to ask.
+Flagged because I made these calls without being able to ask. Everything in this
+section is still **pending the API key** — see "Placeholder" below.
 
 **Verified, not assumed:**
 
@@ -229,6 +249,92 @@ Flagged because I made these calls without being able to ask.
   calls it. The tick loop is pull-based.
 - **The `qc` lane is wired and unused.** Nothing currently checks whether the
   world has drifted out of tone.
+
+---
+
+## Surfaces
+
+The simulation is not the world; the world is a display. Three surfaces
+implement one `SurfaceAdapter` (`src/runtime/surface.ts`):
+
+| Surface          | File                          | What it is                                        |
+| ---------------- | ----------------------------- | ------------------------------------------------- |
+| `ConsoleSurface` | `src/runtime/surface.ts`      | stdout. What `npm run demo` uses.                 |
+| `WebSurface`     | `src/runtime/webSurface.ts`   | three.js in a browser. What `npm run world` uses. |
+| `ChatSurface`    | `src/runtime/chatSurface.ts`  | a terminal. What `npm run chat` uses.             |
+| `MemorySurface`  | `src/runtime/surface.ts`      | collects instead of printing. What the tests use. |
+
+`npm run chat` attaches to the *same running world* as the browser over the same
+socket and replays the *same beats* through the adapter. Two windows, one canon.
+The text surface contains no 3D vocabulary at all — `moveTo` is a sentence, not
+a translation — which is the actual test of whether the seam holds.
+
+### The engine
+
+**three.js, not Godot.** Godot's web export needs a 133 MB editor plus 1.2 GB of
+export templates before a triangle renders, ships a ~30 MB wasm payload, and
+needs COOP/COEP headers to serve. More to the point, the scaffolding an engine
+sells you — scene tree, entity system, game state — is the part Inspiral already
+owns in TypeScript. What was actually needed from the engine was glTF loading,
+soft shadows, ambient occlusion, animation blending, screen-space labels and a
+camera, and three.js ships all of it as addons. No renderer code was written:
+`GLTFLoader`, `AnimationMixer`, `PCFSoftShadowMap`, `GTAOPass`, `CSS2DRenderer`
+and `OrbitControls` do the work. three.js is served straight out of
+`node_modules` via an import map, so there is no build step and the judge's URL
+is a plain static page.
+
+Nothing was hand-modelled. Buildings are stacked from Kenney CC0 kit pieces by
+measured bounding box; the cast are rigged CC0 GLBs that ship 32 animation clips
+each. See `web/assets/ATTRIBUTION.md`.
+
+---
+
+## Decisions for the world surface
+
+Everything here was a judgement call, is isolated to one file, and is cheap to
+reverse.
+
+| # | Assumption | Where | If wrong |
+| - | ---------- | ----- | -------- |
+| 1 | **three.js over Godot 4**, for the reasons above. | `web/`, `src/runtime/webSurface.ts` | The seam is unchanged; another surface is one file. |
+| 2 | **Asset licences.** Kenney packs are CC0, so no attribution is legally required. Recorded anyway. | `web/assets/ATTRIBUTION.md` | Swap the GLBs; the client measures pieces at runtime rather than hard-coding sizes. |
+| 3 | **World layout.** A plaza with three towers is invented set dressing; canon only ever says `kiln_row`, not coordinates. | `WARD_PLACES` in `src/runtime/webSurface.ts` | One table. Nothing above the seam knows a coordinate exists. |
+| 4 | **A minted character's home** ("wharf") is a location the ward has never heard of, so it is assigned a free spot on a ring around the plaza. | `WebSurface.point()` | Add the name to `WARD_PLACES`. |
+| 5 | **Mint input format.** `Key: value` lines, forgiving; a bare paragraph becomes the brief and the schema fills the rest. | `src/canon/mint.ts` | The parser is ~60 lines and self-contained. |
+| 6 | **Character voice** in the mock host is rule-based, not generated — deterministic, instant, free. It is a placeholder for a Mind. | `src/host/mock.ts` | Replaced wholesale by the Minds adapter. |
+| 7 | **Telegram** is not wired, because it needs a bot token this repo does not have. `ChatSurface` takes a `write` callback; a bot is that callback pointed at `sendMessage`, with the existing `/visit /side /leave /mint` commands arriving as messages. | `src/runtime/chatSurface.ts` | ~30 lines in a new script; the surface itself does not change. |
+| 8 | **Tick cadence** in the live world is wall-clock seconds, not the production 4 hours, so a demo is watchable. | `--every` in `scripts/world.ts` | A flag. |
+
+---
+
+## Placeholder: the Minds host
+
+**Exactly one thing in this repo is a placeholder, and it is the only thing that
+needs a key.** Everything else genuinely runs.
+
+`HostRuntime` (`src/host/HostRuntime.ts`) is the seam. There are two
+implementations and one switch:
+
+```ts
+// src/host/index.ts -- THE ENTIRE SWAP COST
+if (cfg.host === "minds") return new MindsHostRuntime({ builderApiKey: key, ... });
+return new MockHostRuntime({ seed: cfg.seed });
+```
+
+- `MockHostRuntime` — **the default.** Rule-based, deterministic, instant, free,
+  offline. Same seed, same history. Every screenshot and every test above ran
+  against it.
+- `MindsHostRuntime` — written, typed against the real client library, wired to
+  the same interface, **never exercised**, because there is no key yet.
+
+To switch tomorrow: put `MINDS_BUILDER_API_KEY=...` in `.env`, set
+`INSPIRAL_HOST=minds`, and change nothing else. If the key is missing or empty
+the adapter logs a warning and falls back to the mock rather than crashing, so a
+half-configured environment still runs the demo.
+
+Nothing downstream of the seam knows a vendor exists: the validator, canon, tick
+loop, character runtime and all three surfaces are host-agnostic and unchanged
+by the swap.
 
 ---
 

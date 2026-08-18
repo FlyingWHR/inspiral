@@ -254,7 +254,7 @@ function agoPhrase(repo: CanonRepo, ts: string): string {
   if (hours < 12) return "earlier today";
   if (hours < 36) return "yesterday";
   const days = Math.round(hours / 24);
-  return `${days} days ago`;
+  return days === 1 ? "a day ago" : `${days} days ago`;
 }
 
 // ---------------------------------------------------------------------------
@@ -331,7 +331,9 @@ export function renderBehavior(
     if (ally && v.returning && slice.grievance) {
       const g = slice.grievance;
       const rivalName = repo.getCharacter(g.against)?.name ?? g.against;
-      const away = v.awayHours >= 24 ? `${Math.round(v.awayHours / 24)} days` : "a while";
+      const awayDays = Math.round(v.awayHours / 24);
+      const away =
+        v.awayHours < 24 ? "a while" : awayDays === 1 ? "a day" : `${awayDays} days`;
       lines.push(`You've been gone ${away}. ${rivalName} did not stop.`);
       lines.push(`${agoPhrase(repo, g.event.ts)}: ${deThirdPerson(g.summary, sheet.name)}`);
       lines.push(`Ask anyone. It's on the record.`);

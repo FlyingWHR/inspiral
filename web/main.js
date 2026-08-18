@@ -235,7 +235,25 @@ function play(a, want, once = false) {
   a.current = next;
 }
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/**
+ * Hold the world on the current line. Useful for filming: the citation is the
+ * payoff and a viewer needs longer to read it than a live tick will allow.
+ * Press P, or call __ward.pause() from a console.
+ */
+let paused = false;
+const idle = () => new Promise((r) => setTimeout(r, 90));
+const wait = async (ms) => {
+  await new Promise((r) => setTimeout(r, ms));
+  while (paused) await idle();
+};
+addEventListener("keydown", (e) => {
+  if (e.key === "p" || e.key === "P") setPaused(!paused);
+});
+function setPaused(v) {
+  paused = v;
+  statusEl.textContent = v ? "held" : "live";
+  statusEl.className = v ? "dead" : "live";
+}
 
 function face(a, x, z) {
   const dx = x - a.root.position.x, dz = z - a.root.position.z;
@@ -292,7 +310,7 @@ async function speak(a, lines, verb, detail) {
     c.textContent = `${d.ok ? "✓" : "✗"} ${d.id} — ${d.summary}`;
     a.bubbleEl.append(c);
   }
-  if (detail?.length) await wait(2600);
+  if (detail?.length) await wait(5200);
   a.bubbleEl.classList.remove("on");
   await wait(200);
   a.bubble.visible = false;
@@ -466,7 +484,12 @@ function frame(dt) {
 
 // Debug handle: lets a browser console (or an agent) drive and measure the
 // scene without waiting on requestAnimationFrame.
-globalThis.__ward = { scene, actors, camera, THREE, frame };
+globalThis.__ward = {
+  scene, actors, camera, THREE, frame,
+  pause: () => setPaused(true),
+  resume: () => setPaused(false),
+  get paused() { return paused; },
+};
 
 const clockT = new THREE.Clock();
 renderer.setAnimationLoop(() => frame(Math.min(clockT.getDelta(), 0.1)));

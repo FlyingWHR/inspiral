@@ -170,6 +170,7 @@ src/
   tick/          runTick.ts, scheduler.ts
 scripts/         demo.ts, tick.ts, canon.ts
 tests/           validator.test.ts, tick.test.ts     ← 48 tests
+docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 
 Append-only is enforced by SQLite triggers: `UPDATE` and `DELETE` on `events`

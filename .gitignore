@@ -6,7 +6,8 @@ dist/
 *.db-shm
 data/
 .env
-.env.local
+.env.*
+!.env.example
 .DS_Store
 *.log
 coverage/

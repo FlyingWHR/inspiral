@@ -154,6 +154,28 @@ export class WebSurface implements SurfaceAdapter {
     return spot;
   }
 
+  /**
+   * Nudge a spot that is already taken. Two characters can legitimately share a
+   * home ("plaza"), and a body standing inside another body reads as a bug even
+   * when canon is perfectly correct.
+   */
+  private free(at: SurfacePoint): SurfacePoint {
+    const taken = (p: SurfacePoint) =>
+      [...this.actors.values()].some(
+        (a) => Math.hypot(a.at.x - p.x, a.at.z - p.z) < 2.8,
+      );
+    if (!taken(at)) return at;
+    for (let i = 1; i <= 12; i++) {
+      const angle = i * 2.4;
+      const candidate = {
+        x: Math.round((at.x + Math.cos(angle) * (2.2 + i * 0.35)) * 10) / 10,
+        z: Math.round((at.z + Math.sin(angle) * (2.2 + i * 0.35)) * 10) / 10,
+      };
+      if (!taken(candidate)) return candidate;
+    }
+    return at;
+  }
+
   private broadcastPlaces(): void {
     const payload = JSON.stringify({ t: "places", places: this.places });
     for (const c of this.clients) if (c.readyState === 1) c.send(payload);
@@ -248,7 +270,7 @@ export class WebSurface implements SurfaceAdapter {
   // --- SurfaceAdapter -------------------------------------------------------
 
   spawn(actor: SurfaceActor): void {
-    const at = this.point(actor.home);
+    const at = this.free(this.point(actor.home));
     // Idempotent: a returning visitor is already on the books, and a second
     // spawn beat would read as a second person walking in.
     if (this.actors.has(actor.id)) {

@@ -190,3 +190,19 @@ describe("canon survives the process", () => {
     }
   });
 });
+
+describe("a home-less sheet does not collide with the last one", () => {
+  it("defaults home_location to the plaza rather than a shared placeholder", () => {
+    const a = parseSheet("Name: Ossa Rell\nTitle: Ropewright");
+    const b = parseSheet("Name: Halric Vaas\nTitle: Wharfmaster");
+
+    // Both default, and the default is a real place -- not slug("")'s fallback,
+    // which silently gave every home-less newcomer the same invented location.
+    expect(a.home_location).toBe("plaza");
+    expect(b.home_location).toBe("plaza");
+  });
+
+  it("keeps an explicit home", () => {
+    expect(parseSheet("Name: X\nHome: The Wet Quarter").home_location).toBe("the_wet_quarter");
+  });
+});

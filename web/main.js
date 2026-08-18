@@ -24,6 +24,20 @@ const BODY = {
   quill: "character-female-e.glb",
   _visitor: "character-male-a.glb",
 };
+// Minted characters are unknown at build time, so they draw from a spare pool,
+// picked by a hash of the id: stable across reloads, and two newcomers do not
+// turn up wearing the same body.
+const SPARE = [
+  "character-female-a.glb", "character-male-b.glb",
+  "character-female-c.glb", "character-male-d.glb",
+];
+function bodyFor(id, kind) {
+  if (BODY[id]) return BODY[id];
+  if (kind === "visitor") return BODY._visitor;
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return SPARE[h % SPARE.length];
+}
 const PERSON_HEIGHT = 1.7;
 const KIT_SCALE = 2.3;
 const WALK_SPEED = 2.6;
@@ -186,7 +200,7 @@ const actors = new Map();
 
 async function addActor({ id, name, kind, title }, at) {
   if (actors.has(id)) return actors.get(id);
-  const file = BODY[id] ?? BODY._visitor;
+  const file = bodyFor(id, kind);
   const gltf = await load(CHARS + file);
   const root = THREE.SkeletonUtils
     ? THREE.SkeletonUtils.clone(gltf.scene)

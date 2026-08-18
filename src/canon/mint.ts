@@ -92,7 +92,10 @@ export function parseSheet(text: string, existingIds: string[] = []): CharacterS
       max_words: Number(get("maxwords")) || 28,
     },
     mood: get("mood") || "even",
-    home_location: slug(get("home", "homelocation", "location", "where")) || "plaza",
+    home_location: (() => {
+      const home = get("home", "homelocation", "location", "where");
+      return home ? slug(home) : "plaza";
+    })(),
   });
 }
 

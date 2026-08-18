@@ -43,6 +43,8 @@ export {
   MemorySurface,
   NullSurface,
   type SurfaceAdapter,
+  type SurfaceActor,
+  type SurfacePoint,
 } from "./runtime/surface.js";
 
 export { runTick, onboardVisitor, visitorAction, type TickContext, type TickOutcome } from "./tick/runTick.js";

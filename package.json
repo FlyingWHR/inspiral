@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "better-sqlite3": "^13.0.0",
+    "three": "^0.185.1",
+    "ws": "^8.21.3",
     "zod": "^3.24.1"
   },
   "optionalDependencies": {
@@ -27,6 +29,8 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.2",
+    "@types/three": "^0.185.4",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

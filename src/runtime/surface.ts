@@ -13,11 +13,35 @@ import type { WorldEvent } from "../types/events.js";
  * to write canon.
  */
 
+/** A spot on the ground plane. The y axis is up and the surface owns it. */
+export interface SurfacePoint {
+  x: number;
+  z: number;
+}
+
+/** Someone who can be put on screen. `home` is an opaque canon location. */
+export interface SurfaceActor {
+  id: string;
+  name: string;
+  kind: "character" | "visitor";
+  title?: string;
+  home?: string;
+}
+
 export interface SurfaceAdapter {
   readonly name: string;
 
   /** An NPC performs. Speak the lines, play the animation, move the body. */
   present(behavior: RenderedBehavior): Promise<void> | void;
+
+  /** Put a body in the world. Called once per character at startup. */
+  spawn?(actor: SurfaceActor): Promise<void> | void;
+
+  /** Take the body away. Visitors leave; characters normally do not. */
+  despawn?(id: string): Promise<void> | void;
+
+  /** Walk someone to a spot. A named canon location or explicit coordinates. */
+  moveTo?(id: string, to: SurfacePoint | string): Promise<void> | void;
 
   /** Something went on the district notice board. */
   postNotice?(text: string, author: string): Promise<void> | void;
@@ -37,6 +61,14 @@ export class ConsoleSurface implements SurfaceAdapter {
 
   constructor(nameOf: (id: string) => string = (id) => id) {
     this.nameOf = nameOf;
+  }
+
+  spawn(a: SurfaceActor): void {
+    console.log(`    [+] ${a.name}${a.title ? `, ${a.title}` : ""}`);
+  }
+
+  despawn(id: string): void {
+    console.log(`    [-] ${this.nameOf(id)}`);
   }
 
   present(b: RenderedBehavior): void {
@@ -59,9 +91,21 @@ export class MemorySurface implements SurfaceAdapter {
   readonly presented: RenderedBehavior[] = [];
   readonly notices: { text: string; author: string }[] = [];
   readonly events: WorldEvent[] = [];
+  readonly spawned: SurfaceActor[] = [];
+  readonly despawned: string[] = [];
+  readonly moves: { id: string; to: SurfacePoint | string }[] = [];
 
   present(b: RenderedBehavior): void {
     this.presented.push(b);
+  }
+  spawn(a: SurfaceActor): void {
+    this.spawned.push(a);
+  }
+  despawn(id: string): void {
+    this.despawned.push(id);
+  }
+  moveTo(id: string, to: SurfacePoint | string): void {
+    this.moves.push({ id, to });
   }
   postNotice(text: string, author: string): void {
     this.notices.push({ text, author });

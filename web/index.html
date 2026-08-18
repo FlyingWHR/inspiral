@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inspiral — Tallow Ward</title>
+<style>
+  :root { --ink:#f2ece1; --dim:#a89f8f; --panel:rgba(18,16,14,.82); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#0d0c0b;
+    font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); }
+  #stage,#labels { position:fixed; inset:0; }
+  #labels { pointer-events:none; }
+
+  .plate { text-align:center; text-shadow:0 1px 3px #000,0 0 10px #000; pointer-events:none; }
+  .plate .nm { font-weight:650; letter-spacing:.02em; white-space:nowrap; }
+  .plate .ti { font-size:11px; color:var(--dim); white-space:nowrap; }
+  .plate.visitor .nm { color:#9fd3ff; }
+
+  .bubble { max-width:270px; padding:9px 12px; border-radius:12px;
+    background:var(--panel); border:1px solid rgba(255,255,255,.13);
+    box-shadow:0 10px 30px rgba(0,0,0,.55); backdrop-filter:blur(7px);
+    font-size:13px; text-align:left; opacity:0; transform:translateY(6px);
+    transition:opacity .18s ease,transform .18s ease; pointer-events:none; }
+  .bubble.on { opacity:1; transform:translateY(0); }
+  .bubble .verb { display:block; font-size:10px; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--dim); margin-bottom:3px; }
+  .bubble .cite { display:block; margin-top:5px; font-size:10px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#7fc7a0; }
+
+  #hud { position:fixed; left:18px; top:16px; width:310px; z-index:5; }
+  #hud h1 { margin:0; font-size:17px; letter-spacing:.05em; font-weight:650; }
+  #hud .sub { color:var(--dim); font-size:11.5px; margin:2px 0 10px;
+    letter-spacing:.08em; text-transform:uppercase; }
+  #feed { background:var(--panel); border:1px solid rgba(255,255,255,.1);
+    border-radius:10px; padding:9px 11px; max-height:36vh; overflow:hidden;
+    font-size:12px; color:#d9d2c6; }
+  #feed div { padding:2.5px 0; border-top:1px solid rgba(255,255,255,.055); }
+  #feed div:first-child { border-top:0; }
+  #feed .ev { color:var(--dim); }
+
+  #panel { position:fixed; right:18px; bottom:18px; z-index:5; display:flex;
+    flex-direction:column; gap:7px; align-items:flex-end; }
+  button { font:inherit; font-size:12.5px; padding:8px 13px; border-radius:9px;
+    cursor:pointer; color:var(--ink); background:var(--panel);
+    border:1px solid rgba(255,255,255,.16); transition:background .15s; }
+  button:hover:not(:disabled) { background:rgba(60,54,46,.92); }
+  button:disabled { opacity:.35; cursor:default; }
+  #status { position:fixed; right:18px; top:16px; z-index:5; font-size:11px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
+  #status.live::before { content:"● "; color:#6fcf97; }
+  #status.dead::before { content:"● "; color:#cf6f6f; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "/vendor/three/build/three.module.js",
+  "three/addons/": "/vendor/three/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <div id="labels"></div>
+
+  <div id="hud">
+    <h1>Tallow Ward</h1>
+    <div class="sub" id="clock">connecting</div>
+    <div id="feed"></div>
+  </div>
+
+  <div id="status">offline</div>
+
+  <div id="panel">
+    <button id="btn-arrive">Walk into the ward</button>
+    <button id="btn-side" disabled>Back Okonkwo, in public</button>
+    <button id="btn-leave" disabled>Leave</button>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

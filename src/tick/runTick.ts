@@ -192,10 +192,6 @@ export async function runTick(ctx: TickContext): Promise<TickOutcome> {
   const { repo, surface } = ctx;
 
   try {
-    if (ctx.clock && ctx.advanceMs && ctx.advanceMs > 0) {
-      ctx.clock.advance(ctx.advanceMs);
-    }
-
     if (budgetExceeded(repo, ctx.dailyBudget)) {
       return replayLast(ctx, "budget");
     }
@@ -251,6 +247,14 @@ export async function runTick(ctx: TickContext): Promise<TickOutcome> {
       /* if even this fails, still do not throw */
     }
     return { status: "skipped", reason: `exception: ${(e as Error).message}` };
+  } finally {
+    // Time moves at the END of a tick, not the start: a tick's events happened
+    // during the interval it consumed, not after it. Advancing first pushed the
+    // final tick of a run onto the next calendar day, so a six-day demo printed
+    // a day 7. In `finally` so a skipped or replayed tick still burns its time.
+    if (ctx.clock && ctx.advanceMs && ctx.advanceMs > 0) {
+      ctx.clock.advance(ctx.advanceMs);
+    }
   }
 }
 

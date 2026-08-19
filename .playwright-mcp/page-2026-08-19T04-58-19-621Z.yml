@@ -1,0 +1,10 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e3]:
+    - heading "Tallow Ward" [level=1] [ref=f3e4]
+    - generic [ref=f3e5]: mock host · no api key · waiting for the next tick
+  - generic [ref=f3e7]: ● live
+  - generic [ref=f3e8]:
+    - button "Walk into the ward" [ref=f3e9] [cursor=pointer]
+    - button "Back Okonkwo, in public" [disabled] [ref=f3e10]
+    - button "Leave" [disabled] [ref=f3e11]
+    - button "Mint a character…" [ref=f3e12] [cursor=pointer]

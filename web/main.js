@@ -77,14 +77,14 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x2a2f38);
-scene.fog = new THREE.Fog(0x2a2f38, 42, 96);
+scene.background = new THREE.Color(0x3a4250);
+scene.fog = new THREE.Fog(0x3a4250, 46, 110);
 
-const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
-camera.position.set(-15.5, 10.8, 22.5);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
+camera.position.set(-7.5, 17.5, 25);
 
 const controls = new OrbitControls(camera, canvas);
-controls.target.set(0, 1.4, 1.0);
+controls.target.set(0, 1.2, 1.5);
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI / 2.12;
 controls.minDistance = 8;
@@ -93,8 +93,8 @@ controls.maxDistance = 62;
 const labels = new CSS2DRenderer({ element: document.getElementById("labels") });
 
 // Soft shadows plus AO is the whole art direction. No voxels, no density.
-const sun = new THREE.DirectionalLight(0xffe9cf, 2.5);
-sun.position.set(-17, 26, 13);
+const sun = new THREE.DirectionalLight(0xffe9cf, 3.4);
+sun.position.set(-14, 24, 19);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.radius = 4;
@@ -102,12 +102,12 @@ sun.shadow.bias = -0.0007;
 sun.shadow.normalBias = 0.03;
 const cam = sun.shadow.camera;
 cam.left = -32; cam.right = 32; cam.top = 32; cam.bottom = -32; cam.far = 90;
-scene.add(sun, new THREE.HemisphereLight(0x9fb6d4, 0x3a3026, 1.25));
-scene.add(new THREE.AmbientLight(0x6b7488, 0.35));
+scene.add(sun, new THREE.HemisphereLight(0x9fb6d4, 0x3a3026, 1.55));
+scene.add(new THREE.AmbientLight(0x6b7488, 0.45));
 
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(150, 150),
-  new THREE.MeshStandardMaterial({ color: 0x5c5346, roughness: 1 }),
+  new THREE.MeshStandardMaterial({ color: 0x6e6455, roughness: 1 }),
 );
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
@@ -115,7 +115,7 @@ scene.add(ground);
 
 const plaza = new THREE.Mesh(
   new THREE.CircleGeometry(9.5, 48),
-  new THREE.MeshStandardMaterial({ color: 0x6d6455, roughness: .95 }),
+  new THREE.MeshStandardMaterial({ color: 0x827761, roughness: .95 }),
 );
 plaza.rotation.x = -Math.PI / 2;
 plaza.position.y = 0.012;
@@ -232,7 +232,7 @@ async function addActor({ id, name, kind, title }, at) {
   bubble.visible = false;
   root.add(bubble);
 
-  const a = { id, name, root, mixer, clips, bubbleEl, bubble, home: { ...at }, current: null };
+  const a = { id, name, root, mixer, clips, plate, bubbleEl, bubble, home: { ...at }, current: null };
   actors.set(id, a);
   play(a, "idle");
   return a;
@@ -356,11 +356,19 @@ function enqueue(b) {
   if (!draining) void drain();
 }
 
+// Who is present is structural; what they said is chatter. Chatter can be
+// dropped when the backlog runs away, presence never can -- losing one spawn
+// leaves an NPC greeting somebody the viewer cannot see.
+const STRUCTURAL = new Set(["spawn", "despawn", "move"]);
+
 async function drain() {
   draining = true;
   while (beats.length) {
-    // A tick fires several beats at once; never let the backlog run away.
-    if (beats.length > 9) beats = beats.slice(-9);
+    if (beats.length > 9) {
+      const chatter = beats.filter((b) => !STRUCTURAL.has(b.t));
+      const drop = new Set(chatter.slice(0, Math.max(0, chatter.length - 6)));
+      beats = beats.filter((b) => !drop.has(b)); // original order preserved
+    }
     try { await stageBeat(beats.shift()); } catch (e) { console.warn(e); }
   }
   draining = false;
@@ -381,7 +389,13 @@ async function stageBeat(b) {
   }
   if (b.t === "despawn") {
     const a = actors.get(b.id);
-    if (a) { scene.remove(a.root); actors.delete(b.id); note(`${a.name} left.`); }
+    if (a) {
+      scene.remove(a.root);
+      a.plate.remove();
+      a.bubbleEl.remove();
+      actors.delete(b.id);
+      note(`${a.name} left.`);
+    }
     return;
   }
   if (b.t === "move") {
@@ -434,6 +448,9 @@ function connect() {
     if (m.t === "places") { places = m.places ?? places; return; }
     if (m.t === "hello") {
       places = m.places ?? {};
+      // Until the first beat lands there is nothing to count, but the ward is
+      // connected -- "connecting" would be a lie.
+      if (!said) clockEl.textContent = "mock host · no api key · waiting for the next tick";
       for (const a of m.actors) await addActor(a.actor, a.at);
       for (const b of m.recent.slice(-4)) enqueue(b);
       return;
@@ -499,7 +516,7 @@ function frame(dt) {
 // Debug handle: lets a browser console (or an agent) drive and measure the
 // scene without waiting on requestAnimationFrame.
 globalThis.__ward = {
-  scene, actors, camera, THREE, frame,
+  scene, actors, camera, controls, THREE, frame,
   pause: () => setPaused(true),
   resume: () => setPaused(false),
   get paused() { return paused; },

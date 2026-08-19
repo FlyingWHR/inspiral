@@ -1,0 +1,10 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - heading "Tallow Ward" [level=1] [ref=e4]
+    - generic [ref=e5]: connecting
+  - generic [ref=e7]: ● live
+  - generic [ref=e8]:
+    - button "Walk into the ward" [ref=e9] [cursor=pointer]
+    - button "Back Okonkwo, in public" [disabled] [ref=e10]
+    - button "Leave" [disabled] [ref=e11]
+    - button "Mint a character…" [ref=e12] [cursor=pointer]

@@ -10,7 +10,9 @@
   html,body { margin:0; height:100%; overflow:hidden; background:#0d0c0b;
     font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); }
   #stage,#labels { position:fixed; inset:0; }
-  #labels { pointer-events:none; }
+  /* Nameplates and speech bubbles paint ABOVE the HUD: the line someone is
+     saying is the content, the feed is only context. */
+  #labels { pointer-events:none; z-index:6; }
 
   .plate { text-align:center; text-shadow:0 1px 3px #000,0 0 10px #000; pointer-events:none; }
   .plate .nm { font-weight:650; letter-spacing:.02em; white-space:nowrap; }

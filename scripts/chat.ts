@@ -131,7 +131,7 @@ async function solo(): Promise<void> {
   const repo = CanonRepo.open(":memory:", clock);
   seedWorld(repo);
   // THE SEAM. Mock unless INSPIRAL_HOST=minds and a key is present;
-  // createHostRuntime falls back to mock rather than crashing if it is not.
+  // startHostRuntime falls back to mock rather than crashing if it is not.
   const host = await startHostRuntime({ ...loadConfig(), seed: 1 });
 
   const ctx: TickContext = {

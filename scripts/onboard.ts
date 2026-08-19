@@ -20,7 +20,7 @@
 import { rmSync } from "node:fs";
 import { CanonRepo } from "../src/canon/repo.js";
 import { loadConfig } from "../src/config.js";
-import { createHostRuntime } from "../src/host/index.js";
+import { startHostRuntime } from "../src/host/index.js";
 import { createSource } from "../src/ip/source.js";
 import { onboardIP } from "../src/ip/onboard.js";
 import { createApprovalChannel } from "../src/approval/index.js";
@@ -60,13 +60,12 @@ async function main(): Promise<void> {
   const cfg = loadConfig();
   const source = createSource(spec!);
   const repo = CanonRepo.open(dbPath, systemClock);
-  const host = has("no-host") ? undefined : createHostRuntime(cfg);
+  const host = has("no-host") ? undefined : await startHostRuntime(cfg);
   const approval = createApprovalChannel(process.env, {
     mode: has("reject") ? "reject" : has("ask") ? "ask" : undefined,
   });
 
   console.log(`\nreading ${source.name} ...`);
-  if (host) await host.init();
 
   const result = await onboardIP({
     source,

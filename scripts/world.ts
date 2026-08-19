@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   seedWorld(repo);
 
   // THE SEAM. Mock unless INSPIRAL_HOST=minds and a key is present;
-  // createHostRuntime falls back to mock rather than crashing if it is not.
+  // startHostRuntime falls back to mock rather than crashing if it is not.
   const host = await startHostRuntime({ ...loadConfig(), seed: SEED });
 
   const surface = new WebSurface({

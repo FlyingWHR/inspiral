@@ -63,8 +63,25 @@ export interface RenderedBehavior {
 /** Minimum absence before a visitor counts as having been away. */
 const GAP_MS = 12 * 3_600_000;
 
+/**
+ * Actions that name the history behind them.
+ *
+ * This used to be a bare `||` chain inline, and it had drifted out of step with
+ * GRIEVABLE below: `alliance_broken` was already something a character could
+ * hold against someone, but `break_alliance` was not on the citing list, so a
+ * ladder that escalated to breaking an alliance produced a beat with no
+ * receipt. Kept as a named set beside GRIEVABLE, with a test asserting every
+ * member maps to a grievable event type, so the two cannot drift again.
+ */
+export const CITING_ACTIONS = new Set<string>([
+  "confront",
+  "snub",
+  "sabotage",
+  "break_alliance",
+]);
+
 /** Event types a character can legitimately hold against someone. */
-const GRIEVABLE = new Set<string>([
+export const GRIEVABLE = new Set<string>([
   "confrontation",
   "snub",
   "sabotage",
@@ -348,7 +365,7 @@ export function renderBehavior(
     // If this escalates against someone they already have history with, the
     // history gets named. Grudges that are never referenced aren't grudges.
     if (
-      (d.action === "confront" || d.action === "snub" || d.action === "sabotage") &&
+      CITING_ACTIONS.has(d.action) &&
       d.target &&
       !isFanRef(d.target)
     ) {

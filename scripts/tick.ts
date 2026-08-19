@@ -11,7 +11,7 @@
 import { loadConfig } from "../src/config.js";
 import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld } from "../src/canon/seed.js";
-import { createHostRuntime } from "../src/host/index.js";
+import { startHostRuntime } from "../src/host/index.js";
 import { runTick, type TickContext } from "../src/tick/runTick.js";
 import { TickScheduler } from "../src/tick/scheduler.js";
 import { ConsoleSurface } from "../src/runtime/surface.js";
@@ -29,14 +29,8 @@ async function main(): Promise<void> {
     log.info("world seeded");
   }
 
-  const host = createHostRuntime(cfg);
-  try {
-    await host.init();
-  } catch (e) {
-    log.error(`host init failed: ${(e as Error).message}`);
-    repo.close();
-    process.exit(1);
-  }
+  // Degrades to the mock if a key is present but wrong, rather than exiting.
+  const host = await startHostRuntime(cfg);
 
   const surface = new ConsoleSurface((id) => repo.getCharacter(id)?.name ?? id);
   const ctx: TickContext = { repo, host, surface, dailyBudget: cfg.dailyHostBudget };

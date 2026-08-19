@@ -16,7 +16,7 @@
 
 import { CanonRepo } from "../src/canon/repo.js";
 import { loadConfig } from "../src/config.js";
-import { createHostRuntime } from "../src/host/index.js";
+import { startHostRuntime } from "../src/host/index.js";
 import { createSource, writeFixtureItem } from "../src/ip/source.js";
 import { ingestOnce, ingestLoop } from "../src/ip/ingest.js";
 import { runTick, type TickContext } from "../src/tick/runTick.js";
@@ -89,8 +89,7 @@ async function main(): Promise<void> {
   report(r);
 
   if (has("tick")) {
-    const host = createHostRuntime(cfg);
-    await host.init();
+    const host = await startHostRuntime(cfg);
     const ctx: TickContext = {
       repo,
       host,

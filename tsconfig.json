@@ -12,9 +12,14 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
+    // The voxel core is plain JS so the browser can load it with no build step
+    // and the test suite can import the same file. Infer its types, do not
+    // type-check its body.
+    "allowJs": true,
+    "checkJs": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts", "web-voxel/voxel/*.js"]
 }

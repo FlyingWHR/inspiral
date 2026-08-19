@@ -75,6 +75,8 @@ export class ConsoleSurface implements SurfaceAdapter {
     const who = this.nameOf(b.character_id);
     const where = b.action.target ? ` -> ${this.nameOf(b.action.target)}` : "";
     console.log(`    ${who} [${b.action.verb}${where}]`);
+    // Narration is not speech: no quotation marks, ever.
+    if (b.stage) console.log(`      (${b.stage})`);
     for (const line of b.lines) console.log(`      "${line}"`);
     if (b.post_draft) console.log(`      BOARD: ${b.post_draft}`);
     if (b.cites.length) console.log(`      (cites ${b.cites.join(", ")})`);

@@ -57,6 +57,7 @@ function apply(target: SurfaceAdapter, beat: Record<string, unknown>): void {
         character_id: beat.id as string,
         action: { verb: beat.verb, target: beat.target },
         lines: (beat.lines as string[]) ?? [],
+        stage: (beat.stage as string) ?? "",
         post_draft: (beat.post as string) ?? null,
         cites: (beat.cites as string[]) ?? [],
       } as never);

@@ -75,6 +75,7 @@ export class ChatSurface implements SurfaceAdapter {
       `\n${this.c.cyan}${this.c.bold}${this.who(b.character_id)}${this.c.reset}` +
         ` ${this.c.dim}[${b.action.verb.replace(/_/g, " ")}]${this.c.reset}${target}`,
     );
+    if (b.stage) this.write(`   ${this.c.dim}(${b.stage})${this.c.reset}`);
     for (const line of b.lines) this.write(`   "${line}"`);
     if (b.post_draft) this.write(`   ${this.c.yellow}BOARD:${this.c.reset} ${b.post_draft}`);
     if (b.cites.length) {

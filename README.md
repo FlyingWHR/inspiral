@@ -45,6 +45,18 @@ npm run digest  -- --fixture tradeclash              # the showrunner's note
 npm run clips   -- --fixture tradeclash --write      # drafts, never posted
 ```
 
+**The one thing that needs a Mind.** Everything else in this repo runs with the
+host switched off; this does not.
+
+```bash
+INSPIRAL_HOST=minds npm run prove   # 0 arcs without a Mind -> 2 with one
+```
+
+Onboards the same un-hinted source twice, with and without a Mind, and prints
+both bibles side by side. The compiler reads hashtags; it cannot decide what a
+body of work is *about*. Arcs are what the tick loop escalates, so zero arcs is
+a cast that exists and a world that does not run.
+
 **The one that never stops.** Real elapsed history, on disk.
 
 ```bash
@@ -498,9 +510,11 @@ mock; a key that is present but wrong → the adapter is constructed, the real A
 rejects it, and `startHostRuntime` warns and falls back to mock. Only the mock
 failing is treated as a real bug.
 
-Nothing downstream of the seam knows a vendor exists: the validator, canon, tick
-loop, character runtime, the IP pipeline and all four surfaces are host-agnostic
-and unchanged by the swap. All eleven entry points go through
+Nothing downstream of the seam talks to the host directly -- the validator,
+canon, tick loop, character runtime, the IP pipeline and all four surfaces read
+canon instead. That is what lets one Mind drive a three.js ward, a first-person
+voxel world, a terminal and a headless demo at once, and why the next surface
+in whatever engine needs no changes on the Mind's side. All eleven entry points go through
 `startHostRuntime()`.
 
 ### Verified against the live key (20 Aug 2026)

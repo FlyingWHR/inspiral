@@ -212,7 +212,20 @@ function play(a, want, once = false) {
   a.current = next;
 }
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/**
+ * Hold the world on the current line. The citation is the payoff and a live
+ * tick does not leave a viewer long enough to read it. Press P, or call
+ * __ward.pause() from a console.
+ */
+let paused = false;
+const idle = () => new Promise((r) => setTimeout(r, 90));
+const wait = async (ms) => {
+  await new Promise((r) => setTimeout(r, ms));
+  while (paused) await idle();
+};
+addEventListener("keydown", (e) => {
+  if (e.key === "p" || e.key === "P") paused = !paused;
+});
 
 function face(a, x, z) {
   const dx = x - a.root.position.x, dz = z - a.root.position.z;
@@ -444,6 +457,8 @@ async function stage(b) {
   const target = b.target ? actors.get(b.target) : null;
   clockEl.textContent = `${++said} beats · ${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
   note(`${a.name} ${b.verb.replace(/_/g, " ")}${target ? " → " + target.name : ""}`);
+  // Narration goes to the feed, never into a bubble: a bubble is speech.
+  if (b.stage) note(b.stage, "ev");
 
   if (target) {
     const tp = target.root.position;
@@ -455,8 +470,10 @@ async function stage(b) {
     face(target, ap.x, ap.z);
   }
   play(a, GESTURE[b.verb] ?? "idle", true);
+  // No spoken words means no speech bubble. A snub is silent by definition and
+  // used to "say" its own stage direction out loud.
   if (b.lines?.length) await speak(a, b.lines, b.verb, b.citeDetail);
-  else await wait(700);
+  else await wait(1100);
   play(a, "idle");
   if (target) await walk(a, a.home.x, a.home.z);
 }
@@ -509,7 +526,12 @@ function frame(dt) {
   labels.render(scene, camera);
 }
 
-globalThis.__ward = { scene, camera, world, actors, player, mesher, THREE, frame };
+globalThis.__ward = {
+  scene, camera, world, actors, player, mesher, THREE, frame,
+  pause: () => { paused = true; },
+  resume: () => { paused = false; },
+  get paused() { return paused; },
+};
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => frame(Math.min(clock.getDelta(), 0.1)));

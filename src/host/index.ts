@@ -12,7 +12,8 @@ export { MindsHostRuntime } from "./minds.js";
  * THIS SWITCH IS THE ENTIRE SWAP COST.
  *
  * Adding a host means writing one class that implements HostRuntime and adding
- * one case here. Nothing else in the codebase knows a vendor exists.
+ * one case here. Everything downstream reads canon, so a Mind reaches every
+ * surface -- browser, voxel world, terminal -- without knowing any of them exist.
  *
  * The mock is the default on purpose: the demo must run for someone who has
  * never heard of Minds and has no key.

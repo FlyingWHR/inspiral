@@ -43,6 +43,7 @@ and safer one. Shot 6 is the voxel ward and is the closing beat.
 | 3 the money shot | three.js | (same window) | 8787 |
 | 4 mint on camera | three.js | (same window) | 8787 |
 | 5 an IP walks in | terminal | `npm run onboard` | — |
+| **5b what a Mind is for** | terminal | **`npm run prove`** | — |
 | 6 post → reaction | terminal | `npm run ingest --post` | — |
 | 7 second surface | terminal | `npm run chat` | attaches to 8787 |
 | 8 closing beat | **voxel** | `npm run voxel` | **8788** |
@@ -171,7 +172,36 @@ owner approves all of it before any of it becomes canon."*
 To show it in 3D, `npm run voxel -- --db ./data/tradeclash.db` opens that world
 in its own chamber.
 
-### Shot 6 — you post something, the world reacts (0:42–0:50)
+### Shot 5b — the answer to the hardest question (0:42–0:50)
+
+**Film this one even if you cut something else.** The sharpest thing a judge can
+ask is not "is this an LLM in a for-loop". It is: *your own repo runs with the
+host switched off — show me one thing that needs a Mind.*
+
+```bash
+INSPIRAL_HOST=minds npm run prove
+```
+
+~60–90 seconds, one invocation. It onboards the same un-hinted source twice —
+once with no host, once against a live Mind — and prints both bibles side by
+side, ending on:
+
+```
+  ARCS:   0  without a Mind      →       2  with one
+```
+
+Hold on that line. Then read one arc title aloud: *"Why the Barrels Stopped"*.
+
+Say: *"The compiler can read hashtags. It cannot decide what a body of work is
+about. Arcs are what the tick loop escalates — zero arcs is a cast that exists
+and a world that doesn't run. That is the Mind's job, and nothing else in this
+repo can do it."*
+
+Use `creator`, not `tradeclash`: Trade Clash ships a complete `hints.json`, so
+the compiler already produces a full cast and the comparison looks like a tie.
+`npm run prove` defaults to the un-hinted source for exactly that reason.
+
+### Shot 6 — you post something, the world reacts (0:50–0:56)
 
 **The strongest beat in the film after the citation.** Same terminal:
 
@@ -207,7 +237,7 @@ npm run digest -- --fixture tradeclash
 **Between takes:** delete `fixtures/tradeclash/drop_*.md`, or re-run `onboard`
 with `--reset`. Dropped posts are gitignored.
 
-### Shot 7 — the engine is not the world (0:50–0:55)
+### Shot 7 — the engine is not the world (0:56–0:58)
 
 Terminal B, with the world still running:
 
@@ -221,7 +251,7 @@ citations. Put the terminal beside the browser.
 Say: *"Same world, second surface, no engine. The simulation is not the
 renderer — swapping the display costs one file."*
 
-### Shot 8 — the closing beat: it is a world you can take apart (0:55–1:00)
+### Shot 8 — the closing beat: it is a world you can take apart (0:58–1:00)
 
 Terminal C, before you start filming:
 

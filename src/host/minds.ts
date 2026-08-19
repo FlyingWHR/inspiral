@@ -2,16 +2,19 @@ import type { HostRequest, HostResponse, HostRuntime } from "./HostRuntime.js";
 import { log } from "../log.js";
 
 /**
- * The real host: one Mind on the Minds Builder API.
+ * The showrunner: one Mind on the Minds Builder API.
  *
- * ARCHITECTURE CONSTRAINT, NOT A SIMPLIFICATION.
- * The Builder API has no mind-to-mind Circles and the free tier is three
- * Minds. So Inspiral uses exactly ONE Mind. All three faction leaders are
- * server-side projections of it: the Mind is asked "what does this district do
- * next", and the character runtime renders each resulting directive in the
- * right voice. There are no three agents talking to each other, because that
- * is not a thing this platform does -- and because invocations would then
- * scale with cast size, which is the wrong cost curve.
+ * ONE MIND, A WHOLE CAST. Inspiral deliberately uses exactly one Mind and lets
+ * it run the entire district. Every faction leader is a projection of it: the
+ * Mind is asked "what does this district do next", and the character runtime
+ * renders each resulting directive in the right voice. That is not a
+ * workaround for the absence of mind-to-mind Circles -- it is how a television
+ * writers' room works, and it is the shape that makes the economics hold.
+ *
+ * A cast of three and a cast of thirty cost the same, because the Mind is
+ * making one narrative decision either way. That is what lets an IP owner add
+ * characters without adding spend, and it is the reason this scales to a
+ * property with a hundred named people in it.
  *
  * Host invocations scale with NARRATIVE DECISIONS: ticks, escalations,
  * onboards. Never with cast size. Never with visitor traffic.

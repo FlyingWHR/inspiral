@@ -50,8 +50,19 @@ export interface CanonSlice {
 
 export interface RenderedBehavior {
   character_id: string;
-  /** Spoken lines, already tone-checked and length-capped. */
+  /**
+   * SPOKEN WORDS ONLY. Whatever goes in here is put in quotation marks and
+   * shown in a speech bubble, so nothing that is not literally said may be
+   * added to it. Stage direction goes in `stage`.
+   */
   lines: string[];
+  /**
+   * What they DO, as narration -- "makes the omission obvious enough that
+   * everyone counts it". This used to be pushed into `lines` and rendered as
+   * dialogue, so characters stood in the plaza reciting their own stage
+   * directions. Surfaces must never quote it.
+   */
+  stage: string;
   /** Engine-agnostic action verb + target. The surface adapter maps this. */
   action: { verb: string; target: string | null; location: string };
   /** Text for a notice board, if this action posts one. */
@@ -305,6 +316,8 @@ export function renderBehavior(
 ): RenderedBehavior {
   const { sheet, tone } = slice;
   const cites: string[] = [];
+  /** Narration collected on the way through. Never quoted. */
+  const stageParts: string[] = [];
   const lines: string[] = [];
 
   const targetName = d.target
@@ -360,7 +373,7 @@ export function renderBehavior(
     // --- character-to-character -----------------------------------------
     const opener = (OPENERS[d.action] ?? OPENERS.hold!)(targetName);
     if (opener) lines.push(opener);
-    lines.push(d.dialogue_intent);
+    // d.dialogue_intent is what they DO, not what they SAY. It goes to `stage`.
 
     // If this escalates against someone they already have history with, the
     // history gets named. Grudges that are never referenced aren't grudges.
@@ -370,6 +383,10 @@ export function renderBehavior(
       !isFanRef(d.target)
     ) {
       const rel = slice.outgoing.find((r) => r.to_id === d.target);
+      // The note stays SPEECH: this is the character raising the matter, and
+      // when the note came from an ingested post, quoting it verbatim is the
+      // whole point of the post-reaction beat. Only `dialogue_intent` -- which
+      // describes the action rather than any utterance -- is narration.
       if (rel?.note) lines.push(rel.note);
       if (rel?.last_event_id) cites.push(rel.last_event_id);
     }
@@ -382,6 +399,7 @@ export function renderBehavior(
   const behavior: RenderedBehavior = {
     character_id: sheet.character_id,
     lines: rendered,
+    stage: [d.dialogue_intent, ...stageParts].filter((t) => t && t.trim()).join(" "),
     action: {
       verb: d.action,
       target: d.target,

@@ -84,6 +84,8 @@ type Beat =
       verb: string;
       target: string | null;
       lines: string[];
+      /** Narration. The client must NOT put this in a speech bubble. */
+      stage: string;
       post: string | null;
       cites: string[];
       /** Each citation, resolved against the append-only log. */
@@ -405,6 +407,7 @@ export class WebSurface implements SurfaceAdapter {
       verb: b.action.verb,
       target: b.action.target ?? null,
       lines: b.lines,
+      stage: b.stage ?? "",
       post: b.post_draft ?? null,
       cites: b.cites,
       citeDetail,

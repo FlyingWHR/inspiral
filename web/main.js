@@ -447,6 +447,8 @@ async function stageBeat(b) {
 
   clockEl.textContent = `${++said} beats · ${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
   note(`${a.name} ${b.verb.replace(/_/g, " ")}${target ? " → " + target.name : ""}`);
+  // Narration goes to the feed, never into a bubble: a bubble is speech.
+  if (b.stage) note(b.stage, "ev");
 
   if (target) {
     // Stand a pace short of them, not inside them.
@@ -460,8 +462,10 @@ async function stageBeat(b) {
   }
 
   play(a, GESTURE[b.verb] ?? "idle", true);
+  // No spoken words means no speech bubble. A snub is silent by definition and
+  // used to "say" its own stage direction out loud.
   if (b.lines?.length) await speak(a, b.lines, b.verb, b.citeDetail);
-  else await wait(700);
+  else await wait(1100);
 
   play(a, "idle");
   if (target) await walk(a, a.home.x, a.home.z);

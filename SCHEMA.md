@@ -20,24 +20,41 @@ That sentence is the product. Everything below exists to make it true.
 
 ## 0. The one rule
 
-**Canon is the source of truth. The Minds platform is not.**
+**The Mind is the showrunner. Canon is the show bible it writes into.**
 
-The host is a stateless opinion generator. It is handed a briefing and returns
-directives. It stores nothing we depend on. Every durable fact — who hates whom,
-what happened, who the visitor sided with — lives in a SQLite file we own, in
-the schema below.
+Every judgement that makes this a world rather than a database is the Mind's:
+who moves against whom this tick, what a grudge is really about, which of six
+days of history is the thing worth throwing in someone's face when they walk
+back in. None of that is in the schema below and none of it can be. The schema
+is what the judgement is *recorded in*.
 
-This is the sovereignty seam. It is the reason a platform outage is a skipped
-tick rather than an amnesiac world, and the reason moving off Minds costs one
-file (`src/host/minds.ts`) rather than a rewrite.
+That division is why an IP owner can hand their property to a Mind at all.
+A showrunner needs a continuity department — a place where "she sided with him
+on the fourth" is a row and not a hope — and the owner needs to keep that
+record. Canon is that department. It is a SQLite file the owner holds, in the
+schema below, and it is what makes an NPC's memory checkable instead of
+plausible.
 
 Two structural consequences, both enforced in code:
 
-- The host never reads the database. It only ever sees a compiled digest.
-- The host never writes to the database. It emits directives, which are
-  validated against canon before a single row moves.
+- **The Mind is never handed the database.** It gets a compiled digest — the
+  briefing a showrunner actually needs, not a table dump. That is what keeps a
+  world of any size inside one context window.
+- **The Mind never writes to the database directly.** It emits directives, and
+  they are validated against canon before a row moves. An invented character or
+  a citation to an event that never happened is caught at the door. This is not
+  distrust; it is the continuity check that lets the show claim its NPCs are
+  *provably* right.
 
----
+The same seam is what makes a Mind portable. One Mind already projects into
+four surfaces here — a three.js ward, a first-person voxel world, a terminal,
+and a headless demo — because none of them talk to it directly; they all read
+canon. The next surface, in whatever engine, is a new reader of the same record
+and needs no changes on the Mind's side. A durable continuity layer is how one
+Mind gets to be in more places, not fewer.
+
+It is also why a dropped packet is a skipped tick rather than an amnesiac
+world. The show survives a bad minute because the bible is on disk.
 
 ## 1. Event schema — FROZEN
 

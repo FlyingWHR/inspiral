@@ -21,6 +21,7 @@
     "ingest": "node --env-file-if-exists=.env --import tsx scripts/ingest.ts",
     "digest": "node --env-file-if-exists=.env --import tsx scripts/showrunner.ts",
     "clips": "node --env-file-if-exists=.env --import tsx scripts/showrunner.ts --clips",
+    "prove": "node --env-file-if-exists=.env --import tsx scripts/prove.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

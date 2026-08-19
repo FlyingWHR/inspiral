@@ -20,6 +20,13 @@ API key. Nothing is mocked up or composited: every frame is the running app.
 | `08-voxel-first-person.png` | Eye level. Sera Vance outside the Ledger, nameplate readable, the lit and shaded faces of the building clearly different. |
 | `09-voxel-dig-and-build.png` | A doorway torn straight through the Ledger's wall, with a mismatched plank patch where blocks were put back. Everything visible is real voxel data. A burst of edits like this becomes one `terrain_altered` event in the same append-only log the cast cites. |
 
+## Scene archetypes
+
+| File | What it shows |
+| ---- | ------------- |
+| `10-scene-council-chamber.png` | Trade Clash, opened from its own database. Onboarding chose `council_chamber` from the bible — nothing hardcoded it — and the cast is Ferrox, Cindra and Okuma with their real titles, standing at the long table. |
+| `11-scene-tavern.png` | The default archetype: bar along the back, tables, the cast mid-beat. What an IP with no strong signal gets. |
+
 ## Honest notes
 
 - The camera in 02, 03 and 05 was moved from the default — the same drag/scroll
@@ -32,6 +39,9 @@ API key. Nothing is mocked up or composited: every frame is the running app.
 - The voxel ward is flat-shaded with no textures. That is deliberate — a texture
   pipeline was out of scope — so it reads as early-Minecraft rather than
   Teardown. Face shading and per-quad tint are doing all the work.
+- Interior scenes are lit by a single point light and it leaves a visible
+  hotspot on the ceiling. The rooms are also fairly monochrome — material
+  contrast is doing all the work and there are no textures.
 - Terrain still terraces where the ground rises steeply. Three octaves of noise
   made the contours ragged rather than concentric, which is most of the fix
   available without a smarter heightfield.

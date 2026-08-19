@@ -6,6 +6,7 @@
 import * as THREE from "three";
 import { Body, step } from "./voxel/physics.js";
 import { raycast } from "./voxel/raycast.js";
+import { groundAt } from "./voxel/pathfind.js";
 import { AIR, BLOCKS, isSolid } from "./voxel/blocks.js";
 
 const EYE = 1.62;      // Minecraft-ish: 1.8 tall, eyes just below the top
@@ -44,8 +45,12 @@ export class Player {
   }
 
   /** Drop in at a column, looking at `lookAt` (defaults to the world origin). */
-  spawnAt(x, z, lookAt = [0, 0]) {
-    const y = this.world.heightAt(x, z) ?? 16;
+  spawnAt(x, z, lookAt = [0, 0], hintY = 13) {
+    // NOT heightAt: in a roofed scene the highest solid voxel is the ROOF, and
+    // spawning there puts you on top of the building looking at a slab.
+    // groundAt finds the nearest standable floor to the hint instead.
+    const stand = groundAt(this.world, x, z, hintY, 24);
+    const y = stand !== null ? stand - 1 : (this.world.heightAt(x, z) ?? 16);
     this.body.position = [x + 0.5, y + 1, z + 0.5];
     this.body.velocity = [0, 0, 0];
     this.yaw = Math.atan2(-(lookAt[0] - x), -(lookAt[1] - z));

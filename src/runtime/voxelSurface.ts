@@ -14,7 +14,25 @@
 
 import { fileURLToPath } from "node:url";
 import { WebSurface, type WebSurfaceOptions, type SurfaceIntent } from "./webSurface.js";
-import { WARD_PLACES as VOXEL_PLACES } from "../../web-voxel/ward.js";
+import { ARCHETYPES } from "../../web-voxel/scene/archetypes.js";
+
+/**
+ * The surface's own fallback is the ward, NOT the selection default.
+ * chooseScene() defaults an unsignposted IP to a tavern; a VoxelSurface
+ * constructed with no archetype at all is the original Tallow Ward, which is
+ * what every existing caller and test means by "no archetype".
+ */
+const SURFACE_DEFAULT = "market_plaza";
+
+interface ArchetypeMeta {
+  id: string;
+  name: string;
+  affords: string;
+  sky: number;
+  spawn: { x: number; z: number };
+  places: Record<string, { x: number; z: number }>;
+}
+const LIBRARY = ARCHETYPES as unknown as Record<string, ArchetypeMeta | undefined>;
 import type { CanonRepo } from "../canon/repo.js";
 import { log } from "../log.js";
 
@@ -29,6 +47,8 @@ export interface VoxelEdit {
 }
 
 export interface VoxelSurfaceOptions extends WebSurfaceOptions {
+  /** Which scene the world opens in. Chosen at onboard time; see src/ip/scene.ts. */
+  archetype?: string;
   /** Needed to write edits into the log. The surface reads nothing else. */
   repo?: CanonRepo;
   /** Fallback identity when an edit arrives without a connection identity. */
@@ -38,22 +58,28 @@ export interface VoxelSurfaceOptions extends WebSurfaceOptions {
   editBatchMs?: number;
 }
 
-/** Coordinates in, the character whose patch this is. */
-function nearestHome(x: number, z: number): { id: string; place: string } | null {
-  const HOMES: Record<string, string> = {
-    counting_house: "vance",
-    kiln_row: "okonkwo",
-    almshouse: "quill",
-  };
+/**
+ * Whose patch did this happen on?
+ *
+ * Used to be a hardcoded ward map. It now resolves through the live cast: each
+ * character's home_location is a canon string, the archetype turns it into a
+ * point, and the nearest one inside 22 blocks owns the ground. Works for every
+ * archetype and needs no per-scene table.
+ */
+function nearestHome(
+  x: number,
+  z: number,
+  homes: { id: string; place: string; at: { x: number; z: number } }[],
+): { id: string; place: string } | null {
   let best: { id: string; place: string } | null = null;
   let bestD = Infinity;
-  for (const [place, id] of Object.entries(HOMES)) {
-    const p = (VOXEL_PLACES as Record<string, { x: number; z: number }>)[place];
-    if (!p) continue;
-    const d = Math.hypot(p.x - x, p.z - z);
-    if (d < bestD) { bestD = d; best = { id, place }; }
+  for (const h of homes) {
+    const d = Math.hypot(h.at.x - x, h.at.z - z);
+    if (d < bestD) {
+      bestD = d;
+      best = { id: h.id, place: h.place };
+    }
   }
-  // Beyond this it happened out in the open and belongs to nobody.
   return bestD <= 22 ? best : null;
 }
 
@@ -71,16 +97,41 @@ export class VoxelSurface extends WebSurface {
   private readonly batchMs: number;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
 
+  readonly archetype: string;
+
   constructor(opts: VoxelSurfaceOptions = {}) {
+    const archetypeId = opts.archetype && LIBRARY[opts.archetype] ? opts.archetype : SURFACE_DEFAULT;
+    const arch = LIBRARY[archetypeId]!;
     super({
       ...opts,
       root: opts.root ?? here("../../web-voxel"),
-      places: opts.places ?? (VOXEL_PLACES as Record<string, { x: number; z: number }>),
+      places: opts.places ?? arch.places,
     });
+    this.archetype = archetypeId;
     this.repo = opts.repo;
     this.visitorId = opts.visitorId ?? "wren";
     this.visitorName = opts.visitorName ?? "Wren";
     this.batchMs = opts.editBatchMs ?? 2500;
+  }
+
+  /**
+   * The client generates the grid itself, so it has to be told which scene
+   * before it generates anything. One static route, fetched at startup.
+   */
+  protected override serveExtra(urlPath: string): { body: string; type: string } | null {
+    if (urlPath !== "/scene.json") return null;
+    const arch = LIBRARY[this.archetype]!;
+    return {
+      type: "application/json",
+      body: JSON.stringify({
+        archetype: this.archetype,
+        name: arch.name,
+        affords: arch.affords,
+        sky: arch.sky,
+        spawn: arch.spawn,
+        places: arch.places,
+      }),
+    };
   }
 
   /** Called by the transport for any intent it does not handle itself. */
@@ -115,7 +166,12 @@ export class VoxelSurface extends WebSurface {
     const broke = edits.filter((e) => e.kind === "break").length;
     const built = edits.length - broke;
     const mid = edits[Math.floor(edits.length / 2)]!;
-    const owner = nearestHome(mid.x, mid.z);
+    const arch = LIBRARY[this.archetype]!;
+    const homes = this.repo
+      .getCharacters()
+      .map((c) => ({ id: c.character_id, place: c.home_location, at: arch.places[c.home_location] }))
+      .filter((h): h is { id: string; place: string; at: { x: number; z: number } } => !!h.at);
+    const owner = nearestHome(mid.x, mid.z, homes);
 
     const what =
       broke && built

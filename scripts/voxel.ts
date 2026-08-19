@@ -11,12 +11,14 @@
  *   --port N        http port (default 8788)
  *   --every N       seconds of wall time per world tick (default 9)
  *   --seed N        mock seed (default 1)
+ *   --db PATH       open an existing world (e.g. one built by `npm run onboard`)
+ *   --scene ID      override the archetype chosen at onboard time
  *   --persist       write to ./data/voxel.db instead of memory
  *   --warm N        ticks to run before opening (default 16)
  */
 
 import { CanonRepo } from "../src/canon/repo.js";
-import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
+import { seedWorld } from "../src/canon/seed.js";
 import { startHostRuntime } from "../src/host/index.js";
 import { loadConfig } from "../src/config.js";
 import { runTick, type TickContext } from "../src/tick/runTick.js";
@@ -37,7 +39,13 @@ const PORT = flag("port", 8788);
 const EVERY = flag("every", 9) * 1000;
 const SEED = flag("seed", 1);
 const WARM = flag("warm", 16);
-const DB = argv.includes("--persist") ? "./data/voxel.db" : ":memory:";
+const dbFlag = argv.indexOf("--db");
+const DB =
+  dbFlag !== -1 && argv[dbFlag + 1]
+    ? argv[dbFlag + 1]!
+    : argv.includes("--persist")
+      ? "./data/voxel.db"
+      : ":memory:";
 
 
 async function main(): Promise<void> {
@@ -49,8 +57,16 @@ async function main(): Promise<void> {
   // startHostRuntime falls back to mock rather than crashing if it is not.
   const host = await startHostRuntime({ ...loadConfig(), seed: SEED });
 
+  // Onboarding wrote the chosen archetype into canon; --scene overrides it.
+  const sceneFlag = argv.indexOf("--scene");
+  const archetype =
+    (sceneFlag !== -1 ? argv[sceneFlag + 1] : undefined) ??
+    repo.getMeta("scene_archetype") ??
+    "market_plaza";
+
   const surface = new VoxelSurface({
     port: PORT,
+    archetype,
     hostName: host.name,
     repo,
     resolveCite: (id) => {
@@ -106,7 +122,10 @@ async function main(): Promise<void> {
   }
 
   await surface.open();
-  for (const c of CHARACTERS) {
+  // The world's OWN cast, not the ward's. Opening an onboarded IP with
+  // `--db` used to show Vance, Okonkwo and Quill standing in someone else's
+  // world because this read a hardcoded constant.
+  for (const c of repo.getCharacters()) {
     surface.spawn({
       id: c.character_id,
       name: c.name,
@@ -117,7 +136,7 @@ async function main(): Promise<void> {
   }
 
   console.log("");
-  console.log(`  Tallow Ward (voxel) is live:  ${surface.url}`);
+  console.log(`  Voxel scene "${surface.archetype}" is live:  ${surface.url}`);
   console.log(
     `  HOST RUNTIME: ${host.name.toUpperCase()}` +
       (host.name === "mock" ? "  (no key -- set INSPIRAL_HOST=minds in .env to switch)" : "  (live Mind)"),

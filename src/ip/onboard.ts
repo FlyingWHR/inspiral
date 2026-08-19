@@ -8,6 +8,15 @@ import { compileBible, bibleToWorldSpec, renderBible, IPBible, IPHints } from ".
 import type { IPSource, RawItem } from "./source.js";
 import { INGEST_CURSOR_KEY, markIngested } from "./ingest.js";
 import { log } from "../log.js";
+import { ARCHETYPE_IDS, ARCHETYPES, chooseScene } from "./scene.js";
+
+/** Canon meta key holding the chosen archetype, read by the voxel surface. */
+export const SCENE_KEY = "scene_archetype";
+
+/** The archetype menu, rendered into the prompt so it cannot drift. */
+const SCENE_LIST = ARCHETYPE_IDS.map(
+  (id) => `  ${id} -- ${(ARCHETYPES as Record<string, { affords: string }>)[id]!.affords}`,
+).join("\n");
 
 /**
  * ONBOARDING: handles in, living cast out.
@@ -70,6 +79,14 @@ Keys you may return:
   relationships[]  {from_id, to_id, affinity, trust, tension, note}
   arcs[]           {arc_id, title, participants[], stage, tension, summary}
   tone             {register, banned_phrases[], forbidden_topics[], max_line_words}
+  scene            {archetype, reason}
+
+SCENE
+Pick the one place this cast most belongs, from exactly this list:
+${SCENE_LIST}
+Where people stand is characterisation: a tavern affords grudges and regulars,
+a council chamber affords procedure and standing, an arena affords an audience
+taking sides. "reason" is one short line the owner will read.
 
 RULES
 - Keep every character_id that is already in the draft. You may add, never rename.
@@ -103,6 +120,18 @@ const BIBLE_KEYS = [
  * shape-invalid is DROPPED and the draft stands -- onboarding degrades the
  * same way a tick does.
  */
+/** The scene block out of a host response, if there is one. Never throws. */
+export function extractScene(raw: string): unknown {
+  const json = extractJson(raw);
+  if (!json) return undefined;
+  try {
+    const parsed = JSON.parse(json) as Record<string, unknown>;
+    return parsed && typeof parsed === "object" ? parsed.scene : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function mergeEnrichment(draft: IPBible, raw: string): { bible: IPBible; enriched: boolean } {
   const json = extractJson(raw);
   if (!json) return { bible: draft, enriched: false };
@@ -169,6 +198,7 @@ export async function onboardIP(opts: OnboardOptions): Promise<OnboardResult> {
   // ---- one host invocation, and only one ----------------------------------
   let enriched = false;
   let hostCalls = 0;
+  let hostScene: unknown;
   if (host) {
     hostCalls = 1;
     const res = await host.ask({
@@ -186,10 +216,16 @@ export async function onboardIP(opts: OnboardOptions): Promise<OnboardResult> {
       const m = mergeEnrichment(bible, res.text);
       bible = m.bible;
       enriched = m.enriched;
+      hostScene = extractScene(res.text);
     } else {
       log.warn(`onboard host call failed (${res.reason}); the compiled draft stands`);
     }
   }
+
+  // ---- which world does this cast belong in --------------------------------
+  // Costs nothing: the host was already asked, and if it said nothing usable a
+  // keyword score over the finished bible picks something defensible.
+  bible = { ...bible, scene: chooseScene(bible, hostScene) };
 
   // ---- the gate -----------------------------------------------------------
   const decision = await approval.review({
@@ -235,6 +271,7 @@ export async function onboardIP(opts: OnboardOptions): Promise<OnboardResult> {
   repo.setMeta("ip_handle", bible.ip_handle);
   repo.setMeta("ip_source", source.name);
   repo.setMeta("ip_bible", JSON.stringify(bible));
+  if (bible.scene) repo.setMeta(SCENE_KEY, bible.scene.archetype);
   // The back catalogue is now day-zero canon. Ingestion starts after it, or it
   // would replay the whole account as breaking news.
   const newest = items.reduce((max, i) => (i.ts > max ? i.ts : max), "");

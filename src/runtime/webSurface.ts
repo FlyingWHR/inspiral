@@ -173,6 +173,18 @@ export class WebSurface implements SurfaceAdapter {
     const known = this.places[to];
     if (known) return known;
 
+    // An onboarded cast names homes this scene has never heard of
+    // ("exchange_floor"). Give them the archetype's unused named spots first --
+    // that is what the places are FOR -- and only improvise once they run out.
+    const taken = new Set([...this.actors.values()].map((a) => `${a.at.x},${a.at.z}`));
+    for (const [name, spot] of Object.entries(this.places)) {
+      if (name === "gate" || name === "plaza") continue; // keep the entrance clear
+      if (!taken.has(`${spot.x},${spot.z}`)) {
+        this.places[to] = spot;
+        return spot;
+      }
+    }
+
     const n = this.improvised++;
     const angle = -Math.PI / 2 + (n + 1) * 2.3; // irrational-ish step, no clumps
     const spot = {
@@ -302,7 +314,22 @@ export class WebSurface implements SurfaceAdapter {
     }
   }
 
+  /**
+   * Subclasses can answer a route with generated content instead of a file.
+   * Return null to fall through to the static roots.
+   */
+  protected serveExtra(_urlPath: string): { body: string; type: string } | null {
+    return null;
+  }
+
   private serve(urlPath: string, res: import("node:http").ServerResponse): void {
+    const generated = this.serveExtra(urlPath.split("?")[0] ?? urlPath);
+    if (generated) {
+      res.writeHead(200, { "content-type": generated.type, "cache-control": "no-cache" });
+      res.end(generated.body);
+      return;
+    }
+
     let file: string | null;
     if (urlPath.startsWith("/vendor/three/")) {
       file = safeJoin(this.vendor, urlPath.slice("/vendor/three".length));

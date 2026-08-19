@@ -320,6 +320,58 @@ launchctl load -w ~/Library/LaunchAgents/com.inspiral.clock.plist
 
 ---
 
+## Scenes
+
+An IP should not open into a random room. Where a cast stands is
+characterisation, so onboarding **chooses** one of eight scene archetypes from
+the compiled bible and the world opens there.
+
+| Archetype | Affords |
+| --------- | ------- |
+| `tavern` *(default)* | regulars, long-running grudges, gossip that travels |
+| `market_plaza` | civic factions, public confrontation — **this is Tallow Ward** |
+| `council_chamber` | procedure as a weapon: standing, precedent, the minuted record |
+| `training_hall` | rivalry with a scoreboard: challenges, form, rank |
+| `ballroom` | status read at a glance: who is introduced, who is cut |
+| `arena` | spectacle with a crowd in it, sides taken loudly |
+| `studio` | an audience-facing set: formats, guests, on and off camera |
+| `cafe` | low-stakes hours where people say the unsayable |
+
+Each is a **data definition** in `web-voxel/scene/archetypes.js` consumed by the
+primitives in `scene/primitives.js` — terrain, enclosure, building, platform,
+tiers, props. Adding a scene is data; there is no new engine code, because the
+ward was already generated from a layout definition and this is that same path
+with eight definitions instead of one.
+
+Every archetype declares **named places** (`the_bar`, `the_dais`, `kiln_row`)
+which is what the directive system targets. Canon says the name; the surface
+turns it into coordinates; nothing above the seam learns what a coordinate is.
+
+### How the choice is made
+
+The archetype rides along in the **existing** onboarding host call — no extra
+invocation, because the budget is ~12/day and a scene choice is not worth one of
+them. If the host says nothing usable, a keyword score over the bible picks one
+deterministically. It always produces something defensible, which matters more
+than being clever: a wrong-but-reasoned tavern beats a coin-flip ballroom.
+
+```
+$ npm run onboard -- --fixture tradeclash --reset
+scene:  The Council Chamber (heuristic) — procedure as a weapon: standing,
+        precedent, and things minuted that cannot be unsaid — matched on
+        chancellor, premier, duty
+```
+
+The choice is stored in canon (`scene_archetype`), so opening that world later
+opens the right room:
+
+```bash
+npm run voxel -- --db ./data/tradeclash.db     # the Trade Clash council chamber
+npm run voxel -- --scene tavern                # or force one
+```
+
+---
+
 ## Surfaces
 
 The simulation is not the world; the world is a display. Three surfaces

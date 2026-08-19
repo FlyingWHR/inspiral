@@ -37,6 +37,17 @@ export const IPBible = z.object({
   arcs: z.array(Arc).default([]),
   tone: ToneRules,
   lore: z.array(LoreEntry).max(40).default([]),
+  /**
+   * Which scene archetype this world opens in, and why. Set during onboarding
+   * -- see src/ip/scene.ts. Optional so an older bible still parses.
+   */
+  scene: z
+    .object({
+      archetype: z.string().max(40),
+      reason: z.string().max(240).default(""),
+      chosen_by: z.enum(["host", "heuristic", "default"]).default("heuristic"),
+    })
+    .optional(),
   /** Provenance. Every claim above should be traceable to one of these. */
   sources: z
     .array(
@@ -275,6 +286,14 @@ export function renderBible(b: IPBible): string {
   if (b.summary) L.push(b.summary, "");
   if (b.themes.length) L.push(`THEMES: ${b.themes.join(", ")}`, "");
   L.push(`AUDIENCE TONE`, `  ${b.audience_tone}`, "");
+  if (b.scene) {
+    L.push(
+      "SCENE",
+      `  ${b.scene.archetype}${b.scene.chosen_by === "host" ? "" : ` (${b.scene.chosen_by})`}`,
+      `  ${b.scene.reason}`,
+      "",
+    );
+  }
   L.push("CAST");
   for (const c of b.characters) {
     L.push(`  ${c.character_id}  ${c.name} -- ${c.title || "(no title)"}, ${c.faction}`);

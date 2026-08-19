@@ -21,5 +21,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts", "web-voxel/voxel/*.js", "web-voxel/ward.js"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts", "web-voxel/voxel/*.js", "web-voxel/ward.js", "web-voxel/scene/*.js"]
 }

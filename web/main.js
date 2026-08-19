@@ -418,7 +418,7 @@ const GESTURE = {
 async function stageBeat(b) {
   if (b.t === "spawn") {
     const a = await addActor(b.actor, b.at);
-    note(`${b.actor.name} is in the ward.`);
+    note(`${b.actor.name} is here.`);
     return a;
   }
   if (b.t === "despawn") {

@@ -156,8 +156,20 @@ and the tone rules. Then the gate line:
 status:       seeded      cast: ferrox, cindra, okuma
 ```
 
-Say: *"That is a real IP's handles going in and a living cast coming out. The
-owner approves the bible before any of it becomes canon."*
+Hold on the scene line too — it is the difference between opening *a* world and
+opening the *right* one:
+
+```
+scene:  The Council Chamber (heuristic) — procedure as a weapon: standing,
+        precedent, and things minuted that cannot be unsaid
+```
+
+Say: *"That is a real IP's handles going in and a living cast coming out — and
+it picked the room. A trade war belongs in a council chamber, not a tavern. The
+owner approves all of it before any of it becomes canon."*
+
+To show it in 3D, `npm run voxel -- --db ./data/tradeclash.db` opens that world
+in its own chamber.
 
 ### Shot 6 — you post something, the world reacts (0:42–0:50)
 

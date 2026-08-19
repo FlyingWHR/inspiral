@@ -24,6 +24,7 @@ import { startHostRuntime } from "../src/host/index.js";
 import { createSource } from "../src/ip/source.js";
 import { onboardIP } from "../src/ip/onboard.js";
 import { createApprovalChannel } from "../src/approval/index.js";
+import { describeScene, type SceneChoice } from "../src/ip/scene.js";
 import { runTick, type TickContext } from "../src/tick/runTick.js";
 import { ConsoleSurface } from "../src/runtime/surface.js";
 import { systemClock } from "../src/clock.js";
@@ -80,6 +81,9 @@ async function main(): Promise<void> {
   console.log(`items read:   ${result.itemsRead}`);
   console.log(`host calls:   ${result.hostCalls}${result.enriched ? " (enrichment applied)" : result.hostCalls ? " (enrichment discarded, draft stands)" : ""}`);
   console.log(`cast:         ${result.bible.characters.map((c) => c.character_id).join(", ")}`);
+  if (result.bible.scene) {
+    console.log(`scene:        ${describeScene(result.bible.scene as SceneChoice)}`);
+  }
   console.log(`database:     ${dbPath}`);
 
   if (result.status !== "seeded") {

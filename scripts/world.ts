@@ -16,7 +16,7 @@
  */
 
 import { CanonRepo } from "../src/canon/repo.js";
-import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
+import { seedWorld } from "../src/canon/seed.js";
 import { startHostRuntime } from "../src/host/index.js";
 import { loadConfig } from "../src/config.js";
 import { runTick, type TickContext } from "../src/tick/runTick.js";
@@ -109,7 +109,10 @@ async function main(): Promise<void> {
   }
 
   await surface.open();
-  for (const c of CHARACTERS) {
+  // The world's OWN cast, not the ward's. Opening an onboarded IP with
+  // `--db` used to show Vance, Okonkwo and Quill standing in someone else's
+  // world because this read a hardcoded constant.
+  for (const c of repo.getCharacters()) {
     surface.spawn({
       id: c.character_id,
       name: c.name,

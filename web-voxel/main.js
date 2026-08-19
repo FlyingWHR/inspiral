@@ -17,10 +17,11 @@ import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 
 import { VoxelWorld } from "./voxel/chunk.js";
 import { BLOCKS, colorOf, nameOf } from "./voxel/blocks.js";
-import { generateWard, WARD_PLACES } from "./ward.js";
+import { generateScene, clearPlaces } from "./scene/generate.js";
+import { getArchetype } from "./scene/archetypes.js";
 import { ChunkMesher } from "./chunkmesh.js";
 import { Player, PALETTE } from "./player.js";
-import { findPath, standable } from "./voxel/pathfind.js";
+import { findPath, standable, groundAt } from "./voxel/pathfind.js";
 
 const CHARS = "/assets/characters/";
 const BODY = {
@@ -34,6 +35,14 @@ const SPARE = ["character-female-a.glb", "character-male-b.glb",
 const PERSON_H = 1.8;
 const WALK_SPEED = 2.4;
 
+// Which scene this world opens in is decided at onboard time and served here.
+// This has to happen before ANYTHING reads ARCH -- the lighting and the sky do.
+const SCENE = await fetch("/scene.json")
+  .then((r) => (r.ok ? r.json() : null))
+  .catch(() => null);
+const ARCH = getArchetype(SCENE?.archetype);
+const PLACES = SCENE?.places ?? ARCH.places;
+
 // --- scene -------------------------------------------------------------------
 
 const canvas = document.getElementById("stage");
@@ -45,8 +54,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x8fb3d9);
-scene.fog = new THREE.Fog(0x8fb3d9, 60, 190);
+scene.background = new THREE.Color(ARCH.sky ?? 0x8fb3d9);
+scene.fog = new THREE.Fog(ARCH.sky ?? 0x8fb3d9, 60, 190);
 
 const camera = new THREE.PerspectiveCamera(74, 1, 0.08, 400);
 const labels = new CSS2DRenderer({ element: document.getElementById("labels") });
@@ -61,8 +70,16 @@ sun.shadow.normalBias = 0.06;
 const sc = sun.shadow.camera;
 sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 220;
 scene.add(sun, sun.target);
-scene.add(new THREE.HemisphereLight(0xbcd6ef, 0x50432f, 1.35));
-scene.add(new THREE.AmbientLight(0x8593a8, 0.34));
+// A roof blocks the sun, so an enclosed scene needs its own fill or it reads
+// as a cave. Lanterns are set dressing; this is what makes the room legible.
+const INDOOR = Boolean(ARCH.indoor);
+scene.add(new THREE.HemisphereLight(0xbcd6ef, 0x50432f, INDOOR ? 0.7 : 1.35));
+scene.add(new THREE.AmbientLight(INDOOR ? 0xffe4c4 : 0x8593a8, INDOOR ? 0.85 : 0.34));
+if (INDOOR) {
+  const fill = new THREE.PointLight(0xffdba8, 55, 55, 2);
+  fill.position.set(0, 18, 0);
+  scene.add(fill);
+}
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -89,7 +106,8 @@ resize();
 // --- the world ---------------------------------------------------------------
 
 const world = new VoxelWorld();
-generateWard(world, { seed: 1 });
+generateScene(world, ARCH.id, { seed: 1 });
+clearPlaces(world, ARCH.id);
 
 const voxelMaterial = new THREE.MeshStandardMaterial({
   vertexColors: true, roughness: 0.94, metalness: 0,
@@ -98,7 +116,7 @@ const mesher = new ChunkMesher(world, scene, voxelMaterial);
 mesher.queueDirty();
 
 const player = new Player(world, camera, canvas, { onEdit });
-player.spawnAt(WARD_PLACES.gate.x, WARD_PLACES.gate.z, [0, 0]); // walk in facing the plaza
+player.spawnAt(ARCH.spawn.x, ARCH.spawn.z, [0, 0]); // walk in facing the middle
 scene.add(player.highlight);
 
 // --- hotbar ------------------------------------------------------------------
@@ -134,8 +152,14 @@ function bodyFor(id, kind) {
   return SPARE[h % SPARE.length];
 }
 
-/** Drop to the voxel surface at x,z. */
+/**
+ * The floor at x,z -- the one a body can stand on, which in a roofed scene is
+ * not the highest solid voxel. Standing the cast on the roof was exactly the
+ * bug this avoids.
+ */
 function groundY(x, z) {
+  const stand = groundAt(world, Math.floor(x), Math.floor(z), 13, 24);
+  if (stand !== null) return stand;
   const y = world.heightAt(Math.floor(x), Math.floor(z));
   return y === null ? 16 : y + 1;
 }
@@ -327,6 +351,13 @@ async function speak(a, lines, verb, detail) {
 
 // --- HUD ---------------------------------------------------------------------
 
+document.querySelector("#hud h1").textContent = ARCH.name ?? "Tallow Ward";
+document.title = `Inspiral — ${ARCH.name ?? "Tallow Ward"}`;
+document.getElementById("splash-title").textContent = ARCH.name ?? "Tallow Ward";
+document.getElementById("splash-affords").textContent =
+  `${ARCH.affords}. Everything you can see is voxels — dig it out, build on it, ` +
+  `and they will notice.`;
+
 const feed = document.getElementById("feed");
 const clockEl = document.getElementById("clock");
 /**
@@ -397,7 +428,7 @@ const GESTURE = {
 };
 
 async function stage(b) {
-  if (b.t === "spawn") { await addActor(b.actor, b.at); note(`${b.actor.name} is in the ward.`); return; }
+  if (b.t === "spawn") { await addActor(b.actor, b.at); note(`${b.actor.name} is here.`); return; }
   if (b.t === "despawn") {
     const a = actors.get(b.id);
     if (a) { scene.remove(a.root); a.plate.remove(); a.bubbleEl.remove(); actors.delete(b.id); note(`${a.name} left.`); }

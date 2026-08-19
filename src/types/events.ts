@@ -16,6 +16,7 @@ export const EventSource = z.enum([
   "tick", // the world tick fired and an NPC acted
   "visitor", // a visitor did something (arrived, pledged, spoke)
   "system", // scheduler / operator bookkeeping
+  "ingest", // pulled in from the owner's real feeds by an IPSource
   "host", // the Mind said something about itself (QC, refusal, timeout)
 ]);
 export type EventSource = z.infer<typeof EventSource>;

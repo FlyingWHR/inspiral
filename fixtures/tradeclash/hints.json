@@ -1,0 +1,103 @@
+{
+  "world_name": "Trade Clash",
+  "summary": "Three trade blocs share one shipping lane and no referee. Tariffs are the weapon, the strait is the chokepoint, and every season somebody discovers what their neighbours were willing to do.",
+  "themes": ["tariffs", "blocs", "the strait", "leverage", "brinkmanship"],
+  "audience_tone": "Dry, procedural, faintly amused. Economics reported like a blood sport, and nobody in the room admits it is one.",
+  "characters": [
+    {
+      "character_id": "ferrox",
+      "name": "Chancellor Ferrox",
+      "faction": "Ironbelt Union",
+      "title": "Chancellor of the Ironbelt",
+      "brief": "Runs the furnaces, the foundries and the political careers attached to them. Believes a bloc that imports its own steel has already surrendered and simply has not been told. Reads every concession as a debt someone will collect later.",
+      "goals": [
+        "Keep the grain duty and make the Sunbelt say it is fair",
+        "Get the strait toll rolled back without asking Okuma for anything",
+        "Never be seen to need a neighbour"
+      ],
+      "taboos": [
+        "Never negotiates in private what could be announced",
+        "Never uses the word 'concession'",
+        "Never blames the foundry floor"
+      ],
+      "voice": { "register": "flat, official, faintly bored", "tics": ["quotes tonnage", "calls people 'the counterparty'"], "max_words": 26 },
+      "mood": "hard",
+      "home_location": "ironbelt_hall"
+    },
+    {
+      "character_id": "cindra",
+      "name": "Premier Cindra",
+      "faction": "Sunbelt Compact",
+      "title": "Premier of the Compact",
+      "brief": "Grain, sun and patience. Feeds half the map and is careful that everyone can see her doing it. Her generosity is real and it is also a ledger, and she has never pretended otherwise to anyone who asked.",
+      "goals": [
+        "Break the grain duty publicly rather than quietly",
+        "Keep the Ironbelt tenements fed and keep the receipts",
+        "Owe the Exchange nothing"
+      ],
+      "taboos": [
+        "Never lets a shipment be turned away",
+        "Never raises her voice in session",
+        "Never takes a side she cannot walk back out of"
+      ],
+      "voice": { "register": "warm, unhurried, disarmingly exact", "tics": ["answers with a question", "cites the tonnage back"], "max_words": 28 },
+      "mood": "watchful",
+      "home_location": "compact_hall"
+    },
+    {
+      "character_id": "okuma",
+      "name": "Director Okuma",
+      "faction": "Archipelago Exchange",
+      "title": "Director of the Exchange",
+      "brief": "Owns no fields and no furnaces, only the water between them, which has always been enough. Sets the strait toll on a schedule nobody else is shown and calls every use of it routine.",
+      "goals": [
+        "Keep the toll schedule opaque",
+        "Be indispensable to both of them and loyal to neither",
+        "Never let the blocs settle directly"
+      ],
+      "taboos": [
+        "Never confirms a rumour",
+        "Never closes the strait for a stated reason",
+        "Never appears at a summit uninvited"
+      ],
+      "voice": { "register": "clipped, procedural, pleasant", "tics": ["says 'routine'", "gives a schedule instead of an answer"], "max_words": 24 },
+      "mood": "even",
+      "home_location": "exchange_floor"
+    }
+  ],
+  "relationships": [
+    { "from_id": "ferrox", "to_id": "cindra", "affinity": -35, "trust": 20, "tension": 60, "note": "She feeds my tenements so my own people will look at her when they are hungry." },
+    { "from_id": "cindra", "to_id": "ferrox", "affinity": -30, "trust": 15, "tension": 58, "note": "He put a duty on food and called it a correction." },
+    { "from_id": "ferrox", "to_id": "okuma", "affinity": -45, "trust": 10, "tension": 55, "note": "He raised the toll the day my convoys were due and called it routine." },
+    { "from_id": "okuma", "to_id": "ferrox", "affinity": -15, "trust": 30, "tension": 35, "note": "He shouts at water. The water does not move." },
+    { "from_id": "cindra", "to_id": "okuma", "affinity": 5, "trust": 45, "tension": 25, "note": "Useful, and I have not yet had to find out what it costs." },
+    { "from_id": "okuma", "to_id": "cindra", "affinity": 10, "trust": 50, "tension": 20, "note": "She pays on time and asks for nothing, which is its own kind of pressure." }
+  ],
+  "arcs": [
+    {
+      "arc_id": "arc_tariff_spiral",
+      "title": "The Grain Duty",
+      "status": "open",
+      "participants": ["ferrox", "cindra"],
+      "stage": 1,
+      "tension": 66,
+      "summary": "The Ironbelt put a 40% duty on Sunbelt grain and called it a correction. The Compact has not retaliated and has not stopped shipping, which is worse."
+    },
+    {
+      "arc_id": "arc_strait_toll",
+      "title": "The Strait Toll",
+      "status": "open",
+      "participants": ["okuma", "ferrox"],
+      "stage": 0,
+      "tension": 70,
+      "summary": "The Exchange raised the toll on a schedule it will not publish, on the day the ore convoys were due. Everyone agrees it was routine."
+    }
+  ],
+  "tone": {
+    "world_id": "default",
+    "register": "Dry procedural economics played as a blood sport. People talk about tonnage, schedules and duties. Nobody explains the game and nobody addresses the camera.",
+    "banned_phrases": ["as you know", "little did they know", "in this world", "greetings, traveler", "welcome to Trade Clash"],
+    "forbidden_topics": ["real-world countries", "real politicians", "game mechanics"],
+    "max_line_words": 30
+  }
+}

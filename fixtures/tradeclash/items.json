@@ -1,0 +1,66 @@
+[
+  {
+    "item_id": "tc_profile",
+    "kind": "profile",
+    "ts": "2026-01-04T09:00:00.000Z",
+    "author": "tradeclash",
+    "text": "Trade Clash. Three blocs, one shipping lane, no referee. Run a bloc, set your tariffs, and find out who blinks. #tradeclash #tariffwar",
+    "url": "https://example.invalid/tradeclash"
+  },
+  {
+    "item_id": "tc_post_001",
+    "kind": "pinned",
+    "ts": "2026-01-06T12:00:00.000Z",
+    "author": "tradeclash",
+    "text": "Season 3 opens with the Ironbelt Union posting a 40% duty on Sunbelt grain. Chancellor Ferrox called it 'a correction'. Premier Cindra called it 'a declaration'.",
+    "url": "https://example.invalid/tradeclash/s3",
+    "actors": ["ferrox", "cindra"],
+    "arc_id": "arc_tariff_spiral",
+    "metrics": { "likes": 8400, "comments": 620 }
+  },
+  {
+    "item_id": "tc_post_002",
+    "kind": "post",
+    "ts": "2026-01-09T15:30:00.000Z",
+    "author": "tradeclash",
+    "text": "Director Okuma raised the strait toll on the same day Ferrox's ore convoys were due through. The Exchange says the timing is a coincidence. Nobody in the Exchange says it with a straight face.",
+    "url": "https://example.invalid/tradeclash/strait",
+    "actors": ["okuma", "ferrox"],
+    "arc_id": "arc_strait_toll",
+    "metrics": { "likes": 5100, "comments": 410 }
+  },
+  {
+    "item_id": "tc_post_003",
+    "kind": "post",
+    "ts": "2026-01-12T11:00:00.000Z",
+    "author": "tradeclash",
+    "text": "Cindra shipped grain to the Ironbelt tenements at cost and made sure the ledgers were public. Ferrox has not thanked her and will not.",
+    "url": "https://example.invalid/tradeclash/grain",
+    "actors": ["cindra", "ferrox"],
+    "metrics": { "likes": 6200, "comments": 300 }
+  },
+  {
+    "item_id": "tc_match_101",
+    "kind": "match",
+    "ts": "2026-01-14T18:00:00.000Z",
+    "author": "tradeclash",
+    "text": "MATCH 101 — Ironbelt Union 3, Sunbelt Compact 2. Ferrox took the grain lane on the last turn and would not stop saying so.",
+    "url": "https://example.invalid/tradeclash/m/101",
+    "actors": ["ferrox", "cindra"],
+    "arc_id": "arc_tariff_spiral",
+    "significance": 0.75,
+    "impact": { "tension": 14, "affinity": -6, "trust": -4 }
+  },
+  {
+    "item_id": "tc_match_102",
+    "kind": "match",
+    "ts": "2026-01-16T18:00:00.000Z",
+    "author": "tradeclash",
+    "text": "MATCH 102 — Archipelago Exchange 4, Ironbelt Union 1. Okuma closed the strait for two turns and let Ferrox watch the clock.",
+    "url": "https://example.invalid/tradeclash/m/102",
+    "actors": ["okuma", "ferrox"],
+    "arc_id": "arc_strait_toll",
+    "significance": 0.7,
+    "impact": { "tension": 12, "affinity": -5 }
+  }
+]

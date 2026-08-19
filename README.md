@@ -454,3 +454,27 @@ by the swap.
 1. Sign off on [SCHEMA.md](SCHEMA.md), or mark it up.
 2. Decide the engine. Then write one `SurfaceAdapter`.
 3. Wire the real Mind and check the four items above.
+
+---
+
+## The IP pipeline
+
+Everything above builds a world by hand. The inbound/outbound pipeline builds one
+out of an existing IP and keeps it fed.
+
+```bash
+# handles in, living cast out
+npm run onboard -- --fixture tradeclash --reset
+
+# post something real; within one tick the cast quotes it and cites it
+npm run ingest -- --fixture tradeclash --tick --actors okuma,ferrox \
+  --arc arc_strait_toll --post "Okuma raised the strait toll a second time."
+
+npm run digest -- --fixture tradeclash          # the showrunner's note
+npm run clips  -- --fixture tradeclash --write  # drafts, never posted
+```
+
+Source adapters, the IP bible, the creator approval gate, ingestion into the
+existing event schema, the daily digest and the outbound clip drafts are all
+documented in **[docs/IP-PIPELINE.md](docs/IP-PIPELINE.md)**, including which
+parts are fixture and which are real.

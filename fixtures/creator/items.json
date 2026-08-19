@@ -1,0 +1,36 @@
+[
+  {
+    "item_id": "cr_profile",
+    "kind": "profile",
+    "ts": "2026-02-01T09:00:00.000Z",
+    "author": "saltandsawdust",
+    "text": "Salt and Sawdust. I buy dead workshops and find out why they died. #saltandsawdust #restoration"
+  },
+  {
+    "item_id": "cr_001",
+    "kind": "pinned",
+    "ts": "2026-02-03T18:00:00.000Z",
+    "author": "saltandsawdust",
+    "text": "Bought a shuttered cooperage for the price of clearing it. Everything inside was still where the last cooper left it, including his lunch. #restoration",
+    "url": "https://example.invalid/saltandsawdust/1",
+    "metrics": { "views": 1400000, "likes": 92000, "comments": 5100 }
+  },
+  {
+    "item_id": "cr_002",
+    "kind": "video",
+    "ts": "2026-02-08T18:00:00.000Z",
+    "author": "saltandsawdust",
+    "text": "The cooperage lathe runs. It took eleven days and a bearing I had to have cut by hand. #restoration #tools",
+    "url": "https://example.invalid/saltandsawdust/2",
+    "metrics": { "views": 2100000, "likes": 158000, "comments": 8800 }
+  },
+  {
+    "item_id": "cr_003",
+    "kind": "post",
+    "ts": "2026-02-12T10:00:00.000Z",
+    "author": "saltandsawdust",
+    "text": "Someone in the comments knew the cooper. Says he stopped because the barrels stopped. I am going to find out what that means. #restoration",
+    "url": "https://example.invalid/saltandsawdust/3",
+    "metrics": { "views": 640000, "likes": 41000, "comments": 12000 }
+  }
+]

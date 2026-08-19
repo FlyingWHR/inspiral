@@ -1,5 +1,6 @@
 import type { CanonRepo } from "./repo.js";
 import type { Arc, CharacterSheet, Relationship, ToneRules } from "../types/canon.js";
+import type { NewWorldEvent } from "../types/events.js";
 
 /**
  * DAY-ZERO CANON.
@@ -196,82 +197,123 @@ export const TONE: ToneRules = {
 };
 
 /**
- * Write day zero. Idempotent: running twice does not duplicate the world.
- * Returns true if this call actually created the world.
+ * Day-zero log entries. These are real, citable events, not backstory prose:
+ * an NPC can quote one by event_id on day 6 exactly like anything a visitor saw.
  */
-export function seedWorld(repo: CanonRepo): boolean {
+export const HISTORY: NewWorldEvent[] = [
+  {
+    source: "seed",
+    actors: ["vance", "okonkwo", "quill"],
+    type: "world_created",
+    payload: {
+      world: WORLD_NAME,
+      summary: `${WORLD_NAME} exists. Three people run it and none of them like the arrangement.`,
+    },
+    significance_hint: 0.2,
+  },
+  {
+    source: "seed",
+    actors: ["vance", "okonkwo"],
+    type: "notice_posted",
+    payload: {
+      summary:
+        "Vance posted the seizure of the Okonkwo tools on the ward board, itemised, with the shortfall printed at the bottom.",
+      arc_id: "arc_kiln_debt",
+    },
+    significance_hint: 0.8,
+  },
+  {
+    source: "seed",
+    actors: ["okonkwo", "vance"],
+    type: "confrontation",
+    payload: {
+      summary:
+        "Okonkwo tore the notice down in front of the morning queue and told Vance the row would pay when the row could pay.",
+      arc_id: "arc_kiln_debt",
+    },
+    significance_hint: 0.7,
+  },
+  {
+    source: "seed",
+    actors: ["quill", "okonkwo"],
+    type: "tribute_offered",
+    payload: {
+      summary:
+        "Mother Quill fed the Kiln Row apprentices through the cold weeks and told no one, which everyone knows.",
+      arc_id: null,
+    },
+    significance_hint: 0.5,
+  },
+  {
+    source: "seed",
+    actors: ["vance", "quill"],
+    type: "snub",
+    payload: {
+      summary:
+        "Vance sent a clerk rather than attend the almshouse audit herself. Quill kept the clerk waiting an hour and fed him.",
+      arc_id: "arc_almshouse_lease",
+    },
+    significance_hint: 0.4,
+  },
+];
+
+/**
+ * Everything needed to write a world's day zero.
+ *
+ * There is exactly ONE seed path. Tallow Ward is a WorldSpec literal; an IP
+ * bible compiled from someone's real feeds becomes a WorldSpec too, and both
+ * go through `seedFrom`. Nothing else may write day-zero canon.
+ */
+export interface WorldSpec {
+  world_name: string;
+  characters: CharacterSheet[];
+  relationships: Relationship[];
+  arcs: Arc[];
+  tone: ToneRules;
+  history: NewWorldEvent[];
+  /** Durable statements true from day zero. Optional. */
+  facts?: { statement: string; about: string[] }[];
+}
+
+export const TALLOW_WARD: WorldSpec = {
+  world_name: WORLD_NAME,
+  characters: CHARACTERS,
+  relationships: RELATIONSHIPS,
+  arcs: ARCS,
+  tone: TONE,
+  history: HISTORY,
+};
+
+/**
+ * Write day zero from a spec. Idempotent: running twice does not duplicate the
+ * world. Returns true if this call actually created it.
+ */
+export function seedFrom(repo: CanonRepo, spec: WorldSpec): boolean {
   if (repo.getMeta("seeded") === "1") return false;
 
   repo.tx(() => {
-    for (const c of CHARACTERS) repo.upsertCharacter(c);
-    for (const r of RELATIONSHIPS) repo.upsertRelationship(r);
-    for (const a of ARCS) repo.upsertArc(a);
-    repo.setTone(TONE);
+    for (const c of spec.characters) repo.upsertCharacter(c);
+    for (const r of spec.relationships) repo.upsertRelationship(r);
+    for (const a of spec.arcs) repo.upsertArc(a);
+    repo.setTone(spec.tone);
 
-    repo.appendEvent({
-      source: "seed",
-      actors: ["vance", "okonkwo", "quill"],
-      type: "world_created",
-      payload: {
-        world: WORLD_NAME,
-        summary: `${WORLD_NAME} exists. Three people run it and none of them like the arrangement.`,
-      },
-      significance_hint: 0.2,
-    });
-
-    // Day-zero memory. These are real log entries, not backstory prose: an NPC
-    // can cite them by event_id on day 6 exactly like anything a visitor saw.
-    repo.appendEvent({
-      source: "seed",
-      actors: ["vance", "okonkwo"],
-      type: "notice_posted",
-      payload: {
-        summary:
-          "Vance posted the seizure of the Okonkwo tools on the ward board, itemised, with the shortfall printed at the bottom.",
-        arc_id: "arc_kiln_debt",
-      },
-      significance_hint: 0.8,
-    });
-
-    repo.appendEvent({
-      source: "seed",
-      actors: ["okonkwo", "vance"],
-      type: "confrontation",
-      payload: {
-        summary:
-          "Okonkwo tore the notice down in front of the morning queue and told Vance the row would pay when the row could pay.",
-        arc_id: "arc_kiln_debt",
-      },
-      significance_hint: 0.7,
-    });
-
-    repo.appendEvent({
-      source: "seed",
-      actors: ["quill", "okonkwo"],
-      type: "tribute_offered",
-      payload: {
-        summary:
-          "Mother Quill fed the Kiln Row apprentices through the cold weeks and told no one, which everyone knows.",
-        arc_id: null,
-      },
-      significance_hint: 0.5,
-    });
-
-    repo.appendEvent({
-      source: "seed",
-      actors: ["vance", "quill"],
-      type: "snub",
-      payload: {
-        summary:
-          "Vance sent a clerk rather than attend the almshouse audit herself. Quill kept the clerk waiting an hour and fed him.",
-        arc_id: "arc_almshouse_lease",
-      },
-      significance_hint: 0.4,
-    });
+    for (const e of spec.history) {
+      const evt = repo.appendEvent(e);
+      // First event of a spec is the creation event; hang facts off it so they
+      // have a citable origin.
+      if (evt.type === "world_created") {
+        for (const f of spec.facts ?? []) repo.addFact(f.statement, f.about, evt.event_id);
+      }
+    }
 
     repo.setMeta("seeded", "1");
-    repo.setMeta("world_name", WORLD_NAME);
+    repo.setMeta("world_name", spec.world_name);
   });
 
   return true;
+}
+
+/** Seed Tallow Ward, the repo's built-in world. */
+export function seedWorld(repo: CanonRepo): boolean {
+  return seedFrom(repo, TALLOW_WARD);
 }

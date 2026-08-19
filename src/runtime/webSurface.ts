@@ -37,8 +37,10 @@ export const WARD_PLACES: Record<string, SurfacePoint> = {
 
 /** Anything the browser can ask the world for. `mint` carries a pasted sheet. */
 export interface SurfaceIntent {
-  kind: "arrive" | "act" | "leave" | "mint";
+  kind: "arrive" | "act" | "leave" | "mint" | "edit";
   text?: string;
+  /** Only present for "edit"; shape is owned by the surface that handles it. */
+  edit?: unknown;
 }
 
 export interface WebSurfaceOptions {
@@ -47,6 +49,8 @@ export interface WebSurfaceOptions {
   root?: string;
   /** three.js package root, served at /vendor/three. */
   vendor?: string;
+  /** Shared CC0 asset root, served at /assets. One copy, every surface. */
+  assets?: string;
   places?: Record<string, SurfacePoint>;
   /** Called when the browser asks for something. May spend an invocation. */
   onIntent?: (intent: SurfaceIntent) => void | Promise<void>;
@@ -99,11 +103,12 @@ function safeJoin(root: string, urlPath: string): string | null {
 }
 
 export class WebSurface implements SurfaceAdapter {
-  readonly name = "web";
+  readonly name: string = "web";
 
   private readonly port: number;
   private readonly root: string;
   private readonly vendor: string;
+  private readonly assets: string;
   private readonly places: Record<string, SurfacePoint>;
   private readonly onIntent: WebSurfaceOptions["onIntent"];
   private readonly resolveCite: WebSurfaceOptions["resolveCite"];
@@ -121,6 +126,7 @@ export class WebSurface implements SurfaceAdapter {
     this.port = opts.port ?? 8787;
     this.root = opts.root ?? here("../../web");
     this.vendor = opts.vendor ?? here("../../node_modules/three");
+    this.assets = opts.assets ?? here("../../web/assets");
     this.places = { ...(opts.places ?? WARD_PLACES) };
     this.onIntent = opts.onIntent;
     this.resolveCite = opts.resolveCite;
@@ -217,16 +223,26 @@ export class WebSurface implements SurfaceAdapter {
     await new Promise<void>((ok) => (this.http ? this.http.close(() => ok()) : ok()));
   }
 
+  /**
+   * Subclasses claim intents the base transport does not understand. Return
+   * true to stop the intent going any further.
+   */
+  protected async handleIntentHook(_intent: SurfaceIntent): Promise<boolean> {
+    return false;
+  }
+
   private async handleIntent(raw: string): Promise<void> {
-    let msg: { t?: string; text?: string };
+    let msg: { t?: string; text?: string; edit?: unknown };
     try {
       msg = JSON.parse(raw);
     } catch {
       return;
     }
-    const KINDS = ["arrive", "act", "leave", "mint"] as const;
+    const KINDS = ["arrive", "act", "leave", "mint", "edit"] as const;
     const kind = KINDS.find((k) => k === msg.t);
-    if (!kind || !this.onIntent) return;
+    if (!kind) return;
+    if (await this.handleIntentHook({ kind, edit: msg.edit })) return;
+    if (!this.onIntent) return;
     try {
       // Browser text is untrusted and is about to become a host prompt. Cap it.
       // A pasted sheet needs more room than a one-line action.
@@ -241,6 +257,10 @@ export class WebSurface implements SurfaceAdapter {
     let file: string | null;
     if (urlPath.startsWith("/vendor/three/")) {
       file = safeJoin(this.vendor, urlPath.slice("/vendor/three".length));
+    } else if (urlPath.startsWith("/assets/")) {
+      // Every surface shares one asset directory rather than copying 2 MB of
+      // CC0 GLBs per client.
+      file = safeJoin(this.assets, urlPath.slice("/assets".length));
     } else {
       file = safeJoin(this.root, urlPath === "/" ? "/index.html" : urlPath);
     }

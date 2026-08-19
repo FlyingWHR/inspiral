@@ -53,6 +53,7 @@ export const EventType = z.enum([
   "directive_rejected", // validator refused a directive
   "world_created",
   "character_minted", // a sheet was pasted in and became an inhabitant
+  "terrain_altered", // a visitor dug out or built onto the world itself
 ]);
 export type EventType = z.infer<typeof EventType>;
 

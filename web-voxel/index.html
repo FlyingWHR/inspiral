@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inspiral — Tallow Ward (voxel)</title>
+<style>
+  :root { --ink:#f2ece1; --dim:#a89f8f; --panel:rgba(18,16,14,.82); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#0d0c0b; color:var(--ink);
+    font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  #stage,#labels { position:fixed; inset:0; }
+  #labels { pointer-events:none; z-index:6; }
+
+  .plate { text-align:center; text-shadow:0 1px 3px #000,0 0 10px #000; pointer-events:none; }
+  .plate .nm { font-weight:650; white-space:nowrap; }
+  .plate .ti { font-size:11px; color:var(--dim); white-space:nowrap; }
+  .plate.visitor .nm { color:#9fd3ff; }
+  .bubble { max-width:280px; padding:9px 12px; border-radius:12px; background:var(--panel);
+    border:1px solid rgba(255,255,255,.13); box-shadow:0 10px 30px rgba(0,0,0,.55);
+    font-size:13px; text-align:left; opacity:0; transform:translateY(6px);
+    transition:opacity .18s,transform .18s; pointer-events:none; }
+  .bubble.on { opacity:1; transform:translateY(0); }
+  .bubble .verb { display:block; font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--dim); margin-bottom:3px; }
+  .bubble .cite { display:block; margin-top:5px; font-size:10px; line-height:1.35;
+    font-family:ui-monospace,Menlo,monospace; color:#7fc7a0;
+    border-top:1px solid rgba(127,199,160,.25); padding-top:4px; }
+  .bubble .cite.bad { color:#e08b8b; }
+
+  /* crosshair only matters while the pointer is captured */
+  #cross { position:fixed; left:50%; top:50%; width:18px; height:18px; margin:-9px 0 0 -9px;
+    z-index:5; opacity:0; transition:opacity .15s; }
+  body.locked #cross { opacity:.85; }
+  #cross::before,#cross::after { content:""; position:absolute; background:#fff;
+    box-shadow:0 0 2px #000; }
+  #cross::before { left:8px; top:0; width:2px; height:18px; }
+  #cross::after { top:8px; left:0; height:2px; width:18px; }
+
+  #hud { position:fixed; left:16px; top:14px; width:300px; z-index:5; }
+  #hud h1 { margin:0; font-size:16px; letter-spacing:.04em; }
+  #hud .sub { color:var(--dim); font-size:11px; margin:2px 0 9px; letter-spacing:.08em;
+    text-transform:uppercase; }
+  #feed { background:var(--panel); border:1px solid rgba(255,255,255,.1); border-radius:10px;
+    padding:8px 10px; max-height:30vh; overflow:hidden; font-size:12px; color:#d9d2c6; }
+  #feed div { padding:2.5px 0; border-top:1px solid rgba(255,255,255,.055); }
+  #feed div:first-child { border-top:0; }
+  #feed .ev { color:var(--dim); }
+
+  #bar { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:5;
+    display:flex; gap:6px; padding:7px; border-radius:12px; background:var(--panel);
+    border:1px solid rgba(255,255,255,.12); }
+  #bar .slot { width:46px; height:46px; border-radius:8px; border:2px solid transparent;
+    display:flex; align-items:flex-end; justify-content:center; font-size:9.5px;
+    padding-bottom:3px; color:rgba(0,0,0,.6); font-weight:700; text-transform:capitalize; }
+  #bar .slot.on { border-color:#fff; box-shadow:0 0 0 2px rgba(0,0,0,.45); }
+
+  #help { position:fixed; right:16px; top:14px; z-index:5; text-align:right; font-size:12px;
+    color:var(--dim); background:var(--panel); border:1px solid rgba(255,255,255,.1);
+    border-radius:10px; padding:9px 11px; }
+  #help b { color:var(--ink); font-weight:600; }
+  #help div { padding:1px 0; }
+
+  #splash { position:fixed; inset:0; z-index:20; display:grid; place-items:center;
+    background:rgba(8,7,6,.82); backdrop-filter:blur(3px); text-align:center; cursor:pointer; }
+  body.locked #splash { display:none; }
+  #splash .box { max-width:430px; padding:26px 30px; }
+  #splash h2 { margin:0 0 8px; font-size:21px; }
+  #splash p { color:var(--dim); margin:6px 0; font-size:13px; }
+  #splash .go { margin-top:14px; display:inline-block; padding:9px 18px; border-radius:9px;
+    border:1px solid rgba(255,255,255,.25); }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "/vendor/three/build/three.module.js",
+  "three/addons/": "/vendor/three/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <div id="labels"></div>
+  <div id="cross"></div>
+
+  <div id="hud">
+    <h1>Tallow Ward</h1>
+    <div class="sub" id="clock">connecting</div>
+    <div id="feed"></div>
+  </div>
+
+  <div id="help">
+    <div><b>WASD</b> move · <b>Space</b> jump · <b>Shift</b> sprint</div>
+    <div><b>Left click</b> break · <b>Right click</b> place</div>
+    <div><b>1–9</b> pick block · <b>F</b> fly · <b>Esc</b> release</div>
+  </div>
+
+  <div id="bar"></div>
+
+  <div id="splash"><div class="box">
+    <h2>Tallow Ward</h2>
+    <p>Three people run this district and none of them like the arrangement.
+       Everything you can see is voxels — dig it out, build on it, and they
+       will notice.</p>
+    <p class="go">Click to enter</p>
+  </div></div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

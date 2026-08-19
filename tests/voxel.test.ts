@@ -96,6 +96,18 @@ describe("greedy meshing", () => {
     expect(m.quads).toBeGreaterThan(6);
   });
 
+  it("emits each boundary face exactly once, so chunk seams do not z-fight", () => {
+    const w = new VoxelWorld();
+    w.set(-1, 4, 4, BLOCK_IDS.stone); // sits on the seam between chunk -1 and 0
+    const s = sampler(w);
+    const owner = meshChunk(s, -CHUNK, 0, 0);
+    const neighbour = meshChunk(s, 0, 0, 0);
+
+    expect(owner.quads).toBe(6);       // the chunk that contains it draws it
+    expect(neighbour.quads).toBe(0);   // the one next door draws nothing
+    expect(owner.quads + neighbour.quads).toBe(6); // 7 would be a double-draw
+  });
+
   it("produces all six axis normals for an isolated voxel", () => {
     const w = new VoxelWorld();
     w.set(1, 1, 1, BLOCK_IDS.stone);

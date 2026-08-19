@@ -52,8 +52,15 @@ export function meshChunk(sample, ox, oy, oz) {
           const b = sample(ox + x[0] + q[0], oy + x[1] + q[1], oz + x[2] + q[2]);
           const sa = isSolid(a);
           const sb = isSolid(b);
-          // Positive id: face points +d. Negative: face points -d.
-          mask[n] = sa === sb ? 0 : sa ? a : -b;
+          // A chunk owns the faces of ITS OWN voxels and no others. Without
+          // this, the two chunks either side of a border both emit the face
+          // between them and the pair z-fights -- which reads as vertical
+          // striping across every chunk seam.
+          const aInside = x[d] >= 0;
+          const bInside = x[d] < DIMS[d] - 1;
+          if (sa === sb) mask[n] = 0;
+          else if (sa) mask[n] = aInside ? a : 0;
+          else mask[n] = bInside ? -b : 0;
         }
       }
 

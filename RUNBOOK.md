@@ -42,10 +42,14 @@ and safer one. Shot 6 is the voxel ward and is the closing beat.
 | 2 the ward | three.js | `npm run world` | 8787 |
 | 3 the money shot | three.js | (same window) | 8787 |
 | 4 mint on camera | three.js | (same window) | 8787 |
-| 5 second surface | terminal | `npm run chat` | attaches to 8787 |
-| 6 closing beat | **voxel** | `npm run voxel` | **8788** |
+| 5 an IP walks in | terminal | `npm run onboard` | — |
+| 6 post → reaction | terminal | `npm run ingest --post` | — |
+| 7 second surface | terminal | `npm run chat` | attaches to 8787 |
+| 8 closing beat | **voxel** | `npm run voxel` | **8788** |
 
-Both can run at once — different ports, different databases, no conflict.
+All of them can run at once — different ports, different databases, no
+conflict. Shots 5 and 6 use `./data/tradeclash.db`, which is separate from both
+the ward demos and from the clock's `./data/canon.db`.
 
 Useful controls while filming:
 
@@ -59,7 +63,13 @@ Useful controls while filming:
 
 ## Shot order
 
-### Shot 1 — the pitch, in the terminal (0:00–0:12)
+Eight beats in sixty seconds is tight. If you need room, the two that carry the
+most weight are **3** (a character citing a real event id) and **6** (you post
+something and the world quotes it back). Shot 7 is the cheapest to drop and
+shot 4 is the next cheapest.
+
+
+### Shot 1 — the pitch, in the terminal (0:00–0:08)
 
 ```bash
 npm run demo
@@ -77,7 +87,7 @@ the **VERIFICATION** block:
 Say: *"Three NPCs, six days of history, nobody watching. Every complaint they
 make is checked against an append-only log."*
 
-### Shot 2 — the ward exists (0:12–0:22)
+### Shot 2 — the ward exists (0:08–0:16)
 
 Terminal A:
 
@@ -93,7 +103,7 @@ days of grudges when the judge first sees it. Cold start is solved off-camera.
 
 Say: *"This is the same simulation. The browser is just a display."*
 
-### Shot 3 — the money shot: you are remembered (0:22–0:40)
+### Shot 3 — the money shot: you are remembered (0:16–0:30)
 
 In the browser, bottom right:
 
@@ -117,7 +127,7 @@ the single most important frame in the video.
 Say: *"He is not improvising. Those are event ids, resolved live against the
 log. The world remembered a choice you made five days ago."*
 
-### Shot 4 — mint a character on camera (0:40–0:48)
+### Shot 4 — mint a character on camera (0:30–0:36)
 
 **Mint a character…** → the textarea is pre-filled with Halric Vaas. Edit the
 name to something the audience picks, then **Mint into the ward**.
@@ -128,7 +138,64 @@ history predates him.
 Say: *"Paste a character sheet, get an inhabitant. He inherits canon he was
 never part of."*
 
-### Shot 5 — the engine is not the world (0:48–0:56)
+### Shot 5 — an IP walks in and becomes a cast (0:36–0:42)
+
+A clean terminal. This is a different world from the ward — nothing above is
+disturbed.
+
+```bash
+npm run onboard -- --fixture tradeclash --reset
+```
+
+~3 seconds. Hold on the output: three named leaders with titles and factions,
+two open storylines, existing lore that has become **citable day-zero events**,
+and the tone rules. Then the gate line:
+
+```
+[gate] non-interactive: approved automatically.
+status:       seeded      cast: ferrox, cindra, okuma
+```
+
+Say: *"That is a real IP's handles going in and a living cast coming out. The
+owner approves the bible before any of it becomes canon."*
+
+### Shot 6 — you post something, the world reacts (0:42–0:50)
+
+**The strongest beat in the film after the citation.** Same terminal:
+
+```bash
+npm run ingest -- --fixture tradeclash --tick \
+  --post "Okuma raised the strait toll a second time, on twelve hours' notice, and published the schedule after the convoys had already sailed." \
+  --actors okuma,ferrox --arc arc_strait_toll
+```
+
+One tick later a character reacts, **quoting the post verbatim and citing its
+event id**:
+
+```
+posted -> fixtures/tradeclash/drop_20260819120539.md
+ingested 1  [evt_mt01owv0_0001] Okuma raised the strait toll a second time...
+
+--- tick ---
+    Chancellor Ferrox [sabotage -> Director Okuma]
+      "arranges for Director Okuma's week to become materially harder"
+      "Okuma raised the strait toll a second time, on twelve hours' notice, ..."
+      (cites evt_mt01owv0_0001)
+```
+
+Say: *"I posted that thirty seconds ago. It is canon now, and he is quoting it
+back with the receipt."*
+
+Optionally follow with the owner's daily note:
+
+```bash
+npm run digest -- --fixture tradeclash
+```
+
+**Between takes:** delete `fixtures/tradeclash/drop_*.md`, or re-run `onboard`
+with `--reset`. Dropped posts are gitignored.
+
+### Shot 7 — the engine is not the world (0:50–0:55)
 
 Terminal B, with the world still running:
 
@@ -142,7 +209,7 @@ citations. Put the terminal beside the browser.
 Say: *"Same world, second surface, no engine. The simulation is not the
 renderer — swapping the display costs one file."*
 
-### Shot 6 — the closing beat: it is a world you can take apart (0:56–1:00)
+### Shot 8 — the closing beat: it is a world you can take apart (0:55–1:00)
 
 Terminal C, before you start filming:
 

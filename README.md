@@ -13,34 +13,48 @@ days of history happen without them. On day 6 they come back and an NPC greets
 them as an ally and complains, accurately, about what a rival did while they were
 gone — citing the event id, which the demo then verifies against the log.
 
-## Three commands
+## Commands
+
+Everything runs with **no API key, no account, no network, no build step**.
+Node 22+ (developed on 24.19.0).
 
 ```bash
-npm install          # once. Node 22+ required (developed on 24.19.0)
-
-npm test             # 95 tests, headless, no engine, no key
-npm run demo         # the whole loop in your terminal, ~2 seconds, exits 0
-npm run world        # the 3D ward -> http://localhost:8787
-npm run voxel        # the VOXEL ward, first person -> http://localhost:8788
+npm install          # once
+npm test             # 153 tests, headless, no engine, no key
 ```
 
-And one that is meant to never stop:
+**The world, three ways.** Same canon, same tick loop, same cast — the surface
+is the only difference.
 
 ```bash
-npm run clock        # tick the REAL on-disk ward, forever
-npm run clock:status # how much history has actually accumulated
+npm run demo         # the whole loop in your terminal, ~2s, exits 0
+npm run world        # the three.js ward     -> http://localhost:8787
+npm run voxel        # the voxel ward, first person, diggable -> :8788
+npm run chat         # the same world as TEXT; attaches to a running world
 ```
 
-No API key. No account. No network. No build step, no bundler. See
-[SETUP.md](SETUP.md), and [RUNBOOK.md](RUNBOOK.md) for the 60-second demo shot
-list.
-
-A fourth command proves the point of the architecture — with `npm run world`
-already running, open another terminal:
+**An IP in, a living cast out.** Builds a world from an existing property and
+keeps it fed from the owner's feed.
 
 ```bash
-npm run chat         # the SAME world, same canon, same cast, rendered as text
+npm run onboard -- --fixture tradeclash --reset      # handles in, cast out
+npm run ingest  -- --fixture tradeclash --tick \
+  --post "Okuma raised the strait toll a second time." \
+  --actors okuma,ferrox --arc arc_strait_toll        # posted -> quoted -> cited
+npm run digest  -- --fixture tradeclash              # the showrunner's note
+npm run clips   -- --fixture tradeclash --write      # drafts, never posted
 ```
+
+**The one that never stops.** Real elapsed history, on disk.
+
+```bash
+npm run clock         # tick the real ward, forever
+npm run clock:status  # how much history has actually accumulated
+```
+
+See [SETUP.md](SETUP.md) to run it, [RUNBOOK.md](RUNBOOK.md) for the demo shot
+list, and [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md) for the inbound/outbound
+layer.
 
 ---
 
@@ -462,19 +476,7 @@ by the swap.
 Everything above builds a world by hand. The inbound/outbound pipeline builds one
 out of an existing IP and keeps it fed.
 
-```bash
-# handles in, living cast out
-npm run onboard -- --fixture tradeclash --reset
-
-# post something real; within one tick the cast quotes it and cites it
-npm run ingest -- --fixture tradeclash --tick --actors okuma,ferrox \
-  --arc arc_strait_toll --post "Okuma raised the strait toll a second time."
-
-npm run digest -- --fixture tradeclash          # the showrunner's note
-npm run clips  -- --fixture tradeclash --write  # drafts, never posted
-```
-
-Source adapters, the IP bible, the creator approval gate, ingestion into the
+The commands are listed above. Source adapters, the IP bible, the creator approval gate, ingestion into the
 existing event schema, the daily digest and the outbound clip drafts are all
 documented in **[docs/IP-PIPELINE.md](docs/IP-PIPELINE.md)**, including which
 parts are fixture and which are real.

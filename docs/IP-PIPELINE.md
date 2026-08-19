@@ -53,12 +53,14 @@ resolves in the log.
 And what the owner gets back:
 
 ```bash
-npm run digest -- --fixture tradeclash --hours 100000
-npm run clips  -- --fixture tradeclash --hours 100000 --write
+npm run digest -- --fixture tradeclash
+npm run clips  -- --fixture tradeclash --write
 ```
 
-(`--hours` is a window of **world** time. The fixtures are dated January 2026,
-so a small window will correctly report that nothing recent happened.)
+`--hours` is a window of **world** time and defaults to 24. A post made with
+`--post` is stamped now, so it lands in the default window; the fixture's back
+catalogue is dated January 2026, so widen the window (`--hours 100000`) if you
+want to see that too.
 
 ---
 

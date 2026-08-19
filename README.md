@@ -412,8 +412,8 @@ npm run onboard -- --fixture tradeclash --reset
 npm run ingest -- --fixture tradeclash --tick --actors okuma,ferrox \
   --arc arc_strait_toll --post "Okuma raised the strait toll a second time."
 
-npm run digest -- --fixture tradeclash --hours 100000   # the showrunner's note
-npm run clips  -- --fixture tradeclash --hours 100000   # drafts, never posted
+npm run digest -- --fixture tradeclash          # the showrunner's note
+npm run clips  -- --fixture tradeclash --write  # drafts, never posted
 ```
 
 Source adapters, the IP bible, the creator approval gate, ingestion into the

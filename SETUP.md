@@ -69,7 +69,7 @@ npm run demo -- --seed 7        # a different history; same seed = same run
 npm run demo -- --persist       # write to ./data/demo.db instead of memory
 npm run demo -- --persist --reset   # ...starting from scratch
 
-npm test                        # 48 tests
+npm test                        # 81 tests
 npm run typecheck
 
 npm run tick                    # one tick against the persistent db

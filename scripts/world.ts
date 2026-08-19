@@ -17,7 +17,8 @@
 
 import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
-import { MockHostRuntime } from "../src/host/mock.js";
+import { startHostRuntime } from "../src/host/index.js";
+import { loadConfig } from "../src/config.js";
 import { runTick, onboardVisitor, visitorAction, type TickContext } from "../src/tick/runTick.js";
 import { WebSurface } from "../src/runtime/webSurface.js";
 import { mintFromText } from "../src/canon/mint.js";
@@ -44,11 +45,13 @@ async function main(): Promise<void> {
   const repo = CanonRepo.open(DB, clock);
   seedWorld(repo);
 
-  const host = new MockHostRuntime({ seed: SEED });
-  await host.init();
+  // THE SEAM. Mock unless INSPIRAL_HOST=minds and a key is present;
+  // createHostRuntime falls back to mock rather than crashing if it is not.
+  const host = await startHostRuntime({ ...loadConfig(), seed: SEED });
 
   const surface = new WebSurface({
     port: PORT,
+    hostName: host.name,
     // The surface shows citations resolved. Canon stays the only reader.
     resolveCite: (id) => {
       const e = repo.getEvent(id);
@@ -130,7 +133,11 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log(`  Tallow Ward is live:  ${surface.url}`);
-  console.log(`  host: ${host.name}   one tick every ${EVERY / 1000}s   ctrl-c to stop`);
+  console.log(
+    `  HOST RUNTIME: ${host.name.toUpperCase()}` +
+      (host.name === "mock" ? "  (no key -- set INSPIRAL_HOST=minds in .env to switch)" : "  (live Mind)"),
+  );
+  console.log(`  one tick every ${EVERY / 1000}s   ctrl-c to stop`);
   console.log("");
 
   const timer = setInterval(() => {

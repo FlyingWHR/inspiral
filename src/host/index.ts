@@ -17,6 +17,29 @@ export { MindsHostRuntime } from "./minds.js";
  * The mock is the default on purpose: the demo must run for someone who has
  * never heard of Minds and has no key.
  */
+/**
+ * Construct the host AND bring it up, degrading to the mock if it cannot start.
+ *
+ * createHostRuntime already handles a missing key, but a key that is present
+ * and wrong only fails later, inside init() -- which used to take the whole
+ * process with it. A typo in .env should cost a warning, not the demo.
+ */
+export async function startHostRuntime(cfg: InspiralConfig): Promise<HostRuntime> {
+  const host = createHostRuntime(cfg);
+  try {
+    await host.init();
+    return host;
+  } catch (e) {
+    if (host.name === "mock") throw e; // the mock failing is a real bug
+    log.warn(
+      `host "${host.name}" failed to start (${(e as Error).message}) -- falling back to the mock.`,
+    );
+    const fallback = new MockHostRuntime({ seed: cfg.seed });
+    await fallback.init();
+    return fallback;
+  }
+}
+
 export function createHostRuntime(cfg: InspiralConfig): HostRuntime {
   if (cfg.host === "minds") {
     const key = process.env.MINDS_BUILDER_API_KEY ?? "";

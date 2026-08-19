@@ -350,6 +350,7 @@ let places = {};
 let beats = [];
 let draining = false;
 let said = 0;
+let hostName = "mock";
 
 function enqueue(b) {
   beats.push(b);
@@ -411,7 +412,7 @@ async function stageBeat(b) {
   if (!a) return;
   const target = b.target ? actors.get(b.target) : null;
 
-  clockEl.textContent = `${++said} beats · mock host · no api key`;
+  clockEl.textContent = `${++said} beats · ${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
   note(`${a.name} ${b.verb.replace(/_/g, " ")}${target ? " → " + target.name : ""}`);
 
   if (target) {
@@ -447,10 +448,11 @@ function connect() {
     const m = JSON.parse(ev.data);
     if (m.t === "places") { places = m.places ?? places; return; }
     if (m.t === "hello") {
+      hostName = m.host ?? hostName;
       places = m.places ?? {};
       // Until the first beat lands there is nothing to count, but the ward is
       // connected -- "connecting" would be a lie.
-      if (!said) clockEl.textContent = "mock host · no api key · waiting for the next tick";
+      if (!said) clockEl.textContent = `${hostName} host${hostName === "mock" ? " · no api key" : ""} · waiting for the next tick`;
       for (const a of m.actors) await addActor(a.actor, a.at);
       for (const b of m.recent.slice(-4)) enqueue(b);
       return;

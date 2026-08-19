@@ -282,6 +282,7 @@ function note(text, cls = "") {
 let beats = [];
 let draining = false;
 let said = 0;
+let hostName = "mock";
 const STRUCTURAL = new Set(["spawn", "despawn", "move"]);
 
 function enqueue(b) { beats.push(b); if (!draining) void drain(); }
@@ -321,7 +322,7 @@ async function stage(b) {
   const a = actors.get(b.id);
   if (!a) return;
   const target = b.target ? actors.get(b.target) : null;
-  clockEl.textContent = `${++said} beats · mock host · no api key`;
+  clockEl.textContent = `${++said} beats · ${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
   note(`${a.name} ${b.verb.replace(/_/g, " ")}${target ? " → " + target.name : ""}`);
 
   if (target) {
@@ -345,11 +346,13 @@ async function stage(b) {
 let sock;
 function connect() {
   sock = new WebSocket(`ws://${location.host}`);
-  sock.onopen = () => { if (!said) clockEl.textContent = "mock host · no api key"; };
+  sock.onopen = () => { if (!said) clockEl.textContent = "connected"; };
   sock.onclose = () => { clockEl.textContent = "reconnecting"; setTimeout(connect, 1500); };
   sock.onmessage = async (ev) => {
     const m = JSON.parse(ev.data);
     if (m.t === "hello") {
+      hostName = m.host ?? hostName;
+      if (!said) clockEl.textContent = `${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
       for (const a of m.actors) await addActor(a.actor, a.at);
       for (const b of m.recent.slice(-3)) enqueue(b);
       return;

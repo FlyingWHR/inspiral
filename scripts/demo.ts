@@ -25,7 +25,8 @@
 import { rmSync } from "node:fs";
 import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
-import { MockHostRuntime } from "../src/host/mock.js";
+import { startHostRuntime } from "../src/host/index.js";
+import { loadConfig } from "../src/config.js";
 import {
   runTick,
   onboardVisitor,
@@ -110,8 +111,9 @@ async function main(): Promise<void> {
   const created = seedWorld(repo);
   repo.setMeta("world_start", START);
 
-  const host = new MockHostRuntime({ seed: SEED });
-  await host.init();
+  // THE SEAM. Mock unless INSPIRAL_HOST=minds and a key is present;
+  // createHostRuntime falls back to mock rather than crashing if it is not.
+  const host = await startHostRuntime({ ...loadConfig(), seed: SEED });
 
   const surface = new MemorySurface();
   const ctx: TickContext = {

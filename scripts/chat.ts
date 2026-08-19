@@ -22,7 +22,8 @@ import { ChatSurface } from "../src/runtime/chatSurface.js";
 import type { SurfaceAdapter } from "../src/runtime/surface.js";
 import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
-import { MockHostRuntime } from "../src/host/mock.js";
+import { startHostRuntime } from "../src/host/index.js";
+import { loadConfig } from "../src/config.js";
 import { runTick, onboardVisitor, visitorAction, type TickContext } from "../src/tick/runTick.js";
 import { mintFromText } from "../src/canon/mint.js";
 import { VirtualClock, HOUR_MS } from "../src/clock.js";
@@ -129,8 +130,9 @@ async function solo(): Promise<void> {
   const clock = new VirtualClock("2026-03-02T08:00:00.000Z");
   const repo = CanonRepo.open(":memory:", clock);
   seedWorld(repo);
-  const host = new MockHostRuntime({ seed: 1 });
-  await host.init();
+  // THE SEAM. Mock unless INSPIRAL_HOST=minds and a key is present;
+  // createHostRuntime falls back to mock rather than crashing if it is not.
+  const host = await startHostRuntime({ ...loadConfig(), seed: 1 });
 
   const ctx: TickContext = {
     repo,
@@ -141,7 +143,7 @@ async function solo(): Promise<void> {
     advanceMs: 4 * HOUR_MS,
   };
 
-  console.log("\n  Tallow Ward — text surface, private world.\n");
+  console.log(`\n  Tallow Ward — text surface, private world.  HOST RUNTIME: ${host.name.toUpperCase()}\n`);
   for (const c of CHARACTERS) {
     surface.spawn({
       id: c.character_id,

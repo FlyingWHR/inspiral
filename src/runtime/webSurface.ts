@@ -52,6 +52,11 @@ export interface WebSurfaceOptions {
   /** Shared CC0 asset root, served at /assets. One copy, every surface. */
   assets?: string;
   places?: Record<string, SurfacePoint>;
+  /**
+   * Which HostRuntime is actually driving this world. Shown in the HUD so it
+   * is provable on camera which one is running, rather than asserted.
+   */
+  hostName?: string;
   /** Called when the browser asks for something. May spend an invocation. */
   onIntent?: (intent: SurfaceIntent) => void | Promise<void>;
   /**
@@ -111,6 +116,8 @@ export class WebSurface implements SurfaceAdapter {
   private readonly assets: string;
   private readonly places: Record<string, SurfacePoint>;
   private readonly onIntent: WebSurfaceOptions["onIntent"];
+  /** Mutable: a host can fall back to mock after the surface is constructed. */
+  hostName: string;
   private readonly resolveCite: WebSurfaceOptions["resolveCite"];
 
   private http?: Server;
@@ -129,6 +136,7 @@ export class WebSurface implements SurfaceAdapter {
     this.assets = opts.assets ?? here("../../web/assets");
     this.places = { ...(opts.places ?? WARD_PLACES) };
     this.onIntent = opts.onIntent;
+    this.hostName = opts.hostName ?? "mock";
     this.resolveCite = opts.resolveCite;
   }
 
@@ -200,6 +208,7 @@ export class WebSurface implements SurfaceAdapter {
       sock.send(
         JSON.stringify({
           t: "hello",
+          host: this.hostName,
           places: this.places,
           actors: [...this.actors.values()],
           recent: this.recent,

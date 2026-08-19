@@ -18,7 +18,7 @@ gone — citing the event id, which the demo then verifies against the log.
 ```bash
 npm install          # once. Node 22+ required (developed on 24.19.0)
 
-npm test             # 56 tests, headless, no engine, no key
+npm test             # 81 tests, headless, no engine, no key
 npm run demo         # the whole loop in your terminal, ~2 seconds, exits 0
 npm run world        # the 3D ward -> http://localhost:8787
 npm run voxel        # the VOXEL ward, first person -> http://localhost:8788
@@ -189,7 +189,8 @@ src/
   tick/          runTick.ts, scheduler.ts
 scripts/         demo.ts, world.ts, chat.ts, tick.ts, canon.ts
 web/             index.html, main.js, assets/        ← CC0 kit, no build step
-tests/           validator.test.ts, tick.test.ts, mint.test.ts   ← 56 tests
+tests/           validator.test.ts, tick.test.ts, mint.test.ts,
+                 voxel.test.ts                      ← 81 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 
@@ -360,10 +361,18 @@ return new MockHostRuntime({ seed: cfg.seed });
 - `MindsHostRuntime` — written, typed against the real client library, wired to
   the same interface, **never exercised**, because there is no key yet.
 
-To switch tomorrow: put `MINDS_BUILDER_API_KEY=...` in `.env`, set
-`INSPIRAL_HOST=minds`, and change nothing else. If the key is missing or empty
-the adapter logs a warning and falls back to the mock rather than crashing, so a
-half-configured environment still runs the demo.
+To switch: put `MINDS_BUILDER_API_KEY=...` in `.env`, set `INSPIRAL_HOST=minds`,
+and change nothing else. Every entry point loads `.env` (`--env-file-if-exists`)
+and every one of them goes through `startHostRuntime()`, so `npm run demo`,
+`world`, `voxel`, `chat` and `tick` all pick up the key. **Which runtime is
+actually live is printed in the terminal banner and shown in the browser HUD**,
+so it is provable on camera rather than asserted.
+
+Degradation is layered, because a half-configured environment must not kill a
+demo: no key at all → mock; `INSPIRAL_HOST=minds` with an empty key → warn, use
+mock; a key that is present but wrong → the adapter is constructed, the real API
+rejects it, and `startHostRuntime` warns and falls back to mock. Only the mock
+failing is treated as a real bug.
 
 Nothing downstream of the seam knows a vendor exists: the validator, canon, tick
 loop, character runtime and all three surfaces are host-agnostic and unchanged

@@ -20,7 +20,7 @@ import { BLOCKS, colorOf, nameOf } from "./voxel/blocks.js";
 import { generateWard, WARD_PLACES } from "./ward.js";
 import { ChunkMesher } from "./chunkmesh.js";
 import { Player, PALETTE } from "./player.js";
-import { findPath } from "./voxel/pathfind.js";
+import { findPath, standable } from "./voxel/pathfind.js";
 
 const CHARS = "/assets/characters/";
 const BODY = {
@@ -202,19 +202,74 @@ function face(a, x, z) {
  */
 function walk(a, tx, tz) {
   return new Promise((done) => {
-    const from = [Math.floor(a.root.position.x), Math.floor(a.root.position.y), Math.floor(a.root.position.z)];
-    const path = findPath(world, from, [Math.floor(tx), Math.floor(tz)], 900);
-    if (!path || path.length === 0) { play(a, "idle"); done(); return; }
-    a.path = path;
+    a.dest = [Math.floor(tx), Math.floor(tz)];
+    a.stuckFor = 0;
+    if (!replan(a)) { play(a, "idle"); done(); return; }
     a.pathDone = done;
     play(a, "walk");
   });
+}
+
+/** Recompute the route from wherever they are standing now. */
+function replan(a) {
+  if (!a.dest) return false;
+  const from = [
+    Math.floor(a.root.position.x),
+    Math.floor(a.root.position.y),
+    Math.floor(a.root.position.z),
+  ];
+  const path = findPath(world, from, a.dest, 900);
+  if (!path || path.length === 0) return false;
+  a.path = path;
+  return true;
+}
+
+/** Give up gracefully: stop, stand still, let the beat continue. */
+function abandon(a) {
+  a.path = null;
+  a.dest = null;
+  play(a, "idle");
+  const done = a.pathDone;
+  a.pathDone = null;
+  done?.();
+}
+
+/**
+ * Wall someone in mid-stride and they should notice. Called when the player
+ * edits blocks, and periodically while walking in case they are wedged.
+ */
+function repathAll() {
+  for (const a of actors.values()) {
+    if (a.path) a.pathDirty = true;
+  }
 }
 
 function stepActors(dt) {
   for (const a of actors.values()) {
     a.mixer.update(dt);
     if (!a.path) continue;
+
+    // The route was valid when it was planned; the player may have changed the
+    // world since. Re-plan when told to, or when the next step has become solid.
+    const next = a.path[0];
+    const blocked = next && !standable(world, next[0], next[1], next[2]);
+    if (a.pathDirty || blocked) {
+      a.pathDirty = false;
+      if (!replan(a)) { abandon(a); continue; }
+    }
+
+    // Making no headway for a couple of seconds means wedged, not slow.
+    a.stuckFor = (a.stuckFor ?? 0) + dt;
+    if (a.lastX === undefined) { a.lastX = a.root.position.x; a.lastZ = a.root.position.z; }
+    if (Math.hypot(a.root.position.x - a.lastX, a.root.position.z - a.lastZ) > 0.25) {
+      a.stuckFor = 0;
+      a.lastX = a.root.position.x;
+      a.lastZ = a.root.position.z;
+    } else if (a.stuckFor > 2.5) {
+      a.stuckFor = 0;
+      if (!replan(a)) { abandon(a); continue; }
+    }
+
     const node = a.path[0];
     const tx = node[0] + 0.5, ty = node[1], tz = node[2] + 0.5;
     const p = a.root.position;
@@ -225,6 +280,7 @@ function stepActors(dt) {
       a.path.shift();
       if (a.path.length === 0) {
         a.path = null;
+        a.dest = null;
         play(a, "idle");
         a.pathDone?.();
         a.pathDone = null;
@@ -243,8 +299,11 @@ async function speak(a, lines, verb, detail) {
   a.bubbleEl.innerHTML = "";
   const v = document.createElement("span");
   v.className = "verb";
-  v.textContent = verb.replace(/_/g, " ");
+  // The name lives in the bubble while they speak, because the nameplate is
+  // directly behind it and loses.
+  v.textContent = `${a.name} — ${verb.replace(/_/g, " ")}`;
   a.bubbleEl.append(v);
+  a.plate.classList.add("muted");
   const body = document.createElement("span");
   a.bubbleEl.append(body);
   a.bubble.visible = true;
@@ -261,6 +320,7 @@ async function speak(a, lines, verb, detail) {
   }
   if (detail?.length) await wait(5200);
   a.bubbleEl.classList.remove("on");
+  a.plate.classList.remove("muted");
   await wait(200);
   a.bubble.visible = false;
 }
@@ -269,6 +329,34 @@ async function speak(a, lines, verb, detail) {
 
 const feed = document.getElementById("feed");
 const clockEl = document.getElementById("clock");
+/**
+ * CSS2D has no idea two labels are on top of each other. Project everyone to
+ * screen space, walk them nearest-first, and hide any plate that would land on
+ * one already drawn. Nearest wins, so the person you are looking at keeps their
+ * name.
+ */
+const _lp = new THREE.Vector3();
+function deconflictPlates() {
+  const shown = [];
+  const ordered = [...actors.values()]
+    .map((a) => {
+      _lp.setFromMatrixPosition(a.root.matrixWorld);
+      const d = camera.position.distanceTo(_lp);
+      _lp.project(camera);
+      return { a, d, x: (_lp.x * 0.5 + 0.5) * innerWidth, y: (-_lp.y * 0.5 + 0.5) * innerHeight, behind: _lp.z > 1 };
+    })
+    .sort((p, q) => p.d - q.d);
+
+  for (const p of ordered) {
+    const clash =
+      p.behind ||
+      shown.some((q) => Math.abs(q.x - p.x) < 108 && Math.abs(q.y - p.y) < 26);
+    // Someone mid-speech always keeps their label: the bubble carries the name.
+    p.a.plate.classList.toggle("hidden", clash && !p.a.bubble.visible);
+    if (!clash) shown.push(p);
+  }
+}
+
 function note(text, cls = "") {
   const d = document.createElement("div");
   if (cls) d.className = cls;
@@ -368,6 +456,7 @@ connect();
 /** Player edits go to canon so the cast can react to them. */
 function onEdit({ kind, x, y, z, block, touched }) {
   mesher.queueChunks(touched);
+  repathAll(); // somebody may have just walled somebody else in
   if (sock?.readyState === 1) {
     sock.send(JSON.stringify({ t: "edit", edit: { kind, x, y, z, block: nameOf(block) } }));
   }
@@ -380,6 +469,7 @@ function frame(dt) {
   paintBar();
   stepActors(dt);
   mesher.update(2);
+  deconflictPlates();
   // keep the shadow frustum around the player instead of the whole ward
   sun.position.set(camera.position.x - 60, 90, camera.position.z + 40);
   sun.target.position.set(camera.position.x, 0, camera.position.z);

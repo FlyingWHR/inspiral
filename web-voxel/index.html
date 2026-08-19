@@ -16,6 +16,9 @@
   .plate .nm { font-weight:650; white-space:nowrap; }
   .plate .ti { font-size:11px; color:var(--dim); white-space:nowrap; }
   .plate.visitor .nm { color:#9fd3ff; }
+  /* set by deconflictPlates(): overlapping or occluded labels step aside */
+  .plate.hidden { opacity:0; transition:opacity .12s; }
+  .plate.muted  { opacity:0; }
   .bubble { max-width:280px; padding:9px 12px; border-radius:12px; background:var(--panel);
     border:1px solid rgba(255,255,255,.13); box-shadow:0 10px 30px rgba(0,0,0,.55);
     font-size:13px; text-align:left; opacity:0; transform:translateY(6px);

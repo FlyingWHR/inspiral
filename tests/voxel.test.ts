@@ -5,6 +5,7 @@ import { VoxelWorld, CHUNK } from "../web-voxel/voxel/chunk.js";
 import { meshChunk } from "../web-voxel/voxel/mesher.js";
 import { raycast } from "../web-voxel/voxel/raycast.js";
 import { Body, step, overlaps } from "../web-voxel/voxel/physics.js";
+import { findPath, standable, groundAt } from "../web-voxel/voxel/pathfind.js";
 import { BLOCK_IDS, isSolid, AIR } from "../web-voxel/voxel/blocks.js";
 
 const sampler = (w: VoxelWorld) => (x: number, y: number, z: number) => w.get(x, y, z);
@@ -179,6 +180,69 @@ describe("bodies against the grid", () => {
     for (let i = 0; i < 120; i++) step(solidFn(w), b, 1 / 60);
     expect(b.position[1]).toBeCloseTo(1, 2);
     expect(overlaps(solidFn(w), b)).toBe(false);
+  });
+});
+
+describe("pathfinding around what the player built", () => {
+  const flat = (r = 12) => {
+    const w = new VoxelWorld();
+    for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) w.set(x, 0, z, BLOCK_IDS.stone);
+    return w;
+  };
+
+  it("knows where a body can stand", () => {
+    const w = flat();
+    expect(standable(w, 0, 1, 0)).toBe(true);
+    expect(standable(w, 0, 0, 0)).toBe(false); // inside the floor
+    w.set(0, 1, 0, BLOCK_IDS.stone);
+    expect(standable(w, 0, 1, 0)).toBe(false); // occupied
+    expect(groundAt(w, 5, 5, 1)).toBe(1);
+  });
+
+  it("walks straight across open ground", () => {
+    const path = findPath(flat(), [0, 1, 0], [8, 0]);
+    expect(path).not.toBeNull();
+    expect(path!.at(-1)).toEqual([8, 1, 0]);
+  });
+
+  it("routes around a wall instead of through it", () => {
+    const w = flat();
+    for (let z = -6; z <= 6; z++) {
+      w.set(4, 1, z, BLOCK_IDS.stone);
+      w.set(4, 2, z, BLOCK_IDS.stone);
+    }
+    const path = findPath(w, [0, 1, 0], [8, 0])!;
+    expect(path).not.toBeNull();
+    // it must go the long way round the end of the wall
+    expect(path.some((c) => Math.abs(c[2]!) > 6)).toBe(true);
+    // and never step inside a solid voxel
+    expect(path.every((c) => !w.solid(c[0]!, c[1]!, c[2]!))).toBe(true);
+  });
+
+  it("gives up rather than walking through a seal", () => {
+    const w = flat();
+    for (let z = -12; z <= 12; z++) {
+      w.set(4, 1, z, BLOCK_IDS.stone);
+      w.set(4, 2, z, BLOCK_IDS.stone);
+    }
+    expect(findPath(w, [0, 1, 0], [8, 0])).toBeNull();
+  });
+
+  it("climbs a one-block step", () => {
+    const w = new VoxelWorld();
+    for (let x = -6; x <= 6; x++) for (let z = -6; z <= 6; z++) w.set(x, 0, z, BLOCK_IDS.stone);
+    for (let x = 2; x <= 6; x++) for (let z = -6; z <= 6; z++) w.set(x, 1, z, BLOCK_IDS.stone);
+    const path = findPath(w, [0, 1, 0], [5, 0])!;
+    expect(path).not.toBeNull();
+    expect(path.at(-1)![1]).toBe(2);
+  });
+
+  it("stays inside its node budget when the goal is unreachable", () => {
+    const w = flat(40);
+    for (let z = -40; z <= 40; z++) for (let y = 1; y <= 2; y++) w.set(4, y, z, BLOCK_IDS.stone);
+    const t0 = Date.now();
+    expect(findPath(w, [0, 1, 0], [30, 0])).toBeNull();
+    expect(Date.now() - t0).toBeLessThan(250); // bounded, not a frame spike
   });
 });
 

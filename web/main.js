@@ -306,8 +306,11 @@ async function speak(a, lines, verb, detail) {
   a.bubbleEl.innerHTML = "";
   const v = document.createElement("span");
   v.className = "verb";
-  v.textContent = verb.replace(/_/g, " ");
+  // The name lives in the bubble while they speak, because the nameplate is
+  // directly behind it and loses.
+  v.textContent = `${a.name} — ${verb.replace(/_/g, " ")}`;
   a.bubbleEl.append(v);
+  a.plate.classList.add("muted");
   const body = document.createElement("span");
   a.bubbleEl.append(body);
   a.bubble.visible = true;
@@ -326,6 +329,7 @@ async function speak(a, lines, verb, detail) {
   }
   if (detail?.length) await wait(5200);
   a.bubbleEl.classList.remove("on");
+  a.plate.classList.remove("muted");
   await wait(200);
   a.bubble.visible = false;
 }
@@ -335,6 +339,34 @@ async function speak(a, lines, verb, detail) {
 const feed = document.getElementById("feed");
 const statusEl = document.getElementById("status");
 const clockEl = document.getElementById("clock");
+
+/**
+ * CSS2D has no idea two labels are on top of each other. Project everyone to
+ * screen space, walk them nearest-first, and hide any plate that would land on
+ * one already drawn. Nearest wins, so the person you are looking at keeps their
+ * name.
+ */
+const _lp = new THREE.Vector3();
+function deconflictPlates() {
+  const shown = [];
+  const ordered = [...actors.values()]
+    .map((a) => {
+      _lp.setFromMatrixPosition(a.root.matrixWorld);
+      const d = camera.position.distanceTo(_lp);
+      _lp.project(camera);
+      return { a, d, x: (_lp.x * 0.5 + 0.5) * innerWidth, y: (-_lp.y * 0.5 + 0.5) * innerHeight, behind: _lp.z > 1 };
+    })
+    .sort((p, q) => p.d - q.d);
+
+  for (const p of ordered) {
+    const clash =
+      p.behind ||
+      shown.some((q) => Math.abs(q.x - p.x) < 108 && Math.abs(q.y - p.y) < 26);
+    // Someone mid-speech always keeps their label: the bubble carries the name.
+    p.a.plate.classList.toggle("hidden", clash && !p.a.bubble.visible);
+    if (!clash) shown.push(p);
+  }
+}
 
 function note(text, cls = "") {
   const d = document.createElement("div");
@@ -514,6 +546,7 @@ function frame(dt) {
   for (const a of actors.values()) a.mixer.update(dt);
   stepWalks(dt);
   controls.update();
+  deconflictPlates();
   composer.render();
   labels.render(scene, camera);
 }

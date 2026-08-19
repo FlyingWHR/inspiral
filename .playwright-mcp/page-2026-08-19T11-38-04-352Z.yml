@@ -1,0 +1,22 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - heading "Tallow Ward" [level=1] [ref=e5]
+    - generic [ref=e6]: connected
+  - generic [ref=e8]:
+    - generic [ref=e9]: WASD move · Space jump · Shift sprint
+    - generic [ref=e10]: Left click break · Right click place
+    - generic [ref=e11]: 1–9 pick block · F fly · Esc release
+  - generic [ref=e12]:
+    - generic [ref=e13]: plank
+    - generic [ref=e14]: stone
+    - generic [ref=e15]: cobble
+    - generic [ref=e16]: brick
+    - generic [ref=e17]: plaster
+    - generic [ref=e18]: timber
+    - generic [ref=e19]: roof
+    - generic [ref=e20]: glass
+    - generic [ref=e21]: lantern
+  - generic [ref=e23] [cursor=pointer]:
+    - heading "Tallow Ward" [level=2] [ref=e24]
+    - paragraph [ref=e25]: Three people run this district and none of them like the arrangement. Everything you can see is voxels — dig it out, build on it, and they will notice.
+    - paragraph [ref=e26]: Click to enter

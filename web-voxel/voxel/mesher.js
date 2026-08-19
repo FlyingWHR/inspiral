@@ -12,7 +12,23 @@
  * Ambient occlusion is deliberately NOT baked per-vertex here: it would have to
  * enter the merge key and would shatter every large quad. The renderer gets its
  * AO from the screen-space GTAO pass instead, which costs nothing per-vertex.
+ *
+ * Two cheap tricks carry most of the look, and neither costs a texture:
+ *  - Faces are shaded by which way they point. A lit top, mid-tone sides and a
+ *    dark underside is what stops a voxel world reading as flat coloured soup.
+ *  - Each merged quad gets a small deterministic tint offset, so a long wall is
+ *    a run of slightly different panels instead of one poster-paint rectangle.
  */
+
+/** Directional shading: +Y, -Y, +X/-X, +Z/-Z. */
+const FACE_LIGHT = { px: 0.86, nx: 0.74, py: 1.0, ny: 0.5, pz: 0.93, nz: 0.66 };
+
+/** Stable per-quad jitter in [-1,1] from its position, so it never shimmers. */
+function jitter(x, y, z) {
+  let h = (x * 374761393 + y * 668265263 + z * 2147483647) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return (((h ^ (h >>> 16)) >>> 0) / 4294967296) * 2 - 1;
+}
 
 import { CHUNK } from "./chunk.js";
 import { colorOf, isSolid } from "./blocks.js";
@@ -111,9 +127,14 @@ export function meshChunk(sample, ox, oy, oz) {
           for (let k = 0; k < 4; k++) normals.push(...nrm);
 
           const hex = colorOf(id);
-          const r = ((hex >> 16) & 255) / 255;
-          const g = ((hex >> 8) & 255) / 255;
-          const bl = (hex & 255) / 255;
+          const axis = d === 0 ? "x" : d === 1 ? "y" : "z";
+          const shade = FACE_LIGHT[(flip ? "n" : "p") + axis];
+          // ±5% per quad. Enough to break up a flat wall, not enough to read
+          // as noise.
+          const tint = shade * (1 + jitter(p0[0], p0[1], p0[2]) * 0.05);
+          const r = (((hex >> 16) & 255) / 255) * tint;
+          const g = (((hex >> 8) & 255) / 255) * tint;
+          const bl = ((hex & 255) / 255) * tint;
           for (let k = 0; k < 4; k++) colors.push(r, g, bl);
 
           if (flip) indices.push(base, base + 2, base + 1, base, base + 3, base + 2);

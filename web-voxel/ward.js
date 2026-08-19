@@ -68,21 +68,52 @@ export function generateWard(world, { seed = 1, radius = 44 } = {}) {
   const noise = makeNoise(seed);
 
   // --- terrain -------------------------------------------------------------
+  // Three octaves rather than two, and the surface material comes from its own
+  // noise field, so the ground is not one flat green disc with contour rings
+  // stamped on it.
+  const damp = makeNoise(seed + 7717);
   for (let x = -radius; x <= radius; x++) {
     for (let z = -radius; z <= radius; z++) {
       const r = Math.hypot(x, z);
-      // Gentle rolling ground, flattened to a level pad inside the plaza.
-      const roll = (noise(x / 18, z / 18) - 0.5) * 6 + (noise(x / 7, z / 7) - 0.5) * 1.6;
-      const flatten = Math.min(1, Math.max(0, (r - PLAZA_R) / 12));
+      const roll =
+        (noise(x / 26, z / 26) - 0.5) * 9 +
+        (noise(x / 11, z / 11) - 0.5) * 3.4 +
+        (noise(x / 4.5, z / 4.5) - 0.5) * 1.3; // ragged edges beat clean rings
+      const flatten = Math.min(1, Math.max(0, (r - PLAZA_R) / 14));
       let top = Math.round(GROUND + roll * flatten);
 
       const inPlaza = r <= PLAZA_R;
       if (inPlaza) top = GROUND;
 
+      // Material zones: damp low ground goes to mud and sand, high dry ground
+      // goes stony, the rest is grass.
+      const wet = damp(x / 21, z / 21);
+      let surface = B.grass;
+      if (!inPlaza) {
+        const rise = top - GROUND;
+        // Grass is the default; the others are accents, not the ground cover.
+        if (rise <= -4 && wet > 0.62) surface = B.sand;
+        else if (rise <= -3 && wet > 0.5) surface = B.dirt;
+        else if (rise >= 4 && wet < 0.4) surface = B.stone;
+        else if (wet < 0.22) surface = B.dirt; // scrubby patches
+      } else {
+        surface = B.cobble;
+      }
+
       for (let y = top; y > top - 4; y--) {
-        world.set(x, y, z, y === top ? (inPlaza ? B.cobble : B.grass) : B.dirt);
+        world.set(x, y, z, y === top ? surface : B.dirt);
       }
       for (let y = top - 4; y >= 0; y--) world.set(x, y, z, B.stone);
+    }
+  }
+
+  // A worn path from the gate to the plaza, because everyone walks it.
+  for (let z = -radius + 4; z <= -PLAZA_R + 1; z++) {
+    const wobble = Math.round((noise(z / 9, 41) - 0.5) * 4);
+    for (let dx = -2; dx <= 2; dx++) {
+      const x = wobble + dx;
+      const y = world.heightAt(x, z);
+      if (y !== null) world.set(x, y, z, Math.abs(dx) === 2 ? B.dirt : B.cobble);
     }
   }
 

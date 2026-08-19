@@ -12,6 +12,14 @@ API key. Nothing is mocked up or composited: every frame is the running app.
 | `05-minted-npc-in-world.png` | Halric Vaas, Wharfmaster, seconds after being minted — standing in the plaza with his own body, alongside the seeded cast and the visitor. |
 | `06-chat-surface-same-canon.png` | `npm run chat` attached to the **same running world**: same cast including the minted Halric Vaas, same visitor, and the same event id `evt_mmn6gow0_0037` with the same resolved receipt. Two surfaces, one canon. Real terminal output, rendered to PNG for legibility. |
 
+## Voxel ward (`npm run voxel`)
+
+| File | What it shows |
+| ---- | ------------- |
+| `07-voxel-ward-aerial.png` | The whole ward as voxels: three buildings, crenellated wall, cobble plaza, the well, and the worn path in from the gate. 100k voxels, ~9k triangles after greedy meshing. Faces are shaded by which way they point and each merged quad is tinted slightly differently — that is what stops it reading as flat coloured soup, and it costs no textures. |
+| `08-voxel-first-person.png` | Eye level. Sera Vance outside the Ledger, nameplate readable, the lit and shaded faces of the building clearly different. |
+| `09-voxel-dig-and-build.png` | A doorway torn straight through the Ledger's wall, with a mismatched plank patch where blocks were put back. Everything visible is real voxel data. A burst of edits like this becomes one `terrain_altered` event in the same append-only log the cast cites. |
+
 ## Honest notes
 
 - The camera in 02, 03 and 05 was moved from the default — the same drag/scroll
@@ -21,3 +29,9 @@ API key. Nothing is mocked up or composited: every frame is the running app.
 - The dialogue is rule-based mock prose and repeats over long runs. That is the
   placeholder, not a rendering problem — see README > "Placeholder: the Minds
   host".
+- The voxel ward is flat-shaded with no textures. That is deliberate — a texture
+  pipeline was out of scope — so it reads as early-Minecraft rather than
+  Teardown. Face shading and per-quad tint are doing all the work.
+- Terrain still terraces where the ground rises steeply. Three octaves of noise
+  made the contours ragged rather than concentric, which is most of the fix
+  available without a smarter heightfield.

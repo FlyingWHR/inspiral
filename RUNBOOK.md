@@ -32,6 +32,21 @@ npm test                    # 56 passing -- sanity check
 Two terminals and a browser. Terminal A runs the world, terminal B runs the text
 surface, the browser shows the ward.
 
+**Which surface each shot uses.** There are two visual surfaces and they are
+filmed on different ports. Shots 1–5 are the three.js ward, which is the older
+and safer one. Shot 6 is the voxel ward and is the closing beat.
+
+| Shot | Surface | Command | Port |
+| ---- | ------- | ------- | ---- |
+| 1 the pitch | terminal | `npm run demo` | — |
+| 2 the ward | three.js | `npm run world` | 8787 |
+| 3 the money shot | three.js | (same window) | 8787 |
+| 4 mint on camera | three.js | (same window) | 8787 |
+| 5 second surface | terminal | `npm run chat` | attaches to 8787 |
+| 6 closing beat | **voxel** | `npm run voxel` | **8788** |
+
+Both can run at once — different ports, different databases, no conflict.
+
 Useful controls while filming:
 
 | Control | Effect |
@@ -102,7 +117,7 @@ the single most important frame in the video.
 Say: *"He is not improvising. Those are event ids, resolved live against the
 log. The world remembered a choice you made five days ago."*
 
-### Shot 4 — mint a character on camera (0:40–0:52)
+### Shot 4 — mint a character on camera (0:40–0:48)
 
 **Mint a character…** → the textarea is pre-filled with Halric Vaas. Edit the
 name to something the audience picks, then **Mint into the ward**.
@@ -113,7 +128,7 @@ history predates him.
 Say: *"Paste a character sheet, get an inhabitant. He inherits canon he was
 never part of."*
 
-### Shot 5 — the engine is not the world (0:52–1:00)
+### Shot 5 — the engine is not the world (0:48–0:56)
 
 Terminal B, with the world still running:
 
@@ -127,25 +142,39 @@ citations. Put the terminal beside the browser.
 Say: *"Same world, second surface, no engine. The simulation is not the
 renderer — swapping the display costs one file."*
 
-### Shot 6 — optional: the voxel ward (add ~15s, or swap for shot 2)
+### Shot 6 — the closing beat: it is a world you can take apart (0:56–1:00)
+
+Terminal C, before you start filming:
 
 ```bash
-npm run voxel        # http://localhost:8788
+npm run voxel -- --every 10 --warm 20     # http://localhost:8788
 ```
 
-Click to enter, then it is Minecraft controls: **WASD**, mouse look, **Space**
-to jump, **left click** to break, **right click** to place, **1–9** to pick a
-block. Walk up to the almshouse and chew a doorway through the wall.
+Click **Click to enter** to take the pointer. Then it is Minecraft controls:
+**WASD**, mouse look, **Space** jump, **Shift** sprint, **left click** break,
+**right click** place, **1–9** pick a block, **F** fly, **Esc** to release the
+pointer.
 
-Say: *"The world is real voxels, so you can take it apart. And when you do, it
-goes into the same log — the almoner knows you knocked a hole in her wall."*
+Walk from the gate up the worn path into the plaza, past the cast. Then walk to
+the Ledger and chew a doorway through its wall. Put two planks back in the hole
+so both verbs are on camera.
 
-The terminal running `npm run voxel` prints the event as you dig:
-`terrain: tore out 6 blocks and put up 2 at almshouse (evt_…)`.
+Say: *"Under it this is a real voxel grid — chunked storage, greedy meshing, the
+lot. So you can take the world apart. And when you do, the almoner finds out."*
 
-**Filming note:** the voxel surface is newer than the three.js ward. If anything
-misbehaves on the day, `npm run world` is the safe one and shots 1–5 do not
-depend on the voxel build at all.
+Cut to Terminal C as you dig. It prints:
+
+```
+terrain: Wren tore out 6 blocks and put up 2 at kiln row (evt_…)
+```
+
+Say: *"Same append-only log. The thing you did to the wall is now a thing they
+can bring up."*
+
+**If two of you are filming:** open `http://localhost:8788` in a second browser
+window. The two windows are two different fans — one is Wren, the other is Ash —
+with separate standing and separate memories. The HUD tells each of them who
+they are.
 
 ---
 
@@ -156,7 +185,9 @@ depend on the voxel build at all.
 | The return greeting has no citation | The visitor left too recently. Leave, wait ~30s, come back. Citations need history to have happened while you were away. |
 | Beats feel slow | `npm run world -- --every 3`. Beats queue and stage one at a time by design. |
 | The browser tab was backgrounded and everything froze | `requestAnimationFrame` throttles in background tabs. Front the tab; it resumes. |
-| You want a clean slate | Restart `npm run world`. The world is in memory unless you pass `--persist`. |
+| You want a clean slate | Restart `npm run world` or `npm run voxel`. Both are in memory unless you pass `--persist`. |
+| Which host is live? | The terminal banner says `HOST RUNTIME: MOCK` or `MINDS`, and the browser HUD says the same. It is never a guess. |
+| An NPC is standing still in the voxel ward | You probably walled them in. They re-plan, and give up rather than walk through it. Dig the wall back out. |
 | You want the same run twice | It already is: `--seed 1` is the default and is deterministic. |
 | Port 8787 is taken | `npm run world -- --port 9000`, then `npm run chat -- --port 9000`. |
 | No browser at all | `npm run chat -- --solo` runs a private world entirely in the terminal. |
@@ -168,4 +199,6 @@ npm run demo -- --days 10 --verbose     # longer, with every line of dialogue
 npm run world -- --every 6 --warm 24    # tick cadence (s) and pre-run ticks
 npm run world -- --persist              # write ./data/world.db instead of memory
 npm run chat -- --solo                  # text surface, private world, no browser
+npm run voxel -- --every 10 --warm 20   # voxel ward, tick cadence and pre-run
+npm run clock:status                    # how much real history has accumulated
 ```

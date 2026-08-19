@@ -24,6 +24,13 @@ npm run world        # the 3D ward -> http://localhost:8787
 npm run voxel        # the VOXEL ward, first person -> http://localhost:8788
 ```
 
+And one that is meant to never stop:
+
+```bash
+npm run clock        # tick the REAL on-disk ward, forever
+npm run clock:status # how much history has actually accumulated
+```
+
 No API key. No account. No network. No build step, no bundler. See
 [SETUP.md](SETUP.md), and [RUNBOOK.md](RUNBOOK.md) for the 60-second demo shot
 list.
@@ -251,6 +258,46 @@ section is still **pending the API key** — see "Placeholder" below.
   calls it. The tick loop is pull-based.
 - **The `qc` lane is wired and unused.** Nothing currently checks whether the
   world has drifted out of tone.
+
+---
+
+## The clock
+
+Every other entry point manufactures six world-days in two seconds against an
+in-memory database. That is fine for a demo and worthless as evidence. The
+pitch is that a district accumulates history whether or not anyone is watching,
+and elapsed time is the one thing that cannot be compressed afterwards — so
+there is a process whose whole job is to be boring for a week.
+
+`npm run clock` ticks `data/canon.db` on **real wall-clock time**, so events
+carry the actual moment they happened and the log is checkable against a
+calendar rather than a seed.
+
+| | |
+| --- | --- |
+| Cadence | one tick every 180 min ≈ 8/day, under the ~12/day invocation budget, leaving headroom for visitors |
+| Storage | on disk, append-only, enforced by SQLite triggers |
+| Restart | all state is in the database; stopping loses nothing but the gap |
+| Safety | the file is copied to `data/backups/` on every boot (last 12 kept) |
+| Concurrency | a lock file refuses a second clock, so pacing and budget stay honest |
+
+```
+$ npm run clock:status
+  clock          RUNNING
+  days elapsed   0.00   (0.0 h of real time)
+  log spans      0.86 days
+  ticks          3
+  events         10
+```
+
+To keep it running across logout and reboot, install the LaunchAgent — it is
+written but deliberately **not** installed, because it touches your login
+session:
+
+```bash
+cp ops/com.inspiral.clock.plist ~/Library/LaunchAgents/
+launchctl load -w ~/Library/LaunchAgents/com.inspiral.clock.plist
+```
 
 ---
 

@@ -5,6 +5,7 @@ dist/
 *.db-wal
 *.db-shm
 data/
+*.clock.lock
 .env
 .env.*
 !.env.example

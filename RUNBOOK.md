@@ -3,6 +3,24 @@
 Everything below runs on the mock host. **No API key, no network, no build
 step.** Same seed, same history, so you can rehearse a shot and get it again.
 
+## The clock must already be running
+
+The strongest thing in the submission is history nobody watched accumulate, and
+it cannot be faked on the day. Check it days ahead, and again before you film:
+
+```bash
+npm run clock:status     # want: clock RUNNING, days elapsed climbing
+```
+
+If it says `not running`:
+
+```bash
+nohup npm run clock -- --every 180 --budget 12 > data/clock.log 2>&1 &
+```
+
+Never point a demo at `data/canon.db`. The demos are in-memory by design; the
+clock's database is the one artefact in this repo that cannot be regenerated.
+
 ## Before you record
 
 ```bash

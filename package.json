@@ -12,6 +12,8 @@
     "demo:reset": "node --env-file-if-exists=.env --import tsx scripts/demo.ts --reset",
     "world": "node --env-file-if-exists=.env --import tsx scripts/world.ts",
     "voxel": "node --env-file-if-exists=.env --import tsx scripts/voxel.ts",
+    "clock": "node --env-file-if-exists=.env --import tsx scripts/clock.ts",
+    "clock:status": "node --env-file-if-exists=.env --import tsx scripts/clock-status.ts",
     "chat": "node --env-file-if-exists=.env --import tsx scripts/chat.ts",
     "tick": "node --env-file-if-exists=.env --import tsx scripts/tick.ts",
     "canon": "node --env-file-if-exists=.env --import tsx scripts/canon.ts",

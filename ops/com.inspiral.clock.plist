@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Keeps the ward ticking across logout and reboot.
+
+  NOT installed automatically -- this touches your login session, so it is your
+  call. To turn it on:
+
+    cp ops/com.inspiral.clock.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.inspiral.clock.plist
+
+  To turn it off:
+
+    launchctl unload -w ~/Library/LaunchAgents/com.inspiral.clock.plist
+
+  Stop any clock you started by hand first -- the lock file will refuse the
+  second one, which is the safe failure, but you will wonder why it is dead.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.inspiral.clock</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>cd /Users/flyingw/ProjectW/Inspiral &amp;&amp; exec npm run clock -- --every 180 --budget 12</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/flyingw/ProjectW/Inspiral</string>
+
+  <!-- Restart if it ever dies, and start at login. -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/flyingw/ProjectW/Inspiral/data/clock.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/flyingw/ProjectW/Inspiral/data/clock.log</string>
+</dict>
+</plist>

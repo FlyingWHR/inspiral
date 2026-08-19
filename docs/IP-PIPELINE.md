@@ -21,23 +21,34 @@ Handles in, living cast out: reads a source, compiles an IP bible, shows the
 owner the draft, seeds a world through the existing seed path, then runs three
 world ticks and prints what the cast does. ~3 seconds, no key, no network.
 
-Then make it react to something you just posted:
+Then post something real and watch the ward pick it up, within one tick:
 
 ```bash
-cat > fixtures/tradeclash/drop.md <<'EOF'
-item_id: tc_post_099
-ts: 2026-01-18T09:00:00.000Z
-actors: ferrox, cindra
-arc_id: arc_tariff_spiral
-significance: 0.9
-
-Ferrox announced the grain duty would rise again in spring and read the
-tonnage out loud, twice, so the record would have it.
-EOF
-
-npm run ingest -- --fixture tradeclash --once --tick
-rm fixtures/tradeclash/drop.md
+npm run ingest -- --fixture tradeclash --tick \
+  --post "Okuma raised the strait toll a second time, on twelve hours' notice, and published the schedule after the convoys had already sailed." \
+  --actors okuma,ferrox --arc arc_strait_toll
 ```
+
+```
+posted -> fixtures/tradeclash/drop_20260819112321.md
+ingested 1  [evt_mt006iec_0001] Okuma raised the strait toll a second time...
+
+--- tick ---
+    Chancellor Ferrox [confront -> Director Okuma]
+      "Director Okuma."
+      "says the thing out loud, in front of witnesses, and does not soften it"
+      "Okuma raised the strait toll a second time, on twelve hours' notice, and
+       published the schedule after the convoys had already sailed."
+      (cites evt_mt006iec_0001)
+```
+
+`--post` writes the same markdown file a person would drop in by hand; it just
+saves you a heredoc on camera. Dropped files are gitignored — delete them
+between takes, or `--reset` the world.
+
+Covered end to end by `tests/ip-demo-beat.test.ts`, which replays exactly this
+sequence in process and asserts the quote, the citation, and that the cited id
+resolves in the log.
 
 And what the owner gets back:
 
@@ -132,10 +143,12 @@ during a live demo.
 | Implementation | Activates when |
 |---|---|
 | `CliApprovalChannel` | Always available. Prompts on a TTY; **auto-approves when there is no TTY** so CI and the demo never hang. `--reject` proves the gate blocks. |
-| `TelegramApprovalChannel` | `TELEGRAM_BOT_TOKEN` **and** `TELEGRAM_CHAT_ID` are both set. Written against the Bot API over plain `fetch`; **not exercised — nobody has run it against a real bot.** |
+| `TelegramApprovalChannel` | `TELEGRAM_BOT_TOKEN` is set. `TELEGRAM_CHAT_ID` is optional — with none, the chat is taken from whoever messaged the bot last, so the owner never looks their own id up. Bot API over plain `fetch`, no SDK, no webhook. **Wire format, decision mapping, chunking, chat discovery and timeout are covered against a fake API in `tests/ip-telegram.test.ts`; the network hop itself is unproven.** |
 
-A half-configured Telegram (token, no chat id) warns and falls back to the CLI.
-A Telegram review that times out returns **reject**: silence is not consent.
+A Telegram review that times out returns **reject**: silence is not consent. A
+reply containing a JSON object is an edit; any other reply is a rejection with
+that text as the reason, because applying free-text prose to a bible safely is
+not something this can do and pretending otherwise would be worse than saying no.
 
 `onboardIP` calls `seedFrom` on exactly one code path, after the gate. The test
 `NOTHING reaches canon when the owner says no` asserts zero characters, zero
@@ -208,21 +221,22 @@ Asserted in `tests/ip-onboard.test.ts` (`hostCalls === 1`) and
 
 ## Known limits
 
-- **Character-to-character citation is not guaranteed on the very next tick.**
-  The render path cites `relationship.last_event_id`, and `MockHostRuntime`'s
-  bystander directive writes the same edge later in the same batch, overwriting
-  the ingest's note before anything is rendered. Measured across 20 mock seeds: the very
-  next tick quotes and cites the post 6-8 times out of 20; run two or three
-  ticks and it is near-certain. The **visitor-facing** citation is
-  deterministic, because `findGrievance` reads the event log directly and cannot
-  be clobbered. Both are covered by tests. The fix is one condition in the
-  mock's bystander block (skip the delta when its target is the first
-  directive's target) or one line in `renderBehavior` to fall back to
-  `slice.grievance` for character-to-character lines — both files are owned by
-  the surface/host work, so neither was touched here.
-- The Telegram channel is written and typed but has never been run against a
-  real bot. Treat it like `MindsHostRuntime`: the seam is real, the wire is not
-  proven.
+- **The on-camera beat is deterministic, not guaranteed.** The mock is a fixed
+  rule engine, so the shipped sequence (default seed 1, the Trade Clash fixture,
+  the strait-toll post) cites on the first tick every single run — that is what
+  the test pins. Vary the seed and it lands 13 times in 20. Every miss has one
+  cause: the mock's ladder picks `break_alliance`, which is not in the
+  renderer's citing action list (`confront | snub | sabotage`) even though
+  `alliance_broken` is already in its GRIEVABLE set. Adding it there is a
+  one-line change in `src/runtime/character.ts` and would take this to 100%;
+  that file belongs to the surface work, so it was not touched.
+  (An earlier version also lost the citation to the mock's bystander directive
+  overwriting the relationship edge mid-batch. Aiming the post at the
+  okuma/ferrox arc removes that entirely — the bystander is then always the
+  third character, and writes a different edge.)
+- The Telegram channel has never touched the real api.telegram.org. Treat it
+  like `MindsHostRuntime`: the seam is real and now the message shapes are
+  tested, but the network hop is not proven.
 - An edit at the gate is applied once and committed; there is no second review
   round. An edit that fails validation is dropped whole rather than half-applied.
 - `hints.json` is doing work a real Mind would have to do on a real account. The

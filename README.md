@@ -405,10 +405,15 @@ Everything above builds a world by hand. The inbound/outbound pipeline builds on
 out of an existing IP and keeps it fed.
 
 ```bash
-npm run onboard -- --fixture tradeclash --reset --play 3   # handles in, living cast out
-npm run ingest  -- --fixture tradeclash --once --tick      # a new post becomes news
-npm run digest  -- --fixture tradeclash --hours 100000     # the showrunner's note
-npm run clips   -- --fixture tradeclash --hours 100000     # postable drafts, never posted
+# handles in, living cast out
+npm run onboard -- --fixture tradeclash --reset
+
+# post something real; within one tick the cast quotes it and cites it
+npm run ingest -- --fixture tradeclash --tick --actors okuma,ferrox \
+  --arc arc_strait_toll --post "Okuma raised the strait toll a second time."
+
+npm run digest -- --fixture tradeclash --hours 100000   # the showrunner's note
+npm run clips  -- --fixture tradeclash --hours 100000   # drafts, never posted
 ```
 
 Source adapters, the IP bible, the creator approval gate, ingestion into the

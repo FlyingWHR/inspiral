@@ -38,6 +38,11 @@ export const WARD_PLACES: Record<string, SurfacePoint> = {
 /** Anything the browser can ask the world for. `mint` carries a pasted sheet. */
 export interface SurfaceIntent {
   kind: "arrive" | "act" | "leave" | "mint" | "edit";
+  /**
+   * Which fan this came from. Assigned per connection, so two browsers on the
+   * same ward are two different people with separate memories.
+   */
+  visitor?: { id: string; name: string };
   text?: string;
   /** Only present for "edit"; shape is owned by the surface that handles it. */
   edit?: unknown;
@@ -51,6 +56,8 @@ export interface WebSurfaceOptions {
   vendor?: string;
   /** Shared CC0 asset root, served at /assets. One copy, every surface. */
   assets?: string;
+  /** Identities handed out to connections, in order. */
+  visitorPool?: { id: string; name: string }[];
   places?: Record<string, SurfacePoint>;
   /**
    * Which HostRuntime is actually driving this world. Shown in the HUD so it
@@ -123,6 +130,9 @@ export class WebSurface implements SurfaceAdapter {
   private http?: Server;
   private wss?: WebSocketServer;
   private readonly clients = new Set<WebSocket>();
+  /** Which fan each open socket is. Freed when they disconnect. */
+  private readonly identities = new Map<WebSocket, { id: string; name: string }>();
+  private readonly pool: { id: string; name: string }[];
 
   /** Enough state that a browser opened on day 4 sees a populated ward. */
   private readonly actors = new Map<string, { actor: SurfaceActor; at: SurfacePoint }>();
@@ -137,6 +147,12 @@ export class WebSurface implements SurfaceAdapter {
     this.places = { ...(opts.places ?? WARD_PLACES) };
     this.onIntent = opts.onIntent;
     this.hostName = opts.hostName ?? "mock";
+    this.pool = opts.visitorPool ?? [
+      { id: "wren", name: "Wren" },
+      { id: "ash", name: "Ash" },
+      { id: "juno", name: "Juno" },
+      { id: "pell", name: "Pell" },
+    ];
     this.resolveCite = opts.resolveCite;
   }
 
@@ -205,20 +221,27 @@ export class WebSurface implements SurfaceAdapter {
 
     this.wss.on("connection", (sock: WebSocket) => {
       this.clients.add(sock);
+      const me = this.claimIdentity();
+      this.identities.set(sock, me);
       sock.send(
         JSON.stringify({
           t: "hello",
           host: this.hostName,
+          you: me,
           places: this.places,
           actors: [...this.actors.values()],
           recent: this.recent,
         }),
       );
       sock.on("message", (raw: unknown) => {
-        void this.handleIntent(String(raw));
+        void this.handleIntent(String(raw), this.identities.get(sock));
       });
-      sock.on("close", () => this.clients.delete(sock));
-      sock.on("error", () => this.clients.delete(sock));
+      const drop = () => {
+        this.clients.delete(sock);
+        this.identities.delete(sock);
+      };
+      sock.on("close", drop);
+      sock.on("error", drop);
     });
 
     await new Promise<void>((ok) => this.http!.listen(this.port, ok));
@@ -240,7 +263,24 @@ export class WebSurface implements SurfaceAdapter {
     return false;
   }
 
-  private async handleIntent(raw: string): Promise<void> {
+  /** First unused identity in the pool, or a numbered guest if it is full. */
+  private claimIdentity(): { id: string; name: string } {
+    const taken = new Set([...this.identities.values()].map((v) => v.id));
+    const free = this.pool.find((p) => !taken.has(p.id));
+    if (free) return free;
+    const n = taken.size + 1;
+    return { id: `guest_${n}`, name: `Guest ${n}` };
+  }
+
+  /** Everyone currently connected, for a HUD that wants to list the room. */
+  get presentVisitors(): { id: string; name: string }[] {
+    return [...this.identities.values()];
+  }
+
+  private async handleIntent(
+    raw: string,
+    visitor?: { id: string; name: string },
+  ): Promise<void> {
     let msg: { t?: string; text?: string; edit?: unknown };
     try {
       msg = JSON.parse(raw);
@@ -250,13 +290,13 @@ export class WebSurface implements SurfaceAdapter {
     const KINDS = ["arrive", "act", "leave", "mint", "edit"] as const;
     const kind = KINDS.find((k) => k === msg.t);
     if (!kind) return;
-    if (await this.handleIntentHook({ kind, edit: msg.edit })) return;
+    if (await this.handleIntentHook({ kind, edit: msg.edit, ...(visitor ? { visitor } : {}) })) return;
     if (!this.onIntent) return;
     try {
       // Browser text is untrusted and is about to become a host prompt. Cap it.
       // A pasted sheet needs more room than a one-line action.
       const cap = kind === "mint" ? 4000 : 200;
-      await this.onIntent({ kind, text: msg.text?.slice(0, cap) });
+      await this.onIntent({ kind, text: msg.text?.slice(0, cap), ...(visitor ? { visitor } : {}) });
     } catch (e) {
       log.error(`visitor intent failed: ${(e as Error).message}`);
     }

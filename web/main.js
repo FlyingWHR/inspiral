@@ -351,6 +351,7 @@ let beats = [];
 let draining = false;
 let said = 0;
 let hostName = "mock";
+let me = { id: "wren", name: "Wren" };   // replaced by the server on connect
 
 function enqueue(b) {
   beats.push(b);
@@ -449,6 +450,7 @@ function connect() {
     if (m.t === "places") { places = m.places ?? places; return; }
     if (m.t === "hello") {
       hostName = m.host ?? hostName;
+      if (m.you) { me = m.you; note(`You are ${me.name}.`); }
       places = m.places ?? {};
       // Until the first beat lands there is nothing to count, but the ward is
       // connected -- "connecting" would be a lie.
@@ -469,6 +471,7 @@ let visited = false;
 
 btn("btn-arrive").onclick = () => {
   send("arrive");
+  btn("btn-arrive").textContent = `Come back to the ward`;
   visited = true;
   btn("btn-arrive").disabled = true;
   btn("btn-side").disabled = false;

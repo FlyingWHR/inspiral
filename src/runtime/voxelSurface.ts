@@ -31,7 +31,7 @@ export interface VoxelEdit {
 export interface VoxelSurfaceOptions extends WebSurfaceOptions {
   /** Needed to write edits into the log. The surface reads nothing else. */
   repo?: CanonRepo;
-  /** Who to blame for an edit. Defaults to the demo visitor. */
+  /** Fallback identity when an edit arrives without a connection identity. */
   visitorId?: string;
   visitorName?: string;
   /** How long to gather edits before writing one event. */
@@ -63,8 +63,11 @@ export class VoxelSurface extends WebSurface {
   private readonly repo: CanonRepo | undefined;
   private readonly visitorId: string;
   private readonly visitorName: string;
-  /** Edits are chatty; batch them so a minute of digging is one event. */
-  private pending: VoxelEdit[] = [];
+  /**
+   * Edits are chatty; batch them so a minute of digging is one event. Keyed by
+   * fan, so two people digging at once do not get merged into one culprit.
+   */
+  private pending = new Map<string, { who: { id: string; name: string }; edits: VoxelEdit[] }>();
   private readonly batchMs: number;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -81,8 +84,11 @@ export class VoxelSurface extends WebSurface {
   }
 
   /** Called by the transport for any intent it does not handle itself. */
-  onEdit(edit: VoxelEdit): void {
-    this.pending.push(edit);
+  onEdit(edit: VoxelEdit, who?: { id: string; name: string }): void {
+    const fan = who ?? { id: this.visitorId, name: this.visitorName };
+    const bucket = this.pending.get(fan.id) ?? { who: fan, edits: [] };
+    bucket.edits.push(edit);
+    this.pending.set(fan.id, bucket);
     if (this.flushTimer) return;
     this.flushTimer = setTimeout(() => {
       this.flushTimer = undefined;
@@ -98,7 +104,12 @@ export class VoxelSurface extends WebSurface {
    * not have to wait out a timer.
    */
   flushEdits(): void {
-    const edits = this.pending.splice(0);
+    const buckets = [...this.pending.values()];
+    this.pending.clear();
+    for (const b of buckets) this.writeEdits(b.who, b.edits);
+  }
+
+  private writeEdits(who: { id: string; name: string }, edits: VoxelEdit[]): void {
     if (!edits.length || !this.repo) return;
 
     const broke = edits.filter((e) => e.kind === "break").length;
@@ -114,13 +125,13 @@ export class VoxelSurface extends WebSurface {
           : `built ${built} block${built === 1 ? "" : "s"} onto the ward`;
     const where = owner ? ` at ${owner.place.replace(/_/g, " ")}` : " out in the open";
 
-    const actors = [`fan:${this.visitorId}`, ...(owner ? [owner.id] : [])];
+    const actors = [`fan:${who.id}`, ...(owner ? [owner.id] : [])];
     const evt = this.repo.appendEvent({
       source: "visitor",
       actors,
       type: "terrain_altered",
       payload: {
-        summary: `${this.visitorName} ${what}${where}, in front of everyone.`,
+        summary: `${who.name} ${what}${where}, in front of everyone.`,
         blocks: edits.length,
         broke,
         built,
@@ -133,23 +144,23 @@ export class VoxelSurface extends WebSurface {
       // They watched you do it. That is what makes it narratively load-bearing.
       this.repo.adjustRelationship(
         owner.id,
-        this.visitorId,
+        who.id,
         {
           affinity: broke > built ? -Math.min(18, broke) : Math.min(8, built),
           tension: Math.min(20, edits.length),
-          note: `${this.visitorName} ${what} at their ${owner.place.replace(/_/g, " ")}.`,
+          note: `${who.name} ${what} at their ${owner.place.replace(/_/g, " ")}.`,
         },
         evt.event_id,
       );
     }
 
-    log.info(`terrain: ${what}${where} (${evt.event_id})`);
+    log.info(`terrain: ${who.name} ${what}${where} (${evt.event_id})`);
     this.onEvent(evt);
   }
 
   protected override async handleIntentHook(intent: SurfaceIntent): Promise<boolean> {
     if (intent.kind !== "edit" || !intent.edit) return false;
-    this.onEdit(intent.edit as VoxelEdit);
+    this.onEdit(intent.edit as VoxelEdit, intent.visitor);
     return true;
   }
 }

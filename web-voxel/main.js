@@ -283,6 +283,7 @@ let beats = [];
 let draining = false;
 let said = 0;
 let hostName = "mock";
+let me = { id: "wren", name: "Wren" };   // replaced by the server on connect
 const STRUCTURAL = new Set(["spawn", "despawn", "move"]);
 
 function enqueue(b) { beats.push(b); if (!draining) void drain(); }
@@ -352,6 +353,7 @@ function connect() {
     const m = JSON.parse(ev.data);
     if (m.t === "hello") {
       hostName = m.host ?? hostName;
+      if (m.you) { me = m.you; note(`You are ${me.name}.`); }
       if (!said) clockEl.textContent = `${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
       for (const a of m.actors) await addActor(a.actor, a.at);
       for (const b of m.recent.slice(-3)) enqueue(b);

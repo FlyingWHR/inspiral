@@ -19,9 +19,10 @@ import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
 import { startHostRuntime } from "../src/host/index.js";
 import { loadConfig } from "../src/config.js";
-import { runTick, onboardVisitor, visitorAction, type TickContext } from "../src/tick/runTick.js";
+import { runTick, type TickContext } from "../src/tick/runTick.js";
 import { WebSurface } from "../src/runtime/webSurface.js";
 import { mintFromText } from "../src/canon/mint.js";
+import { visitorArrive, visitorDoes, visitorLeaves } from "../src/tick/visitors.js";
 import { NullSurface } from "../src/runtime/surface.js";
 import { VirtualClock, HOUR_MS } from "../src/clock.js";
 import { log } from "../src/log.js";
@@ -38,7 +39,6 @@ const SEED = flag("seed", 1);
 const WARM = flag("warm", 12);
 const DB = argv.includes("--persist") ? "./data/world.db" : ":memory:";
 
-const VISITOR = { id: "wren", name: "Wren" };
 
 async function main(): Promise<void> {
   const clock = new VirtualClock("2026-03-02T08:00:00.000Z");
@@ -60,31 +60,22 @@ async function main(): Promise<void> {
       return { ts: e.ts, summary: typeof summary === "string" ? summary : e.type };
     },
     onIntent: async (intent) => {
+      // Who this is comes from the connection, not a constant: two browsers on
+      // the same ward are two different fans with separate memories.
+      const who = intent.visitor ?? { id: "wren", name: "Wren" };
+
       if (intent.kind === "arrive") {
-        // First visit costs an onboard. A return visit is a different prompt:
-        // the cast already has standing toward this person and history to
-        // complain about, which is the whole point of the loop.
-        const returning = repo.visitorExists(VISITOR.id);
-        surface.spawn({ id: VISITOR.id, name: VISITOR.name, kind: "visitor", home: "gate" });
-        repo.setPresence(VISITOR.id, true);
-        surface.moveTo(VISITOR.id, "plaza");
-        if (returning) {
-          await visitorAction(ctx, VISITOR.id, "returned to the ward after days away");
-        } else {
-          await onboardVisitor(ctx, VISITOR.id, VISITOR.name);
-        }
+        surface.spawn({ id: who.id, name: who.name, kind: "visitor", home: "gate" });
+        const { cached, first } = await visitorArrive(ctx, who);
+        log.info(
+          `${who.name} ${first ? "arrived" : "returned"}` +
+            (cached ? " -- unchanged ward, replayed for free" : ""),
+        );
       } else if (intent.kind === "act" && intent.text) {
-        await visitorAction(ctx, VISITOR.id, intent.text);
+        await visitorDoes(ctx, who, intent.text);
       } else if (intent.kind === "leave") {
-        repo.setPresence(VISITOR.id, false);
-        repo.appendEvent({
-          source: "visitor",
-          actors: [`fan:${VISITOR.id}`],
-          type: "visitor_departed",
-          payload: { summary: `${VISITOR.name} left the ward.` },
-          significance_hint: 0.2,
-        });
-        surface.despawn(VISITOR.id);
+        visitorLeaves(ctx, who);
+        surface.despawn(who.id);
       } else if (intent.kind === "mint" && intent.text) {
         const { sheet } = mintFromText(repo, intent.text);
         surface.spawn({
@@ -94,9 +85,6 @@ async function main(): Promise<void> {
           title: sheet.title,
           home: sheet.home_location,
         });
-        log.info(`minted ${sheet.name} (${sheet.character_id})`);
-        // Tick immediately so the newcomer reacts to canon on camera rather
-        // than standing there until the next scheduled tick.
         await runTick(ctx);
       }
     },

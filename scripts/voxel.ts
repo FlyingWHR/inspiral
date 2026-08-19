@@ -19,10 +19,11 @@ import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld, CHARACTERS } from "../src/canon/seed.js";
 import { startHostRuntime } from "../src/host/index.js";
 import { loadConfig } from "../src/config.js";
-import { runTick, onboardVisitor, visitorAction, type TickContext } from "../src/tick/runTick.js";
+import { runTick, type TickContext } from "../src/tick/runTick.js";
 import { VoxelSurface } from "../src/runtime/voxelSurface.js";
 import { NullSurface } from "../src/runtime/surface.js";
 import { mintFromText } from "../src/canon/mint.js";
+import { visitorArrive, visitorDoes, visitorLeaves } from "../src/tick/visitors.js";
 import { VirtualClock, HOUR_MS } from "../src/clock.js";
 import { log } from "../src/log.js";
 
@@ -38,7 +39,6 @@ const SEED = flag("seed", 1);
 const WARM = flag("warm", 16);
 const DB = argv.includes("--persist") ? "./data/voxel.db" : ":memory:";
 
-const VISITOR = { id: "wren", name: "Wren" };
 
 async function main(): Promise<void> {
   const clock = new VirtualClock("2026-03-02T08:00:00.000Z");
@@ -53,8 +53,6 @@ async function main(): Promise<void> {
     port: PORT,
     hostName: host.name,
     repo,
-    visitorId: VISITOR.id,
-    visitorName: VISITOR.name,
     resolveCite: (id) => {
       const e = repo.getEvent(id);
       if (!e) return undefined;
@@ -62,18 +60,22 @@ async function main(): Promise<void> {
       return { ts: e.ts, summary: typeof summary === "string" ? summary : e.type };
     },
     onIntent: async (intent) => {
+      // Who this is comes from the connection, not a constant: two browsers on
+      // the same ward are two different fans with separate memories.
+      const who = intent.visitor ?? { id: "wren", name: "Wren" };
+
       if (intent.kind === "arrive") {
-        const returning = repo.visitorExists(VISITOR.id);
-        surface.spawn({ id: VISITOR.id, name: VISITOR.name, kind: "visitor", home: "gate" });
-        repo.setPresence(VISITOR.id, true);
-        await (returning
-          ? visitorAction(ctx, VISITOR.id, "returned to the ward after days away")
-          : onboardVisitor(ctx, VISITOR.id, VISITOR.name));
+        surface.spawn({ id: who.id, name: who.name, kind: "visitor", home: "gate" });
+        const { cached, first } = await visitorArrive(ctx, who);
+        log.info(
+          `${who.name} ${first ? "arrived" : "returned"}` +
+            (cached ? " -- unchanged ward, replayed for free" : ""),
+        );
       } else if (intent.kind === "act" && intent.text) {
-        await visitorAction(ctx, VISITOR.id, intent.text);
+        await visitorDoes(ctx, who, intent.text);
       } else if (intent.kind === "leave") {
-        repo.setPresence(VISITOR.id, false);
-        surface.despawn(VISITOR.id);
+        visitorLeaves(ctx, who);
+        surface.despawn(who.id);
       } else if (intent.kind === "mint" && intent.text) {
         const { sheet } = mintFromText(repo, intent.text);
         surface.spawn({

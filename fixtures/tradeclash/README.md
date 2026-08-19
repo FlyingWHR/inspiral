@@ -58,17 +58,34 @@ Full mapping in `src/ip/ingest.ts` (`KIND_EVENT_TYPE`).
 
 ## Dropping a post in live
 
-Any `*.md` file in this directory is one item. This is what the demo uses:
+Any `*.md` file in this directory is one item. The easy way, and what the demo
+uses:
+
+```bash
+npm run ingest -- --fixture tradeclash --tick \
+  --post "Okuma raised the strait toll a second time, on twelve hours' notice, and published the schedule after the convoys had already sailed." \
+  --actors okuma,ferrox --arc arc_strait_toll
+```
+
+That writes `drop_<timestamp>.md` here and ingests it. Within one tick Ferrox
+confronts Okuma, quotes the post, and cites its event id.
+
+By hand, the same thing:
 
 ```
 item_id: tc_post_099
 ts: 2026-01-18T09:00:00.000Z
-actors: ferrox, cindra
-arc_id: arc_tariff_spiral
+actors: okuma, ferrox
+arc_id: arc_strait_toll
+significance: 0.9
 
-Ferrox announced the duty would rise again in spring and read the tonnage out
-loud, twice, so the record would have it.
+Okuma raised the strait toll a second time, on twelve hours' notice, and
+published the schedule after the convoys had already sailed.
 ```
 
-Then `npm run ingest -- --fixture tradeclash --once && npm run tick`. Within one
-tick the cast is quoting it and citing its event id.
+`actors[0]` is whoever did the thing; `actors[1]` is whoever has to live with
+it, and is the one who reacts on the next tick. Point `arc_id` at an open
+storyline or the tick loop will list the news rather than act on it.
+
+Dropped files are gitignored. Delete them between takes, or re-run `onboard`
+with `--reset`.

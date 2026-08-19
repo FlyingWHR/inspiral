@@ -5,13 +5,19 @@
  *   npm run ingest -- --fixture tradeclash --once --tick   # and prove they react
  *   npm run ingest -- --fixture tradeclash --watch --interval 60
  *
+ * Post something real, on camera, and watch the ward pick it up:
+ *
+ *   npm run ingest -- --fixture tradeclash --tick \
+ *     --post "Okuma raised the strait toll a second time, on twelve hours' notice." \
+ *     --actors okuma,ferrox --arc arc_strait_toll
+ *
  * Zero host invocations. The tick that follows costs one, as it always does.
  */
 
 import { CanonRepo } from "../src/canon/repo.js";
 import { loadConfig } from "../src/config.js";
 import { createHostRuntime } from "../src/host/index.js";
-import { createSource } from "../src/ip/source.js";
+import { createSource, writeFixtureItem } from "../src/ip/source.js";
 import { ingestOnce, ingestLoop } from "../src/ip/ingest.js";
 import { runTick, type TickContext } from "../src/tick/runTick.js";
 import { ConsoleSurface } from "../src/runtime/surface.js";
@@ -65,6 +71,18 @@ async function main(): Promise<void> {
     process.on("SIGTERM", stop);
     setInterval(() => {}, 1 << 30);
     return;
+  }
+
+  // --post writes the same markdown file a person would drop in by hand.
+  const post = arg("post");
+  if (post) {
+    const written = writeFixtureItem(fixture ?? spec!, {
+      text: post,
+      ...(arg("actors") ? { actors: arg("actors")!.split(/[,\s]+/).filter(Boolean) } : {}),
+      ...(arg("arc") ? { arc_id: arg("arc")! } : {}),
+      significance: Number(arg("significance") ?? 0.9),
+    });
+    console.log(`posted -> ${written.path}`);
   }
 
   const r = await ingestOnce(repo, source);

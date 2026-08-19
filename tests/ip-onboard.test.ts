@@ -8,7 +8,6 @@ import { WorldEvent } from "../src/types/events.js";
 import {
   CliApprovalChannel,
   MemoryApprovalChannel,
-  createApprovalChannel,
   applyPatch,
 } from "../src/approval/index.js";
 import {
@@ -152,14 +151,7 @@ describe("the approval gate", () => {
     expect(lines.join("\n")).toContain("b");
   });
 
-  it("falls back to the CLI when Telegram is half-configured", () => {
-    expect(createApprovalChannel({ TELEGRAM_BOT_TOKEN: "x" } as NodeJS.ProcessEnv).name).toBe("cli");
-    expect(createApprovalChannel({} as NodeJS.ProcessEnv).name).toBe("cli");
-    expect(
-      createApprovalChannel({ TELEGRAM_BOT_TOKEN: "x", TELEGRAM_CHAT_ID: "1" } as NodeJS.ProcessEnv)
-        .name,
-    ).toBe("telegram");
-  });
+  // Channel selection is covered end to end in ip-telegram.test.ts.
 
   it("patches shallowly", () => {
     expect(applyPatch({ a: 1, b: 2 }, { b: 3 })).toEqual({ a: 1, b: 3 });
@@ -167,8 +159,11 @@ describe("the approval gate", () => {
 });
 
 describe("onboarding, end to end", () => {
+  // A sandbox, not ./fixtures: a post dropped in on camera lives in the real
+  // directory and must not be able to change what these tests see.
+  const root = fixtureSandbox();
   const opts = (repo: CanonRepo, approval: MemoryApprovalChannel) => ({
-    source: createSource("fixture:tradeclash"),
+    source: createSource("fixture:tradeclash", root),
     repo,
     approval,
     host: new MockHostRuntime({ seed: 1 }),
@@ -249,7 +244,7 @@ describe("onboarding, end to end", () => {
   it("works with no host at all", async () => {
     const repo = world();
     const r = await onboardIP({
-      source: createSource("fixture:creator"),
+      source: createSource("fixture:creator", root),
       repo,
       approval: new MemoryApprovalChannel(),
     });

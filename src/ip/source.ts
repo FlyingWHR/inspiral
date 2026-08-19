@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 
 /**
@@ -164,6 +164,34 @@ export class FixtureSource implements IPSource {
       );
     });
   }
+}
+
+/**
+ * Write one markdown item into a fixture -- "you post something real".
+ *
+ * This is the same file a person would drop in by hand; `npm run ingest --post`
+ * just saves them the heredoc on camera. Returns the path so the caller can say
+ * where it went (and delete it afterwards).
+ */
+export function writeFixtureItem(
+  fixtureName: string,
+  item: { text: string; actors?: string[]; arc_id?: string; significance?: number; ts?: string },
+  root: string = FIXTURE_ROOT,
+): { path: string; item_id: string } {
+  const ts = item.ts ?? new Date().toISOString();
+  const item_id = `drop_${ts.replace(/[^0-9]/g, "").slice(0, 14)}`;
+  const header = [
+    `item_id: ${item_id}`,
+    `ts: ${ts}`,
+    ...(item.actors?.length ? [`actors: ${item.actors.join(", ")}`] : []),
+    ...(item.arc_id ? [`arc_id: ${item.arc_id}`] : []),
+    ...(item.significance !== undefined ? [`significance: ${item.significance}`] : []),
+  ].join("\n");
+  const dir = join(root, fixtureName);
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, `${item_id}.md`);
+  writeFileSync(path, `${header}\n\n${item.text.trim()}\n`);
+  return { path, item_id };
 }
 
 /** `key: value` lines before the first blank line. Everything after is body. */

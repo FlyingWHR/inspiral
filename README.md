@@ -447,8 +447,27 @@ rejects it, and `startHostRuntime` warns and falls back to mock. Only the mock
 failing is treated as a real bug.
 
 Nothing downstream of the seam knows a vendor exists: the validator, canon, tick
-loop, character runtime and all three surfaces are host-agnostic and unchanged
-by the swap.
+loop, character runtime, the IP pipeline and all four surfaces are host-agnostic
+and unchanged by the swap. All eleven entry points go through
+`startHostRuntime()`.
+
+### What is waiting on the key
+
+| | |
+| --- | --- |
+| `MindsHostRuntime` has never completed a call | Wired, typed and provably reachable — a key in `.env` gets a real HTTP 400 from the Builder API — but no response has ever come back. Prompt shape, latency and whether the JSON survives the validator are unknown until a real key runs a tick. |
+| The accumulating history is mock-authored | The clock has been running since 19 Aug. Real elapsed time, real event ids, real relationship drift — rule-based prose. Restarting it against a live Mind is one command, but every hour that passes is an hour of the week that stays mock. |
+| Two fans taking opposite sides get identical standing | The mock applies the same directive regardless of pledge text. The records are genuinely independent (a test proves one fan acting leaves the other unmoved); making the two sides *differ* needs the real Mind. |
+| Onboarding enrichment is discarded | `npm run onboard` calls the host once to enrich the bible and currently throws the result away, because the mock has nothing useful to add. With a key it becomes the step that turns thin handles into a real cast. |
+| `budgetRemaining()` / cognition metering | Implemented against the client library, never exercised. |
+
+### What is waiting on something other than the key
+
+| | |
+| --- | --- |
+| Social source adapters (`x:`, `youtube:`, …) | Deliberate stubs that **throw**, because no API access method has been chosen. A stub returning `[]` would let a broken integration look like a quiet one. Fixtures are the real, default path. |
+| `fixtures/tradeclash` | Entirely invented placeholder content. Its README lists the exact fields to replace with the real game's. |
+| Telegram approval | Real code, activates on `TELEGRAM_BOT_TOKEN` alone, tested against a fake transport. Needs a bot token, not a Minds key. |
 
 ---
 

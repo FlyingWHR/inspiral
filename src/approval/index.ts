@@ -11,9 +11,9 @@ import { log } from "../log.js";
  * misreads someone's account and confidently writes it into their world.
  *
  * One interface, two implementations. The CLI one works today with zero setup.
- * The Telegram one activates when TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are
- * both present and is otherwise never constructed -- the factory falls back
- * rather than half-starting.
+ * The Telegram one activates on TELEGRAM_BOT_TOKEN alone -- TELEGRAM_CHAT_ID is
+ * optional and is otherwise discovered from whoever messaged the bot last. With
+ * no token the factory never constructs it at all.
  */
 
 export type Decision =
@@ -128,6 +128,18 @@ export class CliApprovalChannel implements ApprovalChannel {
 
 const TG_LIMIT = 4000;
 
+/** Just enough of the Bot API to be swappable in tests. */
+export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string }) => Promise<{ json(): Promise<unknown> }>;
+
+export interface TelegramOptions {
+  token: string;
+  /** Omit and it is discovered from the first person who messages the bot. */
+  chatId?: string;
+  timeoutMs?: number;
+  /** Injected in tests so the wire format is covered without a live bot. */
+  fetchImpl?: FetchLike;
+}
+
 /**
  * Bot API over plain fetch. No SDK, no webhook, no server: long-polls
  * getUpdates only while a review is actually outstanding, so it costs nothing
@@ -140,33 +152,71 @@ const TG_LIMIT = 4000;
  */
 export class TelegramApprovalChannel implements ApprovalChannel {
   readonly name = "telegram";
+  private token: string;
+  private chatId: string | undefined;
+  private timeoutMs: number;
+  private fetchImpl: FetchLike;
   private offset = 0;
 
-  constructor(
-    private token: string,
-    private chatId: string,
-    private timeoutMs = 10 * 60_000,
-  ) {}
+  constructor(opts: TelegramOptions) {
+    this.token = opts.token;
+    this.chatId = opts.chatId && opts.chatId !== "" ? opts.chatId : undefined;
+    this.timeoutMs = opts.timeoutMs ?? 10 * 60_000;
+    this.fetchImpl =
+      opts.fetchImpl ??
+      ((url, init) => fetch(url, init) as unknown as Promise<{ json(): Promise<unknown> }>);
+  }
 
   private async api(method: string, body: unknown): Promise<Record<string, unknown>> {
-    const res = await fetch(`https://api.telegram.org/bot${this.token}/${method}`, {
+    const res = await this.fetchImpl(`https://api.telegram.org/bot${this.token}/${method}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
-    return (await res.json()) as Record<string, unknown>;
+    return ((await res.json()) ?? {}) as Record<string, unknown>;
+  }
+
+  private updatesOf(r: Record<string, unknown>): Record<string, unknown>[] {
+    const list = (r.result as Record<string, unknown>[] | undefined) ?? [];
+    for (const u of list) this.offset = Math.max(this.offset, Number(u.update_id) + 1);
+    return list;
+  }
+
+  /**
+   * TELEGRAM_CHAT_ID is a nuisance to look up, so it is optional: the owner
+   * messages the bot once and the id is taken from that. Nothing is ever sent
+   * to a chat that has not spoken to the bot first.
+   */
+  async resolveChatId(): Promise<string> {
+    if (this.chatId) return this.chatId;
+    for (const u of this.updatesOf(await this.api("getUpdates", { offset: this.offset, timeout: 0 }))) {
+      const msg = (u.message ?? u.callback_query) as Record<string, unknown> | undefined;
+      const chat = (msg?.chat ?? (msg?.message as Record<string, unknown> | undefined)?.chat) as
+        | Record<string, unknown>
+        | undefined;
+      if (chat?.id !== undefined) {
+        this.chatId = String(chat.id);
+        return this.chatId;
+      }
+    }
+    throw new Error(
+      "TELEGRAM_BOT_TOKEN is set but no chat is known. Send your bot any message once, " +
+        "or set TELEGRAM_CHAT_ID, then run this again.",
+    );
   }
 
   async notify(text: string): Promise<void> {
+    const chat_id = await this.resolveChatId();
     for (let i = 0; i < text.length; i += TG_LIMIT) {
-      await this.api("sendMessage", { chat_id: this.chatId, text: text.slice(i, i + TG_LIMIT) });
+      await this.api("sendMessage", { chat_id, text: text.slice(i, i + TG_LIMIT) });
     }
   }
 
   async review(req: ReviewRequest): Promise<Decision> {
+    const chat_id = await this.resolveChatId();
     await this.notify(`${req.title}\n\n${req.body}`);
     await this.api("sendMessage", {
-      chat_id: this.chatId,
+      chat_id,
       text: "Approve this, reject it, or reply with a JSON patch to edit it.",
       reply_markup: {
         inline_keyboard: [
@@ -180,11 +230,7 @@ export class TelegramApprovalChannel implements ApprovalChannel {
 
     const deadline = Date.now() + this.timeoutMs;
     while (Date.now() < deadline) {
-      const r = await this.api("getUpdates", { offset: this.offset, timeout: 25 });
-      const updates = (r.result as Record<string, unknown>[] | undefined) ?? [];
-      for (const u of updates) {
-        this.offset = Number(u.update_id) + 1;
-
+      for (const u of this.updatesOf(await this.api("getUpdates", { offset: this.offset, timeout: 25 }))) {
         const cb = u.callback_query as Record<string, unknown> | undefined;
         if (cb) {
           await this.api("answerCallbackQuery", { callback_query_id: cb.id });
@@ -223,13 +269,12 @@ export function createApprovalChannel(
   cli: CliOptions = {},
 ): ApprovalChannel {
   const token = env.TELEGRAM_BOT_TOKEN ?? "";
-  const chatId = env.TELEGRAM_CHAT_ID ?? "";
-  if (token && chatId) {
+  if (token) {
+    const chatId = env.TELEGRAM_CHAT_ID ?? "";
+    if (!chatId)
+      log.info("TELEGRAM_CHAT_ID unset -- the chat will be taken from whoever messaged the bot last.");
     log.info("approval channel: telegram");
-    return new TelegramApprovalChannel(token, chatId);
-  }
-  if (token && !chatId) {
-    log.warn("TELEGRAM_BOT_TOKEN is set but TELEGRAM_CHAT_ID is not -- using the CLI gate.");
+    return new TelegramApprovalChannel({ token, chatId });
   }
   return new CliApprovalChannel(cli);
 }

@@ -189,3 +189,73 @@ describe("the block registry", () => {
     expect(isSolid(BLOCK_IDS.grass)).toBe(true);
   });
 });
+
+// --- the voxel surface writes player edits into canon ------------------------
+// VoxelSurface only loads `ws` inside open(), so constructing one here pulls in
+// no engine and no socket.
+import { VoxelSurface } from "../src/runtime/voxelSurface.js";
+import { freshWorld } from "./helpers.js";
+
+describe("digging the world is a thing that happened", () => {
+  const surfaceOn = (repo: ReturnType<typeof freshWorld>["repo"]) =>
+    new VoxelSurface({ repo, visitorId: "wren", visitorName: "Wren", editBatchMs: 10_000 });
+
+  it("writes one event for a burst of edits, not one per block", () => {
+    const { repo } = freshWorld();
+    const s = surfaceOn(repo);
+    const before = repo.allEvents().length;
+
+    for (let i = 0; i < 7; i++) {
+      s.onEdit({ kind: "break", x: 17 + i, y: 14, z: -9, block: "brick" });
+    }
+    s.flushEdits();
+
+    const fresh = repo.allEvents().slice(before);
+    expect(fresh).toHaveLength(1);
+    expect(fresh[0]!.type).toBe("terrain_altered");
+    expect(fresh[0]!.payload.broke).toBe(7);
+    repo.close();
+  });
+
+  it("blames the character whose patch it happened on, and moves the relationship", () => {
+    const { repo } = freshWorld();
+    const s = surfaceOn(repo);
+    const before = repo.getRelationship("okonkwo", "wren")?.affinity ?? 0;
+
+    // kiln_row sits at x=13,z=-7 in the voxel ward
+    for (let i = 0; i < 5; i++) s.onEdit({ kind: "break", x: 13, y: 14, z: -7, block: "brick" });
+    s.flushEdits();
+
+    const evt = repo.allEvents().at(-1)!;
+    expect(evt.actors).toContain("okonkwo");
+    expect(evt.actors).toContain("fan:wren");
+    expect(String(evt.payload.summary)).toMatch(/kiln row/);
+    // Tearing out his wall does not improve his opinion of you.
+    expect(repo.getRelationship("okonkwo", "wren")!.affinity).toBeLessThan(before);
+    repo.close();
+  });
+
+  it("leaves nobody to blame when it happens out in the open", () => {
+    const { repo } = freshWorld();
+    const s = surfaceOn(repo);
+    s.onEdit({ kind: "place", x: 200, y: 20, z: 200, block: "plank" });
+    s.flushEdits();
+
+    const evt = repo.allEvents().at(-1)!;
+    expect(evt.type).toBe("terrain_altered");
+    expect(evt.actors).toEqual(["fan:wren"]);
+    expect(String(evt.payload.summary)).toMatch(/out in the open/);
+    repo.close();
+  });
+
+  it("is citable: the event resolves out of the append-only log", () => {
+    const { repo } = freshWorld();
+    const s = surfaceOn(repo);
+    s.onEdit({ kind: "break", x: 13, y: 14, z: -7, block: "brick" });
+    s.flushEdits();
+
+    const id = repo.allEvents().at(-1)!.event_id;
+    expect(repo.getEvent(id)).toBeDefined();
+    repo.close();
+  });
+});

@@ -34,6 +34,8 @@ export interface VoxelSurfaceOptions extends WebSurfaceOptions {
   /** Who to blame for an edit. Defaults to the demo visitor. */
   visitorId?: string;
   visitorName?: string;
+  /** How long to gather edits before writing one event. */
+  editBatchMs?: number;
 }
 
 /** Coordinates in, the character whose patch this is. */
@@ -63,6 +65,7 @@ export class VoxelSurface extends WebSurface {
   private readonly visitorName: string;
   /** Edits are chatty; batch them so a minute of digging is one event. */
   private pending: VoxelEdit[] = [];
+  private readonly batchMs: number;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(opts: VoxelSurfaceOptions = {}) {
@@ -74,6 +77,7 @@ export class VoxelSurface extends WebSurface {
     this.repo = opts.repo;
     this.visitorId = opts.visitorId ?? "wren";
     this.visitorName = opts.visitorName ?? "Wren";
+    this.batchMs = opts.editBatchMs ?? 2500;
   }
 
   /** Called by the transport for any intent it does not handle itself. */
@@ -83,14 +87,17 @@ export class VoxelSurface extends WebSurface {
     this.flushTimer = setTimeout(() => {
       this.flushTimer = undefined;
       this.flushEdits();
-    }, 2500);
+    }, this.batchMs);
   }
 
   /**
    * Turn a burst of edits into one world event. NPCs can then cite it like any
    * other thing that happened, because it IS any other thing that happened.
+   *
+   * Public so a caller can force it -- on shutdown, or in a test that should
+   * not have to wait out a timer.
    */
-  private flushEdits(): void {
+  flushEdits(): void {
     const edits = this.pending.splice(0);
     if (!edits.length || !this.repo) return;
 

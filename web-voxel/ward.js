@@ -111,25 +111,23 @@ export function generateWard(world, { seed = 1, radius = 44 } = {}) {
   // --- buildings ------------------------------------------------------------
   for (const b of BUILDINGS) building(world, b);
 
-  // --- a well in the middle of the plaza, so the centre is not empty --------
-  for (let x = -2; x <= 2; x++) {
-    for (let z = -2; z <= 2; z++) {
-      const edge = Math.abs(x) === 2 || Math.abs(z) === 2;
-      if (edge) {
-        world.set(x, GROUND + 1, z, B.cobble);
-        world.set(x, GROUND + 2, z, B.cobble);
-      } else {
-        world.set(x, GROUND, z, AIR);
-        world.set(x, GROUND - 1, z, AIR);
-      }
+  // --- a well in the middle of the plaza -----------------------------------
+  // Small on purpose: at eye level a 5x5 shed blocks half the square.
+  for (let x = -1; x <= 1; x++) {
+    for (let z = -1; z <= 1; z++) {
+      const rim = Math.abs(x) === 1 || Math.abs(z) === 1;
+      if (rim) world.set(x, GROUND + 1, z, B.cobble);
+      else for (let y = GROUND; y > GROUND - 4; y--) world.set(x, y, z, AIR);
     }
   }
-  for (const [x, z] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) {
-    for (let y = GROUND + 3; y <= GROUND + 5; y++) world.set(x, y, z, B.timber);
+  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    world.set(x, GROUND + 2, z, B.timber);
+    world.set(x, GROUND + 3, z, B.timber);
   }
-  for (let x = -2; x <= 2; x++) {
-    for (let z = -2; z <= 2; z++) world.set(x, GROUND + 6, z, B.plank);
+  for (let x = -1; x <= 1; x++) {
+    for (let z = -1; z <= 1; z++) world.set(x, GROUND + 4, z, B.plank);
   }
+  world.set(0, GROUND + 3, 0, B.lantern);
 
   return world;
 }

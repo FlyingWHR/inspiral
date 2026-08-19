@@ -21,6 +21,7 @@ npm install          # once. Node 22+ required (developed on 24.19.0)
 npm test             # 56 tests, headless, no engine, no key
 npm run demo         # the whole loop in your terminal, ~2 seconds, exits 0
 npm run world        # the 3D ward -> http://localhost:8787
+npm run voxel        # the VOXEL ward, first person -> http://localhost:8788
 ```
 
 No API key. No account. No network. No build step, no bundler. See
@@ -262,12 +263,43 @@ implement one `SurfaceAdapter` (`src/runtime/surface.ts`):
 | `ConsoleSurface` | `src/runtime/surface.ts`      | stdout. What `npm run demo` uses.                 |
 | `WebSurface`     | `src/runtime/webSurface.ts`   | three.js in a browser. What `npm run world` uses. |
 | `ChatSurface`    | `src/runtime/chatSurface.ts`  | a terminal. What `npm run chat` uses.             |
+| `VoxelSurface`   | `src/runtime/voxelSurface.ts` | a diggable voxel world in first person. `npm run voxel`. |
 | `MemorySurface`  | `src/runtime/surface.ts`      | collects instead of printing. What the tests use. |
 
 `npm run chat` attaches to the *same running world* as the browser over the same
 socket and replays the *same beats* through the adapter. Two windows, one canon.
 The text surface contains no 3D vocabulary at all — `moveTo` is a sentence, not
 a translation — which is the actual test of whether the seam holds.
+
+### The voxel ward (`npm run voxel`)
+
+A fourth surface, and the one that answers "can I actually play in it". The
+world is a real chunked voxel grid, not a decorative cube field: 32³ chunks in
+typed arrays, greedy meshing (124k voxels collapse to ~10k triangles), a DDA
+raycast for aiming, and swept AABB collision. First person — WASD, mouse look
+under pointer lock, gravity, jump, sprint, fly. Left click breaks, right click
+places, `1`–`9` pick from a nine-block hotbar, and the affected chunk remeshes
+immediately.
+
+The ward is *generated into the grid* from a layout definition, so every wall,
+roof and cobble is diggable. The cast walks that terrain with A* over standable
+surface cells, which means they route around a wall you build and give up rather
+than walk through one you have sealed them behind.
+
+**Digging is narratively load-bearing.** A burst of edits becomes ONE
+`terrain_altered` event in the same append-only log everything else uses, blamed
+on whichever character's patch it happened on, and it moves that relationship.
+Tearing six blocks out of the almshouse is a thing that happened, and the cast
+can cite it.
+
+The voxel core (`web-voxel/voxel/`) imports no renderer at all, so the browser
+loads it with no build step and the test suite imports the same files.
+
+**Not attempted: Teardown-style rigid-body destruction.** That is voxels being
+partitioned into connected components, each becoming a physics body with derived
+mass and inertia, solved every frame. It is engineer-years, no open-source voxel
+engine ships it alongside an entity system, and it is not what makes block
+worlds fun to poke at. Grid destruction is.
 
 ### The engine
 

@@ -109,6 +109,26 @@ citations. Put the terminal beside the browser.
 Say: *"Same world, second surface, no engine. The simulation is not the
 renderer — swapping the display costs one file."*
 
+### Shot 6 — optional: the voxel ward (add ~15s, or swap for shot 2)
+
+```bash
+npm run voxel        # http://localhost:8788
+```
+
+Click to enter, then it is Minecraft controls: **WASD**, mouse look, **Space**
+to jump, **left click** to break, **right click** to place, **1–9** to pick a
+block. Walk up to the almshouse and chew a doorway through the wall.
+
+Say: *"The world is real voxels, so you can take it apart. And when you do, it
+goes into the same log — the almoner knows you knocked a hole in her wall."*
+
+The terminal running `npm run voxel` prints the event as you dig:
+`terrain: tore out 6 blocks and put up 2 at almshouse (evt_…)`.
+
+**Filming note:** the voxel surface is newer than the three.js ward. If anything
+misbehaves on the day, `npm run world` is the safe one and shots 1–5 do not
+depend on the voxel build at all.
+
 ---
 
 ## Fallbacks

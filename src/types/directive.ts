@@ -98,9 +98,24 @@ export const ArcResolve = z.object({
   resolution: z.string().min(1).max(1000),
 });
 
+/**
+ * Visitors are referred to as "fan:<id>" everywhere else in the prompt -- in
+ * `actors`, in `target`, in the narration -- and then this one field wanted the
+ * bare id. A live Mind reliably wrote "fan:wren" here and every visitor
+ * directive was rejected, which broke the whole return-visit beat. Both spellings
+ * denote the same visitor unambiguously, so accept both and normalise. This is
+ * not a loosened schema: the value still has to name a visitor that exists.
+ */
+const FanId = z
+  .string()
+  .min(1)
+  .max(68)
+  .transform((s) => s.replace(/^fan:/, ""))
+  .pipe(z.string().min(1).max(64));
+
 export const VisitorStance = z.object({
   op: z.literal("visitor_stance"),
-  fan_id: z.string().min(1).max(64),
+  fan_id: FanId,
   character_id: z.string().min(1).max(64),
   sentiment: z.number().min(-MAX_STANCE_STEP).max(MAX_STANCE_STEP),
   /** If set, becomes a notable_moment the NPC can cite on a later visit. */

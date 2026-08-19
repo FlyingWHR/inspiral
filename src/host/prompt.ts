@@ -49,6 +49,7 @@ CANON DELTAS (the only way you may change the world)
   {"op":"arc_advance","arc_id":"arc_x","stage_delta":1,"tension":10,"summary":"updated state of play"}
   {"op":"arc_resolve","arc_id":"arc_x","resolution":"how it ended"}
   {"op":"visitor_stance","fan_id":"f1","character_id":"a","sentiment":15,"moment":"what they'll remember","moment_weight":0.8}
+    NOTE: fan_id takes the BARE id ("f1"), not the "fan:f1" form used in target/actors.
   {"op":"character_mood","character_id":"a","mood":"one or two words"}
   {"op":"world_fact","statement":"a durable fact","about":["a"]}
 

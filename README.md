@@ -503,15 +503,37 @@ loop, character runtime, the IP pipeline and all four surfaces are host-agnostic
 and unchanged by the swap. All eleven entry points go through
 `startHostRuntime()`.
 
+### Verified against the live key (20 Aug 2026)
+
+The key works. Auth, `humanId` (parsed straight from the JWT), Mind selection,
+conversations, send/receive and the validator all work end to end. What that
+run taught us:
+
+| | |
+| --- | --- |
+| **Header** | The library sends `X-Api-Key`. The docs' `X-Access-Key` is `LEGACY_` in its own constants — our adapter was already right. |
+| **Latency** | 40s–166s per call, median ~75s, against a 180s timeout. **This is the operational risk**, not correctness. A rejected directive costs a re-prompt, so one visitor action was measured at 363s. |
+| **Response shape** | Wrapped in `<pre>…</pre>` HTML, never a markdown fence. `extractJson` handles it. |
+| **Validator** | Real output survives **unmodified** — a real tick applied on the first try and cited a real event id. |
+| **Cost** | ~2.6 cognition per invocation. Balance also accrues over time, so runway is not simple division. |
+| **Two fans** | Genuinely diverge now: Wren `{okonkwo +22, vance −20}` vs Ash `{okonkwo −22, vance +20}`. The mock gave both the same. |
+
+Two real bugs it exposed, both fixed: the adapter picked `minds[0]` blindly and
+landed on an **overdrawn** Mind whose every reply was a top-up prompt (it now
+prefers a funded Mind and says so loudly); and the prompt calls visitors
+`fan:<id>` everywhere but required the bare id in `visitor_stance.fan_id`, so
+**every visitor directive was rejected**. Both spellings are accepted now.
+
 ### What is waiting on the key
 
 | | |
 | --- | --- |
-| `MindsHostRuntime` has never completed a call | Wired, typed and provably reachable — a key in `.env` gets a real HTTP 400 from the Builder API — but no response has ever come back. Prompt shape, latency and whether the JSON survives the validator are unknown until a real key runs a tick. |
+| ~~`MindsHostRuntime` has never completed a call~~ | **Done.** Verified 20 Aug — see the table above. |
 | The accumulating history is mock-authored | The clock has been running since 19 Aug. Real elapsed time, real event ids, real relationship drift — rule-based prose. Restarting it against a live Mind is one command, but every hour that passes is an hour of the week that stays mock. |
-| Two fans taking opposite sides get identical standing | The mock applies the same directive regardless of pledge text. The records are genuinely independent (a test proves one fan acting leaves the other unmoved); making the two sides *differ* needs the real Mind. |
-| Onboarding enrichment is discarded | `npm run onboard` calls the host once to enrich the bible and currently throws the result away, because the mock has nothing useful to add. With a key it becomes the step that turns thin handles into a real cast. |
-| `budgetRemaining()` / cognition metering | Implemented against the client library, never exercised. |
+| ~~Two fans taking opposite sides get identical standing~~ | **Done.** They diverge on the live host. |
+| ~~Onboarding enrichment is discarded~~ | **Done, and it is the headline.** On the un-hinted `creator` fixture the mock produces 0 story arcs, empty goals and a metadata summary; the Mind produces 2 named arcs, real goals, and an authored premise and tone. That is "compiles your IP" becoming "learns your IP". Note the `tradeclash` fixture ships a complete `hints.json`, so enrichment has nothing to add there — it is the wrong fixture to demo this with. |
+| ~~`budgetRemaining()` / cognition metering~~ | **Done.** Returns real numbers and now drives Mind selection. |
+| Clock on the live host | **Deliberately not switched.** Cost is fine (~2.6/invocation) but median 75s latency and the rejection-retry tail need a decision — see below. |
 
 ### What is waiting on something other than the key
 

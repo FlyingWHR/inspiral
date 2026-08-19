@@ -313,3 +313,64 @@ describe("repair prompt", () => {
     expect(p.toLowerCase()).toContain("json only");
   });
 });
+
+describe("visitor ids are accepted in both spellings", () => {
+  // A live Mind writes "fan:wren" here because that is how the prompt refers to
+  // visitors everywhere else. Rejecting it broke every visitor directive.
+  it("normalises a fan: prefix on visitor_stance.fan_id", () => {
+    const { repo } = freshWorld();
+    repo.ensureVisitor("wren", "Wren");
+    const out = validateDirectives(
+      batchJson([{
+        actor: "okonkwo",
+        action: "greet_visitor",
+        target: "fan:wren",
+        dialogue_intent: "greets them as one of ours",
+        arc_id: "arc_kiln_debt",
+        significance_hint: 0.5,
+        canon_deltas: [{
+          op: "visitor_stance", fan_id: "fan:wren", character_id: "okonkwo",
+          sentiment: 12, moment: "took my side", moment_weight: 0.7,
+        }],
+      }]),
+      repo,
+    );
+    expect(out.ok, JSON.stringify(out.ok ? [] : out.issues)).toBe(true);
+    if (out.ok) {
+      const delta = out.batch.directives[0]!.canon_deltas[0] as { fan_id: string };
+      expect(delta.fan_id).toBe("wren");
+    }
+    repo.close();
+  });
+
+  it("still accepts the bare form", () => {
+    const { repo } = freshWorld();
+    repo.ensureVisitor("wren", "Wren");
+    const out = validateDirectives(
+      batchJson([{
+        actor: "okonkwo", action: "greet_visitor", target: "fan:wren",
+        dialogue_intent: "greets them", arc_id: "arc_kiln_debt", significance_hint: 0.5,
+        canon_deltas: [{ op: "visitor_stance", fan_id: "wren", character_id: "okonkwo", sentiment: 5 }],
+      }]),
+      repo,
+    );
+    expect(out.ok, JSON.stringify(out.ok ? [] : out.issues)).toBe(true);
+    repo.close();
+  });
+
+  it("still rejects a visitor who does not exist, either way round", () => {
+    const { repo } = freshWorld();
+    for (const id of ["ghost", "fan:ghost"]) {
+      const out = validateDirectives(
+        batchJson([{
+          actor: "okonkwo", action: "greet_visitor", target: "fan:ghost",
+          dialogue_intent: "greets", arc_id: "arc_kiln_debt", significance_hint: 0.5,
+          canon_deltas: [{ op: "visitor_stance", fan_id: id, character_id: "okonkwo", sentiment: 5 }],
+        }]),
+        repo,
+      );
+      expect(out.ok).toBe(false);
+    }
+    repo.close();
+  });
+});

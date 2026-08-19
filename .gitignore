@@ -16,3 +16,6 @@ coverage/
 # Posts dropped into a fixture on camera. They are the owner's feed, not ours.
 fixtures/*/drop_*.md
 .playwright-mcp/
+
+# scratch probes used against the live API; never part of the repo
+/.*.mjs

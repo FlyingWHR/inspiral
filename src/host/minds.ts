@@ -130,15 +130,50 @@ export class MindsHostRuntime implements HostRuntime {
 
     if (!this.mindId) {
       const minds = await this.client.listMinds();
-      const first = minds[0];
-      if (!first) {
+      if (minds.length === 0) {
         throw new Error(
           "No Minds on this builder account. Create one at build.hellominds.ai/console, " +
             "or set INSPIRAL_MIND_ID.",
         );
       }
-      this.mindId = first.mindId;
-      log.info(`using Mind ${first.mindId}${first.name ? ` (${first.name})` : ""}`);
+
+      // Prefer a Mind that can actually think. Picking minds[0] blindly cost an
+      // hour: the first Mind on the account was overdrawn, so every reply was a
+      // top-up prompt instead of directives, and the validator rejected them as
+      // "no JSON" -- which looks exactly like a broken adapter.
+      const funded: { mindId: string; name?: string | null; balance: number }[] = [];
+      for (const m of minds) {
+        let balance = Number.NaN;
+        try {
+          const b = await this.client.getCognitionBalance(m.mindId);
+          balance = typeof b === "number" ? b : (b?.cognition ?? Number.NaN);
+        } catch {
+          /* balance is advisory; a Mind we cannot price is still usable */
+        }
+        funded.push({ ...m, balance });
+      }
+      const usable = funded.filter((m) => !(m.balance <= 0));
+      const chosen = usable[0] ?? funded[0]!;
+      this.mindId = chosen.mindId;
+
+      const broke = funded.filter((m) => m.balance <= 0);
+      if (broke.length) {
+        log.warn(
+          `${broke.length} of ${funded.length} Mind(s) have no cognition left ` +
+            `(${broke.map((m) => `${m.name ?? m.mindId}: ${m.balance.toFixed(2)}`).join(", ")}). ` +
+            `An overdrawn Mind answers with a top-up prompt, not directives.`,
+        );
+      }
+      if (usable.length === 0) {
+        log.error(
+          `EVERY Mind on this account is out of cognition. Ticks will be rejected as ` +
+            `malformed until the account is topped up at build.hellominds.ai.`,
+        );
+      }
+      log.info(
+        `using Mind ${chosen.mindId}${chosen.name ? ` (${chosen.name})` : ""}` +
+          (Number.isFinite(chosen.balance) ? ` -- cognition ${chosen.balance.toFixed(2)}` : ""),
+      );
     }
 
     // One Mind, four lanes. ensureConversation handles the already-exists case.

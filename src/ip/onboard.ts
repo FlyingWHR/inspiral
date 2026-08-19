@@ -133,21 +133,40 @@ export function extractScene(raw: string): unknown {
 }
 
 export function mergeEnrichment(draft: IPBible, raw: string): { bible: IPBible; enriched: boolean } {
+  // Every rejection path below used to return silently, so a host that came
+  // back with prose, or with only keys we do not merge, looked identical to a
+  // host that was never called. The fallback is meant to be invisible in
+  // BEHAVIOUR, not in the logs.
+  const snippet = raw.replace(/\s+/g, " ").slice(0, 120);
+
   const json = extractJson(raw);
-  if (!json) return { bible: draft, enriched: false };
+  if (!json) {
+    log.warn(`onboard enrichment: no JSON object in the response -- "${snippet}"`);
+    return { bible: draft, enriched: false };
+  }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
-  } catch {
+  } catch (e) {
+    log.warn(`onboard enrichment: JSON did not parse (${(e as Error).message}) -- "${snippet}"`);
     return { bible: draft, enriched: false };
   }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    log.warn(`onboard enrichment: response was not a JSON object -- "${snippet}"`);
     return { bible: draft, enriched: false };
+  }
 
   const obj = parsed as Record<string, unknown>;
   const touched = BIBLE_KEYS.filter((k) => obj[k] !== undefined);
-  if (touched.length === 0) return { bible: draft, enriched: false };
+  if (touched.length === 0) {
+    log.warn(
+      `onboard enrichment: response had no mergeable keys ` +
+        `(returned: ${Object.keys(obj).join(", ") || "none"}; mergeable: ${BIBLE_KEYS.join(", ")})`,
+    );
+    return { bible: draft, enriched: false };
+  }
+  log.info(`onboard enrichment: merging ${touched.join(", ")}`);
 
   const hints = IPHints.safeParse(obj);
   if (!hints.success) {

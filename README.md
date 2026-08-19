@@ -18,7 +18,7 @@ gone — citing the event id, which the demo then verifies against the log.
 ```bash
 npm install          # once. Node 22+ required (developed on 24.19.0)
 
-npm test             # 81 tests, headless, no engine, no key
+npm test             # 95 tests, headless, no engine, no key
 npm run demo         # the whole loop in your terminal, ~2 seconds, exits 0
 npm run world        # the 3D ward -> http://localhost:8787
 npm run voxel        # the VOXEL ward, first person -> http://localhost:8788
@@ -194,10 +194,15 @@ src/
                  webSurface.ts   ← three.js surface: http + websocket
                  chatSurface.ts  ← the same world as text
   tick/          runTick.ts, scheduler.ts
-scripts/         demo.ts, world.ts, chat.ts, tick.ts, canon.ts
+                 visitors.ts     ← many fans, cheap returns
+scripts/         demo.ts, world.ts, voxel.ts, chat.ts,
+                 clock.ts, clock-status.ts, tick.ts, canon.ts
 web/             index.html, main.js, assets/        ← CC0 kit, no build step
+web-voxel/       voxel/ (storage, meshing, raycast,
+                 physics, pathfind), ward.js, main.js ← no renderer import
+ops/             com.inspiral.clock.plist            ← optional always-on
 tests/           validator.test.ts, tick.test.ts, mint.test.ts,
-                 voxel.test.ts                      ← 81 tests
+                 voxel.test.ts, visitors.test.ts    ← 95 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 
@@ -312,6 +317,12 @@ implement one `SurfaceAdapter` (`src/runtime/surface.ts`):
 | `WebSurface`     | `src/runtime/webSurface.ts`   | three.js in a browser. What `npm run world` uses. |
 | `ChatSurface`    | `src/runtime/chatSurface.ts`  | a terminal. What `npm run chat` uses.             |
 | `VoxelSurface`   | `src/runtime/voxelSurface.ts` | a diggable voxel world in first person. `npm run voxel`. |
+
+Two browsers on one ward are two different fans. Each connection is handed an
+identity (Wren, Ash, …) with its own standing and its own memory; the HUD tells
+each of them who they are. Coming back is free when the cast has done nothing
+since you left — the greeting is replayed from canon rather than costing an
+invocation to be told the same thing.
 | `MemorySurface`  | `src/runtime/surface.ts`      | collects instead of printing. What the tests use. |
 
 `npm run chat` attaches to the *same running world* as the browser over the same

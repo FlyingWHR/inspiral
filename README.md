@@ -96,6 +96,50 @@ layer.
 
 ---
 
+## Looking at it, and measuring it
+
+A world that scores 3/10 on UX does not need opinions, it needs numbers.
+
+```
+npm run shots        # render all eight scene archetypes to docs/screens/looks
+npm run pixelstats -- docs/screens    # read the histograms back
+npm run platform     # what we actually use of the Minds platform, live
+```
+
+`pixelstats` and `contactsheet` are vendored from
+[thrixel/build-world](https://github.com/thrixel/build-world) under Apache-2.0
+(see `tools/visual/`). We evaluated the rest of that project — Thrixel's
+text-to-3D asset generation — and did not adopt it: it needs an account and,
+by the vendor's own README, a paid plan for a real build, and the licence
+position on shipping generated assets in a jam submission could not be
+established. The measurement half was free, and it paid for itself in one run
+by proving that a "visual improvement" we had already shipped was blowing 20.6%
+of its pixels to white.
+
+**Per-archetype visual identity.** Eight look profiles in
+`web-voxel/scene/looks.js`, one per scene archetype, each with its own exposure,
+sky, sun, hemisphere, ambient, fog, practicals and colour grade. Both the ward
+and the voxel world read the same profiles. A tavern is warm, dim and firelit;
+a council chamber is cold, hard and lit from a window you cannot reach; a studio
+is flat, bright and artificial. Same code, same generator — the difference is
+data, which is the "it learns your IP" claim made visible in one frame.
+
+Two shaders do the work, both small and both commented with why they exist: a
+gradient sky dome (`skydome.js`) that replaced three's physical `Sky`, because a
+physical sky is genuinely brighter than anything under it and cannot be
+art-directed, only surrendered to; and a lift/gamma/gain/saturation/vignette
+grade (`grade.js`) that runs after tone mapping, which is where `gain` under 1.0
+stops the brightest thing in frame reaching 255.
+
+**Themed build palettes.** The hotbar is the archetype's, not one global list —
+tavern hands you plank, timber and lantern, a council chamber hands you stone —
+so anything a visitor builds is on-theme by construction. Each archetype also
+carries a one-line brief with no score and no completion state attached. The
+reward is that the cast reacts to what you put down, and that reaction now
+announces itself in the feed instead of vanishing into a socket.
+
+---
+
 ## What this repo is and is not
 
 The 3D engine is still an open question, so **there is no engine code here and

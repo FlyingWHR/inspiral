@@ -52,6 +52,9 @@ async function main(): Promise<void> {
   const surface = new WebSurface({
     port: PORT,
     hostName: host.name,
+    // Read once at startup rather than counted locally: the HUD should show
+    // what the platform says the balance is, not what we think we spent.
+    cognition: host.name === "minds" ? await host.budgetRemaining() : undefined,
     // The surface shows citations resolved. Canon stays the only reader.
     resolveCite: (id) => {
       const e = repo.getEvent(id);

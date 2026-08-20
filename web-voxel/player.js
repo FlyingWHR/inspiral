@@ -16,17 +16,20 @@ const JUMP = 9.2;
 const REACH = 6;
 
 export class Player {
-  constructor(world, camera, dom, { onEdit } = {}) {
+  constructor(world, camera, dom, { onEdit, palette } = {}) {
     this.world = world;
     this.camera = camera;
     this.dom = dom;
     this.onEdit = onEdit;
+    this.opts = { palette };
     this.body = new Body([0, 0, 0], [0.6, 1.8, 0.6]);
     this.yaw = 0;
     this.pitch = 0;
     this.keys = new Set();
     this.locked = false;
-    this.held = BLOCKS.findIndex((b) => b.name === "plank");
+    // Start on slot 1, which is the archetype's signature material rather than
+    // always plank -- a council chamber should not hand you a plank first.
+    this.held = this.paletteAt(0);
     this.flying = false;
 
     this.highlight = this.makeHighlight();
@@ -90,9 +93,13 @@ export class Player {
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
   }
 
-  /** Palette is every solid block except the ones the terrain uses as filler. */
+  /**
+   * The hotbar contents, which are per-archetype now: a tavern hands you plank
+   * and lantern, a council chamber hands you stone. Falls back to the old fixed
+   * list if a caller does not supply one.
+   */
   paletteAt(i) {
-    const pal = PALETTE;
+    const pal = this.opts?.palette?.length ? this.opts.palette : PALETTE;
     return pal[Math.min(i, pal.length - 1)];
   }
 

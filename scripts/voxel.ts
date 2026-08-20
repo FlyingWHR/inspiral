@@ -68,6 +68,9 @@ async function main(): Promise<void> {
     port: PORT,
     archetype,
     hostName: host.name,
+    // Read once at startup rather than counted locally: the HUD should show
+    // what the platform says the balance is, not what we think we spent.
+    cognition: host.name === "minds" ? await host.budgetRemaining() : undefined,
     repo,
     resolveCite: (id) => {
       const e = repo.getEvent(id);

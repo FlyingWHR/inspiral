@@ -4,6 +4,11 @@ import { ARCHETYPES, ARCHETYPE_IDS, DEFAULT_ARCHETYPE } from "../web-voxel/scene
 import { generateScene, clearPlaces } from "../web-voxel/scene/generate.js";
 import { findPath, standable, groundAt } from "../web-voxel/voxel/pathfind.js";
 import { chooseScene, chooseSceneHeuristically, scoreScenes, describeScene } from "../src/ip/scene.js";
+import { PALETTES as RAW_PALETTES, PALETTE_IDS, paletteFor } from "../web-voxel/scene/palettes.js";
+
+/** The palette library is plain JS; this is the shape TypeScript needs. */
+const PALETTES = RAW_PALETTES as unknown as Record<string, { blocks: string[]; prompt: string }>;
+import { BLOCKS } from "../web-voxel/voxel/blocks.js";
 import { compileBible } from "../src/ip/bible.js";
 import { createSource } from "../src/ip/source.js";
 import type { IPBible } from "../src/ip/bible.js";
@@ -184,5 +189,49 @@ describe("the shipped fixtures pick sensible scenes", () => {
     const choice = chooseSceneHeuristically(await bibleFor("tradeclash"));
     expect(choice.reason).toMatch(/matched on/);
     expect(choice.reason.length).toBeGreaterThan(30);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Build palettes. A misspelt block name here does not throw -- it silently
+// hands the player an air block, which is why every name is checked.
+// ---------------------------------------------------------------------------
+
+describe("themed build palettes", () => {
+  const SOLID = new Set(BLOCKS.filter((b) => b.solid).map((b) => b.name));
+
+  it("covers every archetype", () => {
+    for (const id of ARCHETYPE_IDS) expect(PALETTE_IDS).toContain(id);
+  });
+
+  it.each(PALETTE_IDS)("%s names only real, solid blocks", (id) => {
+    for (const name of PALETTES[id]!.blocks) {
+      expect(SOLID, `${id} lists "${name}", which is not a solid block`).toContain(name);
+    }
+  });
+
+  it.each(PALETTE_IDS)("%s fills the hotbar without repeats", (id) => {
+    const blocks = PALETTES[id]!.blocks;
+    expect(blocks.length).toBe(9);
+    expect(new Set(blocks).size).toBe(9);
+  });
+
+  it.each(PALETTE_IDS)("%s asks for something in one line", (id) => {
+    const p = PALETTES[id]!.prompt;
+    expect(p.length).toBeGreaterThan(30);
+    expect(p.length).toBeLessThan(140);
+  });
+
+  it("gives different rooms different signature materials", () => {
+    // Slot 1 is what a player builds with before they read anything, so it is
+    // the slot that has to differ. A tavern opening on stone is a bug.
+    const firsts = PALETTE_IDS.map((id) => PALETTES[id]!.blocks[0]);
+    expect(new Set(firsts).size).toBeGreaterThanOrEqual(3);
+    expect(PALETTES.tavern!.blocks[0]).toBe("plank");
+    expect(PALETTES.council_chamber!.blocks[0]).toBe("stone");
+  });
+
+  it("never throws on an unknown archetype", () => {
+    expect(paletteFor("space_station").blocks.length).toBe(9);
   });
 });

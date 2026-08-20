@@ -205,6 +205,13 @@ export class MindsHostRuntime implements HostRuntime {
 
       await client.sendMessage({ alias, messageText: req.prompt });
 
+      /**
+       * ALREADY SSE. `waitForReply` opens the event stream first and only falls
+       * back to polling `getHistory` every 2s if the stream errors or ends
+       * early -- read dist/index.js if you doubt it. Swapping this for a raw
+       * `subscribeEvents` call would lose that fallback and buy nothing: the
+       * ~75s we wait is the Mind thinking, not us noticing late.
+       */
       const outcome = await client.waitForReply({
         alias,
         timeoutMs: this.timeoutMs,

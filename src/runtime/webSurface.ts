@@ -64,6 +64,8 @@ export interface WebSurfaceOptions {
    * is provable on camera which one is running, rather than asserted.
    */
   hostName?: string;
+  /** Live cognition balance, shown in the HUD when running against a Mind. */
+  cognition?: number;
   /** Called when the browser asks for something. May spend an invocation. */
   onIntent?: (intent: SurfaceIntent) => void | Promise<void>;
   /**
@@ -134,6 +136,7 @@ export class WebSurface implements SurfaceAdapter {
   private readonly onIntent: WebSurfaceOptions["onIntent"];
   /** Mutable: a host can fall back to mock after the surface is constructed. */
   hostName: string;
+  cognition: number | undefined;
   private readonly resolveCite: WebSurfaceOptions["resolveCite"];
 
   private http?: Server;
@@ -157,6 +160,7 @@ export class WebSurface implements SurfaceAdapter {
     this.places = { ...(opts.places ?? WARD_PLACES) };
     this.onIntent = opts.onIntent;
     this.hostName = opts.hostName ?? "mock";
+    this.cognition = opts.cognition;
     this.pool = opts.visitorPool ?? [
       { id: "wren", name: "Wren" },
       { id: "ash", name: "Ash" },
@@ -249,6 +253,7 @@ export class WebSurface implements SurfaceAdapter {
         JSON.stringify({
           t: "hello",
           host: this.hostName,
+          cognition: this.cognition,
           you: me,
           places: this.places,
           actors: [...this.actors.values()],

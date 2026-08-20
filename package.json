@@ -28,7 +28,8 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "shots": "node tools/visual/shots.mjs --out=docs/screens/looks",
-    "pixelstats": "node tools/visual/pixelstats.mjs"
+    "pixelstats": "node tools/visual/pixelstats.mjs",
+    "platform": "node --env-file-if-exists=.env --import tsx scripts/platform.ts"
   },
   "dependencies": {
     "@animocabrands/minds-client-lib": "0.1.3",

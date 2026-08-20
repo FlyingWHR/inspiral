@@ -24,7 +24,8 @@ import { getLook } from "./scene/looks.js";
 import { createSkyDome, applySkyLook } from "./scene/skydome.js";
 import { GradeShader, applyGrade } from "./scene/grade.js";
 import { ChunkMesher } from "./chunkmesh.js";
-import { Player, PALETTE } from "./player.js";
+import { Player } from "./player.js";
+import { paletteFor } from "./scene/palettes.js";
 import { findPath, standable, groundAt } from "./voxel/pathfind.js";
 
 const CHARS = "/assets/characters/";
@@ -163,14 +164,20 @@ const voxelMaterial = new THREE.MeshStandardMaterial({
 const mesher = new ChunkMesher(world, scene, voxelMaterial);
 mesher.queueDirty();
 
-const player = new Player(world, camera, canvas, { onEdit });
+/**
+ * The build palette is the archetype's, not one global list. Constraint as a
+ * creativity aid: whatever a visitor puts down is on-theme by construction.
+ */
+const BUILD = paletteFor(ARCH.id);
+const BUILD_BLOCKS = BUILD.blocks.map((n) => BLOCKS.findIndex((b) => b.name === n)).filter((i) => i > 0);
+const player = new Player(world, camera, canvas, { onEdit, palette: BUILD_BLOCKS });
 player.spawnAt(ARCH.spawn.x, ARCH.spawn.z, [0, 0]); // walk in facing the middle
 scene.add(player.highlight);
 
 // --- hotbar ------------------------------------------------------------------
 
 const bar = document.getElementById("bar");
-PALETTE.forEach((id, i) => {
+BUILD_BLOCKS.forEach((id, i) => {
   const el = document.createElement("div");
   el.className = "slot";
   el.style.background = "#" + colorOf(id).toString(16).padStart(6, "0");
@@ -414,6 +421,14 @@ async function speak(a, lines, verb, detail) {
 
 document.querySelector("#hud h1").textContent = ARCH.name ?? "Tallow Ward";
 document.title = `Inspiral — ${ARCH.name ?? "Tallow Ward"}`;
+/**
+ * The build brief. One line, no score, no completion state -- the point is to
+ * turn a blank hotbar into a suggestion, and the only reward is that the cast
+ * reacts to what you actually put down.
+ */
+document.getElementById("splash-brief").textContent = BUILD.prompt;
+document.getElementById("brief").innerHTML =
+  "<b>The ward could use</b>" + BUILD.prompt.replace(/[<>&]/g, "");
 document.getElementById("splash-title").textContent = ARCH.name ?? "Tallow Ward";
 document.getElementById("splash-affords").textContent =
   `${ARCH.affords}. Everything you can see is voxels — dig it out, build on it, ` +
@@ -463,6 +478,7 @@ let beats = [];
 let draining = false;
 let said = 0;
 let hostName = "mock";
+let cognition;  // live balance from the Builder API, when there is a key
 let me = { id: "wren", name: "Wren" };   // replaced by the server on connect
 const STRUCTURAL = new Set(["spawn", "despawn", "move"]);
 
@@ -503,7 +519,11 @@ async function stage(b) {
   const a = actors.get(b.id);
   if (!a) return;
   const target = b.target ? actors.get(b.target) : null;
-  clockEl.textContent = `${++said} beats · ${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
+  // The cognition figure is the honest one: it is read from the Builder API at
+  // startup, not a counter we keep ourselves.
+  const cog = typeof cognition === "number" ? ` · ${cognition.toFixed(0)} cognition` : "";
+  clockEl.textContent =
+    `${++said} beats · ${hostName} host${hostName === "mock" ? " · no api key" : cog}`;
   note(`${a.name} ${b.verb.replace(/_/g, " ")}${target ? " → " + target.name : ""}`);
   // Narration goes to the feed, never into a bubble: a bubble is speech.
   if (b.stage) note(b.stage, "ev");
@@ -537,8 +557,12 @@ function connect() {
     const m = JSON.parse(ev.data);
     if (m.t === "hello") {
       hostName = m.host ?? hostName;
+      if (typeof m.cognition === "number") cognition = m.cognition;
       if (m.you) { me = m.you; note(`You are ${me.name}.`); }
-      if (!said) clockEl.textContent = `${hostName} host${hostName === "mock" ? " · no api key" : ""}`;
+      if (!said)
+        clockEl.textContent =
+          `${hostName} host${hostName === "mock" ? " · no api key"
+            : typeof cognition === "number" ? ` · ${cognition.toFixed(0)} cognition` : ""}`;
       for (const a of m.actors) await addActor(a.actor, a.at);
       for (const b of m.recent.slice(-3)) enqueue(b);
       return;
@@ -555,6 +579,11 @@ function onEdit({ kind, x, y, z, block, touched }) {
   repathAll(); // somebody may have just walled somebody else in
   if (sock?.readyState === 1) {
     sock.send(JSON.stringify({ t: "edit", edit: { kind, x, y, z, block: nameOf(block) } }));
+    // Say it out loud in the feed. The whole claim of this surface is that the
+    // cast NOTICES what you build, and a claim nobody can see happen is a claim
+    // nobody believes -- the edit used to vanish into a socket in silence.
+    note(kind === "place" ? `You placed ${nameOf(block)}. The ward is watching.`
+                          : `You broke ${nameOf(block)}. Somebody saw that.`, "ev");
   }
 }
 

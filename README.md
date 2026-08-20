@@ -140,15 +140,36 @@ this delivers.
 
 ### One Mind, three projections
 
-The Builder API has **no mind-to-mind Circles** (the Circles endpoints take human
-emails), and the free tier is **3 Minds**. So Inspiral uses **exactly one Mind**.
-All three faction leaders are server-side projections of it.
+Inspiral uses **exactly one Mind**. All three faction leaders are server-side
+projections of it.
 
-This is not a simplification of a multi-agent design. Three agents conversing is
-not something the platform does — and if it were, invocations would scale with
-cast size, which is the wrong cost curve. Instead the Mind is asked *"what does
-this district do next"* and returns up to four directives naming whichever
-characters act.
+An earlier draft of this README said the platform forbids mind-to-mind Circles
+and that the design was forced. **That was wrong, and it was worth finding out.**
+The client's README is careful — "not documented for builders today ... if the
+platform later supports Mind platform emails, the client passes them through;
+verify with `result` and `getCircle()`" — so we verified. Adding one Mind's
+platform email (`getMind(id).email`, e.g. `john.carmack@hellominds.ai`) to
+another Mind's circle returns `action: "mind_added"` and the member shows up in
+`getCircle()` with `isSteward: false`. Removal returns `deactivated`. It works
+today, undocumented.
+
+So one Mind is a **choice**, and here is the actual argument for it.
+
+*Cost.* A cast is not a committee. Ask three Minds what they do and you pay three
+invocations for one beat, and the bill scales with cast size — a thirty-character
+IP would be ten times the price of a three-character one for the same story. Ask
+one Mind *"what does this district do next"* and it returns up to four directives
+naming whichever characters act, for one invocation, at any cast size.
+
+*Coherence.* A grudge is a fact about two people. Split the two across separate
+Minds with separate context and the grudge has no single owner — you get two
+plausible half-memories and a continuity bug the audience notices before you do.
+One showrunner holding the whole district is how television does it, and canon
+is the show bible it writes into.
+
+A future version with a real budget could plausibly give a **principal** cast
+member its own Mind and keep the showrunner for everyone else. That is the
+interesting version of the idea. It is not an eight-day change.
 
 Four conversation aliases are lanes on that single Mind, not separate agents:
 `tick`, `onboard`, `fan-events`, `qc`.
@@ -267,6 +288,28 @@ raise. It is a property of the database, not a convention.
 
 Flagged because I made these calls without being able to ask. Everything in this
 section is still **pending the API key** — see "Placeholder" below.
+
+**Pinned to `0.1.3` exactly, not `^0.1.3`.** Four versions have ever been
+published, the first on 9 June 2026 and the latest on 21 July 2026, on a platform
+still moving fast enough that a minor bump could change the wire format under a
+demo. There is nothing to gain from floating and a jam to lose.
+
+**The licence is `UNLICENSED` — "private alpha tooling".** We depend on it and
+call it over the network, which is what it is for; we do not vendor it, fork it,
+re-publish it, or include `node_modules` in anything submitted. A judge clones
+the repo and runs `npm install`, which fetches it from npm under whatever terms
+Animoca grants. Nothing here claims redistribution rights we do not have.
+
+**The library does not read `.env`** — its README is explicit that your app or
+the `minds` CLI handles that. This is not trivia: it is exactly the bug that had
+our clock running mock-authored for a day while we believed it was live. Every
+entry point in this repo therefore starts with
+`node --env-file-if-exists=.env`, and shell variables still win over the file.
+
+**The `api.build` host is fixed in the library**; the base URL is not
+configurable. There is no staging endpoint to point at, so any live test is a
+live test against the real account — which is why `INSPIRAL_HOST` defaults to
+the deterministic stand-in and every test runs offline.
 
 **Verified, not assumed:**
 

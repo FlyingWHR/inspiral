@@ -374,3 +374,29 @@ describe("visitor ids are accepted in both spellings", () => {
     repo.close();
   });
 });
+
+describe("a host that answers over a rich-text channel", () => {
+  // A live Mind wrapped its JSON in HTML. <pre>{...}</pre> survived because the
+  // braces still bound the object; {<br> ...} did not, and the tick was lost.
+  it("reads JSON wrapped in <pre>", () => {
+    const out = extractJson('<pre>{"directives":[]}</pre>');
+    expect(out).not.toBeNull();
+    expect(JSON.parse(out!)).toEqual({ directives: [] });
+  });
+
+  it("reads JSON broken up by <br>", () => {
+    const out = extractJson('{<br>  "directives": [],<br>  "note": "hi"<br>}');
+    expect(out).not.toBeNull();
+    expect(JSON.parse(out!).note).toBe("hi");
+  });
+
+  it("decodes the entities that come with the tags", () => {
+    const out = extractJson('<pre>{&quot;directives&quot;: [], &quot;note&quot;: &quot;a &amp; b&quot;}</pre>');
+    expect(out).not.toBeNull();
+    expect(JSON.parse(out!).note).toBe("a & b");
+  });
+
+  it("still returns null for prose with no object in it", () => {
+    expect(extractJson("<p>I could not do that.</p>")).toBeNull();
+  });
+});

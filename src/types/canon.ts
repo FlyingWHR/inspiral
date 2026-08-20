@@ -27,7 +27,19 @@ export const CharacterSheet = z.object({
     register: z.string().max(120).default("plain"),
     tics: z.array(z.string().max(80)).max(8).default([]),
     /** Rough words-per-line ceiling for rendered dialogue. */
-    max_words: z.number().int().min(4).max(80).default(28),
+    /**
+     * Rough words-per-line ceiling for rendered dialogue.
+     *
+     * CLAMPED, not validated. A live Mind returned a value below the floor and
+     * the whole enrichment was thrown away with it -- an entire cast and two
+     * storylines lost to one cosmetic number. A ceiling that is out of range is
+     * a ceiling to correct, not a reason to discard the world.
+     */
+    max_words: z
+      .number()
+      .catch(28)
+      .transform((n) => Math.min(80, Math.max(4, Math.round(n))))
+      .default(28),
   }),
   /** Volatile. Updated by directives, unlike the rest of the sheet. */
   mood: z.string().max(60).default("even"),

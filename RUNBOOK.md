@@ -174,6 +174,9 @@ in its own chamber.
 
 ### Shot 5b — the answer to the hardest question (0:42–0:50)
 
+*A captured run of this is in `docs/transcripts/prove-creator.txt` if you want
+to check the wording before you film it.*
+
 **Film this one even if you cut something else.** The sharpest thing a judge can
 ask is not "is this an LLM in a for-loop". It is: *your own repo runs with the
 host switched off — show me one thing that needs a Mind.*

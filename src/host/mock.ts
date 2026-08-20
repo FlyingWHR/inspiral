@@ -172,6 +172,32 @@ function ladder(tension: number, stage: number, r: number, avoid?: string): stri
  * says the thing out loud" -- which is how you can tell a system is stapling
  * strings together rather than writing.
  */
+/**
+ * What the stand-in host SAYS, as opposed to what it narrates.
+ *
+ * The real Mind writes these lines itself; this table is the mock's version of
+ * the same job, so the offline demo has dialogue and so the host-derived line
+ * ratio is measurable without a key. Deliberately plain -- the point of the
+ * live comparison is that a Mind writes better ones.
+ */
+const SPEECH: Record<string, (a: string, b: string) => string[]> = {
+  confront: (_a, b) => [`${b}.`, `We are doing this here, then.`],
+  post_notice: () => [`Read it yourself.`],
+  snub: () => [],
+  spread_rumor: () => [`You didn't hear it from me.`],
+  sabotage: () => [],
+  concede: (_a, b) => [`${b}. You've made your point.`],
+  offer_tribute: (_a, b) => [`${b}. Take it, don't thank me.`],
+  offer_alliance: (_a, b) => [`${b}. An arrangement, then.`],
+  accept_alliance: (_a, b) => [`${b}. Agreed, and I'll hold you to it.`],
+  break_alliance: (_a, b) => [`${b}. We're finished.`],
+  hold: () => [],
+  greet_visitor: () => [`You're new. Everyone here is something to someone.`],
+  recruit_visitor: () => [`You picked a side in front of witnesses. I don't forget that.`],
+};
+const speechFor = (action: string, a: string, b: string): string[] =>
+  (SPEECH[action] ?? SPEECH.hold!)(a, b);
+
 const INTENTS: Record<string, (a: string, b: string) => string> = {
   confront: () => `says the thing out loud, in front of witnesses, and does not soften it`,
   post_notice: (_a, b) => `puts it on the board where ${b} will have to walk past it`,
@@ -403,6 +429,7 @@ export class MockHostRuntime implements HostRuntime {
           actor: pair.from,
           action,
           target: pair.to,
+          speech: speechFor(action, nameOf(pair.from), nameOf(pair.to)),
           dialogue_intent: intent,
           arc_id: arc.id,
           significance_hint: escalating ? 0.8 : 0.5,
@@ -434,6 +461,7 @@ export class MockHostRuntime implements HostRuntime {
         actor: bystander,
         action,
         target: other === bystander ? null : other,
+        speech: speechFor(action, nameOf(bystander), nameOf(other)),
         dialogue_intent: (INTENTS[action] ?? INTENTS.hold!)(nameOf(bystander), nameOf(other)),
         arc_id: null,
         significance_hint: 0.35,
@@ -472,6 +500,7 @@ export class MockHostRuntime implements HostRuntime {
         actor: ally[0],
         action: "greet_visitor",
         target: `fan:${v.fanId}`,
+        speech: [`You've been here before.`],
         dialogue_intent:
           "greet them as one of ours, then complain about what the rival did, citing it exactly",
         arc_id: null,
@@ -583,6 +612,7 @@ export class MockHostRuntime implements HostRuntime {
         actor: ally[0],
         action: "greet_visitor",
         target: `fan:${fanId}`,
+        speech: [`Good. I was hoping it would be you.`],
         dialogue_intent:
           "greet them as one of ours, then tell them exactly what the rival did while they were gone",
         arc_id: null,
@@ -605,6 +635,7 @@ export class MockHostRuntime implements HostRuntime {
         actor: enemy[0],
         action: "snub",
         target: `fan:${fanId}`,
+        speech: [],
         dialogue_intent: "make it clear their return changes nothing and costs them nothing",
         arc_id: null,
         significance_hint: 0.5,

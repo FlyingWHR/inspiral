@@ -15,6 +15,8 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
+import { Sky } from "three/addons/objects/Sky.js";
 
 const KIT = "/assets/castle/";
 const CHARS = "/assets/characters/";
@@ -49,22 +51,50 @@ const BUILDINGS = [
   { at: [0, 10.6], yaw: Math.PI, parts: ["tower-hexagon-base", "tower-hexagon-mid", "tower-hexagon-roof"] },
 ];
 const W = 2.3; // one kit piece is 1 unit wide, scaled by KIT_SCALE
+
+/**
+ * Set dressing. Empty geometry reads as unfinished far more than low-poly
+ * does, so the ward gets clutter: a treeline with varied scale and rotation,
+ * rocks breaking the wall line, market stalls and barrels around the plaza,
+ * lamps as vertical accents. Nothing here is hand-modelled -- it is the
+ * same eighteen CC0 kit pieces, repeated with variation.
+ */
 const DRESSING = [
-  ["tree-small", -12.5, 9.5, 0], ["tree-large", 12.5, 10.5, 1.1], ["tree-small", 15, 3, .4],
-  ["rocks-small", -14, 5, .8], ["rocks-small", 13.5, -12, 2.2], ["rocks-small", 16, 9, 1.4],
-  ["tree-small", -15.5, -9, 2.0], ["tree-large", 15.5, -8, .2],
-  ["wall-pillar", -W * 1.5, -14, 0], ["wall-pillar", W * 1.5, -14, 0],
-  ["flag", -9.6, -2.2, 0], ["flag", 9.6, -2.2, 0], ["flag", 1.9, 8.6, Math.PI],
+  // trees, deliberately uneven -- a row of identical trees reads as a fence
+  ["tree-large", -13.5, 10.5, 1.1, 2.7], ["tree-small", -11.0, 13.0, 0.3, 2.0],
+  ["tree-large", 13.0, 11.5, 2.4, 2.9], ["tree-small", 15.5, 8.5, 0.9, 1.8],
+  ["tree-small", -16.5, 2.0, 2.0, 2.2], ["tree-large", 17.0, -2.0, 0.2, 2.5],
+  ["tree-small", -18.0, -10.5, 1.4, 1.9], ["tree-large", 16.5, -12.0, 2.8, 2.6],
+  ["tree-small", 6.0, 17.0, 0.6, 2.1], ["tree-small", -6.5, 16.5, 1.9, 2.3],
+
+  // rocks, low and scattered, breaking up the ground plane
+  ["rocks-small", -15.0, 6.0, 0.8, 2.4], ["rocks-small", 14.0, -14.0, 2.2, 2.0],
+  ["rocks-small", 18.0, 4.0, 1.4, 2.8], ["rocks-small", -17.5, -5.0, 0.4, 1.7],
+  ["rocks-small", -4.0, 18.5, 2.6, 2.2], ["rocks-small", 9.0, -17.5, 1.1, 1.9],
+
+  // the plaza edge: stalls, crates, a stack of barrels-as-pillars
+  ["wall-narrow-wood-fence", -8.0, 6.5, 0.2, 1.9], ["wall-narrow-wood-fence", -6.0, 7.2, 0.35, 1.9],
+  ["wall-narrow-wood-fence", 7.5, 6.8, 3.0, 1.9], ["wall-narrow-wood-fence", 9.4, 6.0, 2.85, 1.9],
+  ["wall-pillar", -10.0, 3.0, 0, 1.4], ["wall-pillar", 10.2, 3.4, 0, 1.5],
+  ["wall-pillar", -9.2, -8.5, 0, 1.2], ["wall-pillar", 9.6, -8.8, 0, 1.3],
+  ["stairs-stone", 0, 5.4, 0, 2.2], ["stairs-stone", -3.2, -9.0, 3.14, 2.0],
+  ["door", -4.5, 5.0, 0.5, 2.0], ["door", 5.2, 4.6, 2.7, 2.0],
+
+  // flags and lamps: vertical accents that break the horizontal skyline
+  ["flag", -9.6, -2.2, 0, 2.3], ["flag", 9.6, -2.2, 0, 2.3],
+  ["flag", 1.9, 8.6, Math.PI, 2.3], ["flag", -12.0, -12.0, 0.7, 2.0],
+  ["flag", 12.4, -11.0, 5.6, 2.0],
+
   // the ward wall: contiguous, with a gate-width gap on the plaza axis
   ...[2.5, 3.5, 4.5, 5.5, 6.5].flatMap((i) => [
-    ["wall", -W * i, -14, 0], ["wall", W * i, -14, 0],
+    ["wall", -W * i, -14, 0, KIT_SCALE], ["wall", W * i, -14, 0, KIT_SCALE],
   ]),
   ...[-3, -2, -1, 0, 1, 2, 3].flatMap((i) => [
-    ["wall-narrow-wood-fence", -16.5, W * i, Math.PI / 2],
-    ["wall-narrow-wood-fence", 16.5, W * i, Math.PI / 2],
+    ["wall-narrow-wood-fence", -16.5, W * i, Math.PI / 2, KIT_SCALE],
+    ["wall-narrow-wood-fence", 16.5, W * i, Math.PI / 2, KIT_SCALE],
   ]),
+  ["wall-pillar", -W * 1.5, -14, 0, KIT_SCALE], ["wall-pillar", W * 1.5, -14, 0, KIT_SCALE],
 ];
-
 
 // --- scene ------------------------------------------------------------------
 
@@ -74,17 +104,46 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.02;
+renderer.toneMappingExposure = 0.72;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x3a4250);
-scene.fog = new THREE.Fog(0x3a4250, 46, 110);
+/**
+ * A physical sky instead of a flat clear-colour. Late afternoon: the sun sits
+ * low so everything casts a long shadow, which is most of what makes a
+ * low-poly set read as a place rather than a diagram.
+ */
+const SUN_ELEVATION = 34;   // high enough for a blue sky, low enough for long shadows
+const SUN_AZIMUTH = 128;   // behind-left of the default camera, not in it
+const sky = new Sky();
+sky.scale.setScalar(8000);
+{
+  const u = sky.material.uniforms;
+  u.turbidity.value = 3.2;
+  u.rayleigh.value = 1.6;
+  u.mieCoefficient.value = 0.006;
+  u.mieDirectionalG.value = 0.82;
+}
+scene.add(sky);
+
+const sunDir = new THREE.Vector3().setFromSphericalCoords(
+  1,
+  THREE.MathUtils.degToRad(90 - SUN_ELEVATION),
+  THREE.MathUtils.degToRad(SUN_AZIMUTH),
+);
+sky.material.uniforms.sunPosition.value.copy(sunDir);
+
+// Exponential fog reads as air with depth in it; linear fog reads as a curtain.
+// Light touch: enough haze for depth, not so much that a low camera looking
+// toward a low sun washes the whole frame out.
+// Very light. The ground plane is 150 units across and the camera sees most
+// of it, so anything denser than this turns the entire frame to milk.
+scene.fog = new THREE.FogExp2(0xa8bdd4, 0.0032);
 
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
-camera.position.set(-7.5, 17.5, 25);
+camera.position.set(-12.5, 10.5, 23);
 
 const controls = new OrbitControls(camera, canvas);
-controls.target.set(0, 1.2, 1.5);
+controls.target.set(0, 3.2, 0.5);
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI / 2.12;
 controls.minDistance = 8;
@@ -93,29 +152,70 @@ controls.maxDistance = 62;
 const labels = new CSS2DRenderer({ element: document.getElementById("labels") });
 
 // Soft shadows plus AO is the whole art direction. No voxels, no density.
-const sun = new THREE.DirectionalLight(0xffe9cf, 3.4);
-sun.position.set(-14, 24, 19);
+const sun = new THREE.DirectionalLight(0xfff0d0, 4.6);
+sun.position.copy(sunDir).multiplyScalar(70);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.radius = 4;
+sun.shadow.radius = 6;
 sun.shadow.bias = -0.0007;
 sun.shadow.normalBias = 0.03;
 const cam = sun.shadow.camera;
 cam.left = -32; cam.right = 32; cam.top = 32; cam.bottom = -32; cam.far = 90;
-scene.add(sun, new THREE.HemisphereLight(0x9fb6d4, 0x3a3026, 1.55));
-scene.add(new THREE.AmbientLight(0x6b7488, 0.45));
+// Sky-coloured bounce, warm ground bounce. Cheap global illumination.
+scene.add(sun, new THREE.HemisphereLight(0x7fa8d8, 0x5a4630, 0.85));
+scene.add(new THREE.AmbientLight(0x7d8fa8, 0.16));
+
+/**
+ * A procedural dirt/gravel texture, drawn once into a canvas.
+ *
+ * NOT the kit's colormap.png -- that is a palette ATLAS (a grid of flat colour
+ * swatches the models index into), and tiling it across the ground produced
+ * rainbow stripes. Generating the surface is both correct and free, and it is
+ * the cheapest thing that stops flat ground reading as a diagram.
+ */
+function groundTexture(base, speck, size = 256) {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const g = c.getContext("2d");
+  g.fillStyle = base;
+  g.fillRect(0, 0, size, size);
+  // deterministic speckle: same ground every load
+  let seed = 1337;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  for (let i = 0; i < size * 26; i++) {
+    const x = rnd() * size, y = rnd() * size, r = rnd() * 2.2 + 0.3;
+    g.fillStyle = speck[(rnd() * speck.length) | 0];
+    g.globalAlpha = 0.10 + rnd() * 0.28;
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+const groundTex = groundTexture("#6f6350", ["#5b503f", "#7d7059", "#4e4536", "#877a61"]);
+groundTex.repeat.set(26, 26);
 
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(150, 150),
-  new THREE.MeshStandardMaterial({ color: 0x6e6455, roughness: 1 }),
+  new THREE.MeshStandardMaterial({ map: groundTex, roughness: 1 }),
 );
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
+// Cobble: paler, tighter speckle, so the square reads as laid stone against
+// the dirt around it.
+const plazaTex = groundTexture("#938770", ["#7e7360", "#a79a80", "#6d6353"]);
+plazaTex.repeat.set(7, 7);
 const plaza = new THREE.Mesh(
   new THREE.CircleGeometry(9.5, 48),
-  new THREE.MeshStandardMaterial({ color: 0x827761, roughness: .95 }),
+  new THREE.MeshStandardMaterial({ map: plazaTex, roughness: .95 }),
 );
 plaza.rotation.x = -Math.PI / 2;
 plaza.position.y = 0.012;
@@ -135,7 +235,16 @@ if (!location.search.includes("ao=0")) {
     console.warn("GTAO unavailable, running without AO:", e);
   }
 }
+/**
+ * NO BLOOM. It was tried and removed.
+ *
+ * The physical sky is far brighter than any threshold worth setting, so
+ * UnrealBloomPass smeared the sky across the entire frame and turned the ward
+ * into milk -- it looked like heavy fog, and cost three iterations to pin on
+ * the right pass. Lanterns are small; the effect was never worth the risk.
+ */
 composer.addPass(new OutputPass());
+composer.addPass(new SMAAPass());
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -541,7 +650,7 @@ btn("mint-go").onclick = () => {
 
 await Promise.all([
   ...BUILDINGS.map((b) => stack(b.parts, b.at[0], b.at[1], b.yaw)),
-  ...DRESSING.map(([n, x, z, r]) => prop(n, x, z, r)),
+  ...DRESSING.map(([n, x, z, r, sc]) => prop(n, x, z, r, sc ?? KIT_SCALE)),
 ]);
 note("The ward is standing. Waiting for the world to tick.");
 

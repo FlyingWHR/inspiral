@@ -13,6 +13,32 @@ days of history happen without them. On day 6 they come back and an NPC greets
 them as an ally and complains, accurately, about what a rival did while they were
 gone — citing the event id, which the demo then verifies against the log.
 
+## Build What Creators Need Next
+
+The jam's brief, answered in its own terms.
+
+**Discoverability.** A world is a reason to be found. Every beat the cast plays
+is a clip draft with a permalink and a citation attached (`npm run clips`) --
+not "post more", but *the property generating its own posts, sourced*. An IP
+owner's back catalogue becomes a place people can walk into and talk about.
+
+**Engagement.** The unit is not a session, it is a grudge. A visitor takes a
+side and the world remembers it while they are gone; when they come back an NPC
+brings it up and cites the event id. That is a reason to return that does not
+depend on a notification, and it works for two fans at once with separate
+memories.
+
+**Workflow efficiency.** Handles in, living cast out, in about a minute and one
+model call (`npm run onboard`). The owner keeps an approval gate before any of
+it becomes canon, a daily digest of what their world did (`npm run digest`),
+and clip drafts they can post or bin. Nothing publishes itself. Cost scales
+with narrative decisions, not with cast size -- three characters and thirty
+cost the same.
+
+The rest of this README is how those three are built.
+
+---
+
 ## Commands
 
 Everything runs with **no API key, no account, no network, no build step**.

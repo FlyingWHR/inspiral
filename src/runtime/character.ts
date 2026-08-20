@@ -69,6 +69,12 @@ export interface RenderedBehavior {
   post_draft?: string;
   /** Event ids this performance references. Empty means it invented nothing. */
   cites: string[];
+  /**
+   * How many of `lines` the host actually wrote, versus fell back to a canned
+   * opener. Reported by `npm run authorship` -- if this is ever zero across a
+   * run, the model is decorative and the architecture is lying.
+   */
+  hostLines: number;
 }
 
 /** Minimum absence before a visitor counts as having been away. */
@@ -258,6 +264,36 @@ function deThirdPerson(text: string, name: string): string {
     .replace(new RegExp(`\\b${esc}\\b`, "g"), "me");
 }
 
+/**
+ * Said TO the person it is about, so they are "you", not "they".
+ *
+ * A visitor's notable moment is recorded in the third person -- "They took my
+ * side in public" -- because canon does not know who will read it later. Spoken
+ * to that visitor's face it has to become second person, or the character is
+ * talking about them as if they were not standing there. This shipped in the
+ * money-shot screenshot.
+ *
+ * Only applied where the addressee IS the subject, so the plural pronouns are
+ * unambiguously them.
+ */
+function toSecondPerson(text: string, visitorName: string): string {
+  let out = text;
+  if (visitorName) {
+    const esc = visitorName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(new RegExp(`\\b${esc}'s\\b`, "g"), "your");
+    out = out.replace(new RegExp(`\\b${esc}\\b`, "g"), "you");
+  }
+  return out
+    .replace(/^They\b/, "You")
+    .replace(/\bthey\b/g, "you")
+    .replace(/\bThey\b/g, "You")
+    .replace(/\bthem\b/g, "you")
+    .replace(/\btheir\b/g, "your")
+    .replace(/\bthemselves\b/g, "yourself")
+    // "you took" not "you takes": the verb has to follow the pronoun.
+    .replace(/\byou was\b/g, "you were");
+}
+
 /** Per-character diction. Deliberately rule-based: it costs nothing to run. */
 function inVoice(sheet: CharacterSheet, text: string): string {
   switch (sheet.character_id) {
@@ -318,6 +354,11 @@ export function renderBehavior(
   const cites: string[] = [];
   /** Narration collected on the way through. Never quoted. */
   const stageParts: string[] = [];
+  /**
+   * What the host actually wrote. This is the default source of dialogue; the
+   * hardcoded openers below exist for when it is empty.
+   */
+  const hostSpeech = (d.speech ?? []).map((l) => l.trim()).filter(Boolean);
   const lines: string[] = [];
 
   const targetName = d.target
@@ -332,7 +373,11 @@ export function renderBehavior(
     const ally = v.stance >= 20;
     const hostile = v.stance <= -20;
 
-    if (v.isNew) {
+    // THE HOST WRITES THE GREETING. These canned lines are what a viewer sees
+    // only when there is no host, or it returned nothing usable.
+    if (hostSpeech.length) {
+      lines.push(...hostSpeech);
+    } else if (v.isNew) {
       lines.push(`You're new. Everyone here is something to someone.`);
     } else if (ally && v.returning) {
       lines.push(`${targetName}. Good. I was hoping it would be you.`);
@@ -350,9 +395,10 @@ export function renderBehavior(
     // saying to someone who has been away.
     const moment = v.moments[0];
     if (moment && v.returning && (ally || hostile)) {
-      lines.push(
-        `I haven't forgotten. ${agoPhrase(repo, moment.ts)}: ${deThirdPerson(moment.summary, sheet.name)}`,
-      );
+      // Framing is the host's job when it wrote the greeting; canon only
+      // guarantees the fact and the id underneath it.
+      const fact = toSecondPerson(deThirdPerson(moment.summary, sheet.name), targetName);
+      lines.push(hostSpeech.length ? fact : `I haven't forgotten. ${agoPhrase(repo, moment.ts)}: ${fact}`);
       cites.push(moment.event_id);
     }
 
@@ -364,15 +410,23 @@ export function renderBehavior(
       const awayDays = Math.round(v.awayHours / 24);
       const away =
         v.awayHours < 24 ? "a while" : awayDays === 1 ? "a day" : `${awayDays} days`;
-      lines.push(`You've been gone ${away}. ${rivalName} did not stop.`);
+      // Same split: the host may already have said the "you have been gone"
+      // part in its own words. What canon insists on is the quoted fact.
+      if (!hostSpeech.length) {
+        lines.push(`You've been gone ${away}. ${rivalName} did not stop.`);
+      }
       lines.push(`${agoPhrase(repo, g.event.ts)}: ${deThirdPerson(g.summary, sheet.name)}`);
-      lines.push(`Ask anyone. It's on the record.`);
+      if (!hostSpeech.length) lines.push(`Ask anyone. It's on the record.`);
       cites.push(g.event.event_id);
     }
   } else {
     // --- character-to-character -----------------------------------------
-    const opener = (OPENERS[d.action] ?? OPENERS.hold!)(targetName);
-    if (opener) lines.push(opener);
+    if (hostSpeech.length) {
+      lines.push(...hostSpeech);
+    } else {
+      const opener = (OPENERS[d.action] ?? OPENERS.hold!)(targetName);
+      if (opener) lines.push(opener);
+    }
     // d.dialogue_intent is what they DO, not what they SAY. It goes to `stage`.
 
     // If this escalates against someone they already have history with, the
@@ -399,6 +453,7 @@ export function renderBehavior(
   const behavior: RenderedBehavior = {
     character_id: sheet.character_id,
     lines: rendered,
+    hostLines: hostSpeech.length,
     stage: [d.dialogue_intent, ...stageParts].filter((t) => t && t.trim()).join(" "),
     action: {
       verb: d.action,

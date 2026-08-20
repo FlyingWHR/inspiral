@@ -153,8 +153,23 @@ export const Directive = z.object({
   /** character_id, `fan:<id>`, a location, or null for undirected actions. */
   target: z.string().max(64).nullable().default(null),
   /**
-   * WHAT they mean to get across -- not the literal line. The character
-   * runtime renders the words. Keep it short and declarative.
+   * THE LINES THEY ACTUALLY SAY. This is the host's real output: the words a
+   * viewer reads in the speech bubble come from here.
+   *
+   * It used to not exist -- the host returned only an intent and the character
+   * runtime picked from a table of canned openers, which meant zero percent of
+   * rendered dialogue came from the model. The deterministic openers are still
+   * there, but they are now the FALLBACK for a host that is unavailable or
+   * returns nothing usable, not the default path.
+   *
+   * Still validated: tone rules and the character's word ceiling are applied at
+   * render time exactly as before, and nothing here can reference canon that
+   * does not exist.
+   */
+  speech: z.array(z.string().min(1).max(240)).max(4).optional(),
+  /**
+   * What they DO while saying it -- stage direction, shown as narration and
+   * never quoted. Short and declarative.
    */
   dialogue_intent: z.string().min(1).max(500),
   canon_deltas: z.array(CanonDelta).max(MAX_DELTAS_PER_DIRECTIVE).default([]),
@@ -169,6 +184,14 @@ export type Directive = z.infer<typeof Directive>;
 export const DirectiveBatch = z.object({
   directives: z.array(Directive).min(1).max(MAX_DIRECTIVES_PER_TICK),
   /** Optional host commentary. Logged, never applied. */
-  note: z.string().max(1000).optional(),
+  /**
+   * Commentary. Canon ignores it, so its length must never cost us a tick --
+   * a live Mind wrote 1100 characters here and the entire batch was rejected,
+   * losing two perfectly good directives. Truncate, do not reject.
+   */
+  note: z
+    .string()
+    .optional()
+    .transform((t) => (t === undefined ? t : t.slice(0, 1000))),
 });
 export type DirectiveBatch = z.infer<typeof DirectiveBatch>;

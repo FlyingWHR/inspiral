@@ -1,0 +1,55 @@
+
+> inspiral@0.1.0 prove
+> node --env-file-if-exists=.env --import tsx scripts/prove.ts
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+  WHAT A MIND IS FOR   —   source: fixture:creator  (no hints)
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+WITHOUT A MIND (deterministic compile)               │ WITH A MIND (live)
+───────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+PREMISE
+Salt and Sawdust, compiled from 4 item(s) off        │ One craftsperson buys dead workshops for the price
+creator. 1 character(s), 0 open storyline(s).        │ of clearing them, restarts the machines, and finds
+                                                     │ out why the last owner walked away. The work is
+                                                     │ filmed. The audience is in the comments, and one of
+                                                     │ them knew the cooper.
+
+THEMES
+restoration, saltandsawdust, tools, restoration,     │ restoration, dead workshops, hand-cut parts, the
+cooper, cooperage                                    │ last shift, the comment section, what the building
+                                                     │ remembers
+
+TONE
+The voice of creator's feed: restoration,            │ Hands in the work. Quiet, specific, unromantic. A
+saltandsawdust, tools. Nobody explains the premise   │ camera in the corner, a kettle on the stove, a tool
+and nobody addresses the camera.                     │ that has not moved in years. The audience came for
+                                                     │ the lathe and stayed for the comments that knew the
+                                                     │ cooper by name.
+
+GOALS
+[]                                                   │ ["Find out why the barrels stopped","Find out why
+                                                     │ the cooper stopped","Keep the lathe running past the
+                                                     │ first week it moves"]
+
+STORYLINES
+(none — nothing for the tick loop to advance)        │ • The Cooperage
+                                                     │ Bought the shuttered cooperage for the price of
+                                                     │ clearing it. Everything was where the last cooper
+                                                     │ left it, including his lunch. Eleven days, one
+                                                     │ bearing cut by hand. The lathe runs.
+                                                     │ • Why the Barrels Stopped
+                                                     │ A commenter in twelve thousand replies said the
+                                                     │ cooper stopped because the barrels stopped. The
+                                                     │ cooperage is alive again. The question that started
+                                                     │ the buy is not.
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ARCS:   0  without a Mind      →       2  with one
+  Arcs are what the tick loop escalates. Zero arcs is a cast that exists
+  and a world that does not run. The compiler can read hashtags; it cannot
+  decide what a body of work is about.
+───────────────────────────────────────────────────────────────────────────────────────────────────────────
+  host: minds   invocations: 1   elapsed: 68.5s
+

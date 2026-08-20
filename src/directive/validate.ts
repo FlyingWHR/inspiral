@@ -38,7 +38,27 @@ export function extractJson(raw: string): string | null {
 
   // ```json ... ``` or ``` ... ```
   const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const body = (fence?.[1] ?? trimmed).trim();
+  let body = (fence?.[1] ?? trimmed).trim();
+
+  /**
+   * A live Mind replies over a rich-text channel and sometimes wraps its JSON
+   * in HTML: `<pre>{...}</pre>` parses fine because the braces still bound it,
+   * but `{<br>  "directives": ...}` does not, and the whole tick was lost to a
+   * line break. Strip the tags and decode the handful of entities that come
+   * with them before looking for the object.
+   */
+  if (/<[a-z/][^>]*>/i.test(body)) {
+    body = body
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/?(?:pre|code|p|div|span|b|i|em|strong)\b[^>]*>/gi, "")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+  }
 
   // Fast path: already a bare object.
   if (body.startsWith("{") && body.endsWith("}")) return body;

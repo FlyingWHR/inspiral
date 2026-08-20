@@ -26,7 +26,8 @@ SHAPE
       "actor": "<character id from the cast>",
       "action": "<one of: ${actions}>",
       "target": "<character id | fan:<id> | location | null>",
-      "dialogue_intent": "<what they mean to get across, one sentence, not the literal line>",
+      "speech": ["<what they actually SAY, in their voice>", "<second line, optional>"],
+      "dialogue_intent": "<what they DO while saying it -- stage direction, not speech>",
       "arc_id": "<open arc id this belongs to, or null>",
       "significance_hint": 0.0-1.0,
       "canon_deltas": [ ... ]
@@ -41,7 +42,14 @@ RULES THAT WILL GET YOU REJECTED IF BROKEN
 - Use ONLY arc ids that appear in open arcs, unless you are opening one with arc_open.
 - An actor may not target themselves.
 - greet_visitor and recruit_visitor REQUIRE a "fan:<id>" target.
-- dialogue_intent is intent, not dialogue. The characters speak for themselves.
+- YOU WRITE THE DIALOGUE. "speech" is the words a viewer reads. Write them in
+  the character's voice, honour their register, tics and word ceiling from the
+  cast list, and obey the tone rules. One or two lines is usually right; a
+  character who would say nothing gets an empty array.
+- "dialogue_intent" is what they DO, in the third person. It is shown as stage
+  direction and is never spoken aloud. Do not put dialogue in it.
+- Do not state facts in "speech" that are not in the briefing. Canon appends the
+  receipts -- the cited event, quoted exactly -- underneath what you write.
 
 CANON DELTAS (the only way you may change the world)
   {"op":"relationship_delta","from_id":"a","to_id":"b","affinity":-10,"trust":-5,"tension":8,"note":"why, one line"}

@@ -34,7 +34,10 @@ surface, the browser shows the ward.
 
 **Which surface each shot uses.** There are two visual surfaces and they are
 filmed on different ports. Shots 1–5 are the three.js ward, which is the older
-and safer one. Shot 6 is the voxel ward and is the closing beat.
+and safer one. Shot 6 is the voxel ward and is the closing beat. Shot 7b is the
+archetype cut — tavern against council chamber — and is the one to protect if
+time runs short, because it is the only shot that proves the system generalises
+rather than having been decorated once.
 
 | Shot | Surface | Command | Port |
 | ---- | ------- | ------- | ---- |
@@ -254,6 +257,26 @@ citations. Put the terminal beside the browser.
 Say: *"Same world, second surface, no engine. The simulation is not the
 renderer — swapping the display costs one file."*
 
+### Shot 7b — one system, eight worlds (0:58–1:02)
+
+**This is the strongest visual argument in the film and it costs four seconds.**
+Cut between two frames:
+
+```
+docs/screens/looks/tavern.png          docs/screens/looks/council_chamber.png
+```
+
+Same generator, same code path, same three characters. The tavern is warm, dim
+and firelit at 34% saturation with a blue-minus-red of −62 through the middle of
+frame; the council chamber is cold and hard at 18% with +20 down the left wall.
+Nothing was relit by hand — the archetype chose the profile.
+
+Say: *"Same engine, same cast, same code. The IP picked the room, and the room
+picked the light. This is what 'it learns your IP' looks like in one frame."*
+
+Regenerate all eight any time with `npm run shots`, and check them with
+`npm run pixelstats -- docs/screens/looks`.
+
 ### Shot 8 — the closing beat: it is a world you can take apart (0:58–1:00)
 
 Terminal C, before you start filming:
@@ -314,3 +337,30 @@ npm run chat -- --solo                  # text surface, private world, no browse
 npm run voxel -- --every 10 --warm 20   # voxel ward, tick cadence and pre-run
 npm run clock:status                    # how much real history has accumulated
 ```
+
+
+---
+
+## The screenshot set
+
+Every still in `docs/screens/` is reproducible, and every one is measured:
+
+```bash
+npm run shots:ward     # 01-05, driven through the real UI
+npm run shots:voxel    # 07-09
+npm run shots          # the eight archetype looks
+npm run pixelstats -- docs/screens
+```
+
+The bar a still has to clear before it goes in front of a design judge: under
+0.5% blown, no crushed shadows, saturation under 25, and a real tonal spread
+rather than everything sitting in one sixth of the range.
+
+`06-chat-surface-same-canon.png` is the one exception, and deliberately so. It
+measures L=21.6, which would be a failure for a rendered frame; it is a terminal
+capture, and a terminal is supposed to be dark. The risk there is a projector,
+not the histogram — reshoot it with a light terminal theme if the room is bright.
+
+`12-before-visual-pass.png` and `13-after-visual-pass.png` are kept only as the
+record of a regression: `13` was shipped and described as an improvement while
+blowing 20.6% of its pixels to white. Neither belongs in the film.

@@ -221,6 +221,8 @@ export interface MockOptions {
 
 export class MockHostRuntime implements HostRuntime {
   readonly name = "mock";
+  /** Same prompt, same answer, every time -- that is the point of the mock. */
+  readonly deterministic = true;
   private seed: number;
   private failOn: Record<number, "timeout" | "malformed" | "error" | "bad-reference">;
   private latencyMs: number;

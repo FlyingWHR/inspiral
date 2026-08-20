@@ -34,6 +34,16 @@ export interface HostRuntime {
   readonly name: string;
 
   /**
+   * True when the same prompt always yields the same answer.
+   *
+   * This is not trivia: it decides whether retrying a bad answer is worth an
+   * invocation. Asking the deterministic stand-in twice returns the identical
+   * response and burns a call for nothing, so callers that retry on a poor
+   * result must check this first.
+   */
+  readonly deterministic?: boolean;
+
+  /**
    * Called once before the first ask. Establishes conversations/aliases.
    * Must be idempotent and must not throw on a world that is already set up.
    */

@@ -132,7 +132,26 @@ export function extractScene(raw: string): unknown {
   }
 }
 
-export function mergeEnrichment(draft: IPBible, raw: string): { bible: IPBible; enriched: boolean } {
+/**
+ * What an enrichment attempt actually produced.
+ *
+ * `enriched` used to be the whole answer, and it lied. A response carrying only
+ * `summary`, `themes` and `tone` has mergeable keys, passes validation, merges
+ * cleanly and sets `enriched: true` -- while adding no characters and no arcs.
+ * That is the difference between a world that exists and a world that runs, and
+ * it was reported as a success. `arcs` and `characters` are counted separately
+ * now so the caller can tell a real enrichment from a tonal one.
+ */
+export interface EnrichResult {
+  bible: IPBible;
+  enriched: boolean;
+  arcs: number;
+  characters: number;
+  /** Top-level keys the host actually sent, for the log line when it goes wrong. */
+  keys: string[];
+}
+
+export function mergeEnrichment(draft: IPBible, raw: string): EnrichResult {
   // Every rejection path below used to return silently, so a host that came
   // back with prose, or with only keys we do not merge, looked identical to a
   // host that was never called. The fallback is meant to be invisible in
@@ -142,7 +161,7 @@ export function mergeEnrichment(draft: IPBible, raw: string): { bible: IPBible; 
   const json = extractJson(raw);
   if (!json) {
     log.warn(`onboard enrichment: no JSON object in the response -- "${snippet}"`);
-    return { bible: draft, enriched: false };
+    return { bible: draft, enriched: false, arcs: 0, characters: 0, keys: [] };
   }
 
   let parsed: unknown;
@@ -150,11 +169,11 @@ export function mergeEnrichment(draft: IPBible, raw: string): { bible: IPBible; 
     parsed = JSON.parse(json);
   } catch (e) {
     log.warn(`onboard enrichment: JSON did not parse (${(e as Error).message}) -- "${snippet}"`);
-    return { bible: draft, enriched: false };
+    return { bible: draft, enriched: false, arcs: 0, characters: 0, keys: [] };
   }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     log.warn(`onboard enrichment: response was not a JSON object -- "${snippet}"`);
-    return { bible: draft, enriched: false };
+    return { bible: draft, enriched: false, arcs: 0, characters: 0, keys: [] };
   }
 
   const obj = parsed as Record<string, unknown>;
@@ -164,22 +183,28 @@ export function mergeEnrichment(draft: IPBible, raw: string): { bible: IPBible; 
       `onboard enrichment: response had no mergeable keys ` +
         `(returned: ${Object.keys(obj).join(", ") || "none"}; mergeable: ${BIBLE_KEYS.join(", ")})`,
     );
-    return { bible: draft, enriched: false };
+    return { bible: draft, enriched: false, arcs: 0, characters: 0, keys: Object.keys(obj) };
   }
   log.info(`onboard enrichment: merging ${touched.join(", ")}`);
 
   const hints = IPHints.safeParse(obj);
   if (!hints.success) {
     log.warn(`onboard enrichment rejected: ${hints.error.issues[0]?.message ?? "shape"}`);
-    return { bible: draft, enriched: false };
+    return { bible: draft, enriched: false, arcs: 0, characters: 0, keys: Object.keys(obj) };
   }
 
   const merged = IPBible.safeParse({ ...draft, ...hints.data });
   if (!merged.success) {
     log.warn(`onboard enrichment did not survive validation; keeping the draft`);
-    return { bible: draft, enriched: false };
+    return { bible: draft, enriched: false, arcs: 0, characters: 0, keys: Object.keys(obj) };
   }
-  return { bible: merged.data, enriched: true };
+  return {
+    bible: merged.data,
+    enriched: true,
+    arcs: merged.data.arcs.length,
+    characters: merged.data.characters.length,
+    keys: Object.keys(obj),
+  };
 }
 
 export interface OnboardOptions {
@@ -219,25 +244,74 @@ export async function onboardIP(opts: OnboardOptions): Promise<OnboardResult> {
   let hostCalls = 0;
   let hostScene: unknown;
   if (host) {
-    hostCalls = 1;
-    const res = await host.ask({
-      kind: "onboard",
-      prompt: enrichPrompt(source.handle, renderSourcePack(source.handle, items), JSON.stringify(bible)),
-    });
-    repo.recordHostInvocation({
-      alias: "onboard",
-      kind: "onboard",
-      ok: res.ok,
-      latencyMs: res.latencyMs,
-      ...(res.ok ? {} : { error: res.message }),
-    });
-    if (res.ok) {
+    const prompt = enrichPrompt(
+      source.handle,
+      renderSourcePack(source.handle, items),
+      JSON.stringify(bible),
+    );
+
+    /**
+     * ONE RETRY, AND ONLY ON A SPECIFIC FAILURE.
+     *
+     * Measured against a live Mind, roughly one onboarding call in three came
+     * back with a response that parsed, validated and merged -- and contained
+     * no arcs. Two shapes did it: a tonal-only reply carrying `summary`,
+     * `themes` and `tone` but no cast, and a `{"directives": [...]}` payload,
+     * which is the TICK schema answered on the onboarding lane. The second one
+     * is the giveaway: the lane's history had accumulated tick replies, and the
+     * Mind pattern-matches its own past answers.
+     *
+     * A bible with no arcs is a cast that exists and a world that does not run,
+     * so it is worth one more invocation. It retries ONLY on zero arcs -- not
+     * on a transport failure, not on a rejection, and never more than once.
+     */
+    // A deterministic host returns the identical answer to the identical
+    // prompt, so a retry against one is a wasted invocation by construction.
+    const maxAttempts = host.deterministic ? 1 : 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      hostCalls = attempt;
+      const res = await host.ask({ kind: "onboard", prompt });
+      repo.recordHostInvocation({
+        alias: "onboard",
+        kind: "onboard",
+        ok: res.ok,
+        latencyMs: res.latencyMs,
+        ...(res.ok ? {} : { error: res.message }),
+      });
+
+      if (!res.ok) {
+        log.warn(`onboard host call failed (${res.reason}); the compiled draft stands`);
+        break;
+      }
+
       const m = mergeEnrichment(bible, res.text);
       bible = m.bible;
       enriched = m.enriched;
       hostScene = extractScene(res.text);
-    } else {
-      log.warn(`onboard host call failed (${res.reason}); the compiled draft stands`);
+
+      if (m.arcs > 0) {
+        if (attempt > 1) log.info(`onboard enrichment: retry produced ${m.arcs} arcs`);
+        break;
+      }
+
+      /**
+       * The loud version of the silent failure. This used to merge quietly and
+       * report success, and the only visible symptom was "0 arcs -> 0 arcs" on
+       * the headline demo, on camera, with nothing in the log to explain it.
+       */
+      log.warn(
+        `onboard enrichment produced NO ARCS ` +
+          `(merged=${m.enriched}, characters=${m.characters}, ` +
+          `keys=[${m.keys.join(", ") || "none"}], ${res.text.length} chars in ${res.latencyMs}ms)`,
+      );
+      if (m.keys.includes("directives")) {
+        log.warn(
+          `  the host answered with the TICK schema on the onboarding lane -- ` +
+            `its history has taught it the wrong shape. A fresh alias fixes the cause: ` +
+            `set INSPIRAL_ALIAS_ONBOARD to an unused name.`,
+        );
+      }
+      if (attempt < maxAttempts) log.warn(`  retrying once`);
     }
   }
 

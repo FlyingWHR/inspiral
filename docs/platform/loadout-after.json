@@ -1,0 +1,15 @@
+{
+  "skills": [],
+  "apps": [
+    {
+      "appId": "10EE782C-BB2E-F111-AD1D-0EA9A5017E89",
+      "appName": "Animoca Minds Auth",
+      "description": "DNA.expression([v1.1.10 Update: Hardened OAuth & Zero-Friction Routing] Unlock 1000+ integrations with a single app. Authenticate and fetch data from the most popular services on the web via a unified, secure gateway. Currently supports Slack, Github, Stripe, Instagram, TikTok, LinkedIn, Outlook, Canva, Figma, Trello, Supabase, Monday, Hubspot, Strava, Airtable and Asana.)",
+      "tier": "verified",
+      "version": "1.1.10",
+      "appVersionId": "1F8CAFB2-9332-F111-AD1D-0EA9A5017E89",
+      "equippedAtUtc": "2026-08-08T18:27:42.7966667",
+      "updatedAtUtc": "2026-08-08T18:27:42.7966667"
+    }
+  ]
+}

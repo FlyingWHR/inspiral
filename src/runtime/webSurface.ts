@@ -122,6 +122,13 @@ export class WebSurface implements SurfaceAdapter {
   private readonly port: number;
   private readonly root: string;
   private readonly vendor: string;
+  /**
+   * Look profiles, the sky dome and the grade shader live with the archetypes
+   * in web-voxel/scene, because that is where the thing they describe lives.
+   * Both surfaces import them from this one URL so the ward and the voxel world
+   * are lit by the same data instead of two drifting copies.
+   */
+  private readonly shared: string;
   private readonly assets: string;
   private readonly places: Record<string, SurfacePoint>;
   private readonly onIntent: WebSurfaceOptions["onIntent"];
@@ -145,6 +152,7 @@ export class WebSurface implements SurfaceAdapter {
     this.port = opts.port ?? 8787;
     this.root = opts.root ?? here("../../web");
     this.vendor = opts.vendor ?? here("../../node_modules/three");
+    this.shared = here("../../web-voxel/scene");
     this.assets = opts.assets ?? here("../../web/assets");
     this.places = { ...(opts.places ?? WARD_PLACES) };
     this.onIntent = opts.onIntent;
@@ -335,6 +343,8 @@ export class WebSurface implements SurfaceAdapter {
     let file: string | null;
     if (urlPath.startsWith("/vendor/three/")) {
       file = safeJoin(this.vendor, urlPath.slice("/vendor/three".length));
+    } else if (urlPath.startsWith("/shared/")) {
+      file = safeJoin(this.shared, urlPath.slice("/shared".length));
     } else if (urlPath.startsWith("/assets/")) {
       // Every surface shares one asset directory rather than copying 2 MB of
       // CC0 GLBs per client.

@@ -1,0 +1,80 @@
+{
+  "skills": [
+    {
+      "skillId": "398E443E-F36B-1410-8462-00039CE7DF11",
+      "name": "Event Deal Flow Scout",
+      "description": "Identify high-signal professional and creative gatherings. Specialized event scout, tactical networking for founders, artists, and professionals.",
+      "source": "mind",
+      "equippedAtUtc": "2026-08-08T18:27:42.8000000",
+      "updatedAtUtc": "2026-08-08T18:27:42.8000000"
+    },
+    {
+      "skillId": "0E934A3E-F36B-1410-8462-00039CE7DF11",
+      "name": "Professional Slide creation tool supports PowerPoint PPT, PDF, Google Slides",
+      "description": "Generate highly professional slide presentations (PowerPoint PPT, PDF, Google Slides) by sending a natural-language brief to the Mindspage Gateway, strictly following the latest integration guide and returning an ephemeral presentationUrl to the human user.",
+      "source": "mind",
+      "equippedAtUtc": "2026-08-08T18:27:42.8000000",
+      "updatedAtUtc": "2026-08-08T18:27:42.8000000"
+    },
+    {
+      "skillId": "03F5CD21-5D29-F111-AD1D-0EA9A5017E89",
+      "name": "Sales & Negotiation (Mark-Cuban-Mode)",
+      "description": "High-stakes business sales and negotiation protocol modeled on Mark Cuban-style directness: rapidly surface pain, prove immediate value with numbers and proof, hold firm on the core value proposition, handle resistance as objections (not final outcomes), and drive to a clear next step with ethical transparency.",
+      "source": "mind",
+      "equippedAtUtc": "2026-08-08T18:27:42.8000000",
+      "updatedAtUtc": "2026-08-08T18:27:42.8000000"
+    }
+  ],
+  "apps": [
+    {
+      "appId": "10EE782C-BB2E-F111-AD1D-0EA9A5017E89",
+      "appName": "Animoca Minds Auth",
+      "description": "DNA.expression([v1.1.10 Update: Hardened OAuth & Zero-Friction Routing] Unlock 1000+ integrations with a single app. Authenticate and fetch data from the most popular services on the web via a unified, secure gateway. Currently supports Slack, Github, Stripe, Instagram, TikTok, LinkedIn, Outlook, Canva, Figma, Trello, Supabase, Monday, Hubspot, Strava, Airtable and Asana.)",
+      "tier": "verified",
+      "version": "1.1.10",
+      "appVersionId": "1F8CAFB2-9332-F111-AD1D-0EA9A5017E89",
+      "equippedAtUtc": "2026-08-08T18:27:42.7966667",
+      "updatedAtUtc": "2026-08-08T18:27:42.7966667"
+    },
+    {
+      "appId": "DCBC93B2-A426-F111-AD1D-0EA9A5017E89",
+      "appName": "Gmail Suite v3",
+      "description": "Gmail REST API v1 integration for comprehensive management of Messages, Drafts, Threads, and Labels. Supports 30 specialized tools with full CRUD operations, batch processing, and secure message transmission using OAuth 2.0. Version 3.1.1 includes hardened identity resolution and full authority scopes. Secure by design.",
+      "tier": "verified",
+      "version": "3.1.1",
+      "appVersionId": "3D42B663-B526-F111-AD1D-0EA9A5017E89",
+      "equippedAtUtc": "2026-08-08T18:27:42.7966667",
+      "updatedAtUtc": "2026-08-08T18:27:42.7966667"
+    },
+    {
+      "appId": "6750ADAF-BB06-F111-AD1D-0EA9A5017E89",
+      "appName": "GoogleCalendar",
+      "description": "Allows you to administer your human steward's Google calendar",
+      "tier": "verified",
+      "version": "1.0.0",
+      "appVersionId": "91CE3DC1-BB06-F111-AD1D-0EA9A5017E89",
+      "equippedAtUtc": "2026-08-08T18:27:42.7966667",
+      "updatedAtUtc": "2026-08-08T18:27:42.7966667"
+    },
+    {
+      "appId": "1F30493E-F36B-1410-8462-00039CE7DF11",
+      "appName": "LinkedInRecruiter_Suite",
+      "description": "One-click recruiter Mind that fuses the Browserbase cloud Chrome layer with LinkedIn public-page scraping. Recruiter provides a Browserbase API key. All scraping runs through Stagehand REST API. Search LinkedIn jobs, fetch postings, search people, fetch profiles, search companies, fetch company pages, search posts, fetch post detail, and fetch company post streams. Authenticated LinkedIn (feed, authenticated-mode people/profile/post) available via Browserbase Context. Read-only — no messaging, connection requests, follows, likes, comments, or posts. Bundles Browserbase tooling internally — do not equip BrowserbaseDevTools_Suite alongside.",
+      "tier": "verified",
+      "version": "2.0.0",
+      "appVersionId": "5536473E-F36B-1410-8466-00039CE7DF11",
+      "equippedAtUtc": "2026-08-08T18:27:42.7966667",
+      "updatedAtUtc": "2026-08-08T18:27:42.7966667"
+    },
+    {
+      "appId": "A54FEF68-0808-F111-AD1D-0EA9A5017E89",
+      "appName": "x-api",
+      "description": "Native driver for X API v2. Endpoint: Create Post. 100% Signal. Created by Woz.",
+      "tier": "verified",
+      "version": "0.0.1",
+      "appVersionId": "C7F39857-0A08-F111-AD1D-0EA9A5017E89",
+      "equippedAtUtc": "2026-08-08T18:28:00.0635516",
+      "updatedAtUtc": "2026-08-08T18:28:00.0635516"
+    }
+  ]
+}

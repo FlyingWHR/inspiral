@@ -16,7 +16,10 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
-import { Sky } from "three/addons/objects/Sky.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { getLook } from "/shared/looks.js";
+import { createSkyDome, applySkyLook } from "/shared/skydome.js";
+import { GradeShader, applyGrade } from "/shared/grade.js";
 
 const KIT = "/assets/castle/";
 const CHARS = "/assets/characters/";
@@ -100,11 +103,14 @@ const DRESSING = [
 
 const canvas = document.getElementById("stage");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+// The look has to exist before the renderer is configured -- exposure is the
+// first thing it sets. `?look=tavern` forces a profile for comparison shots.
+const LOOK = getLook(new URLSearchParams(location.search).get("look") ?? "market_plaza");
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.72;
+renderer.toneMappingExposure = LOOK.exposure;
 
 const scene = new THREE.Scene();
 /**
@@ -112,32 +118,35 @@ const scene = new THREE.Scene();
  * low so everything casts a long shadow, which is most of what makes a
  * low-poly set read as a place rather than a diagram.
  */
-const SUN_ELEVATION = 34;   // high enough for a blue sky, low enough for long shadows
-const SUN_AZIMUTH = 128;   // behind-left of the default camera, not in it
-const sky = new Sky();
-sky.scale.setScalar(8000);
-{
-  const u = sky.material.uniforms;
-  u.turbidity.value = 3.2;
-  u.rayleigh.value = 1.6;
-  u.mieCoefficient.value = 0.006;
-  u.mieDirectionalG.value = 0.82;
-}
-scene.add(sky);
-
+/**
+ * THE SKY IS NO LONGER PHYSICAL, AND THAT IS THE FIX.
+ *
+ * three's `Sky` is a real Rayleigh/Mie model, and a real sky is genuinely far
+ * brighter than anything under it. Measured on the frame this replaced: 20.6%
+ * of pixels above 250, the upper third a flat white slab at L=251.8 with an
+ * edge score of 0.03, and the ground left at L=55. There is no exposure that
+ * fixes that -- expose for the sky and the ward goes black, expose for the ward
+ * and the sky clips. You cannot art-direct a physical sky, only surrender to it.
+ *
+ * The gradient dome in web-voxel/scene/skydome.js is three colours we choose,
+ * and it shares the archetype look profiles with the voxel surface, so both
+ * surfaces are lit by the same data.
+ */
 const sunDir = new THREE.Vector3().setFromSphericalCoords(
   1,
-  THREE.MathUtils.degToRad(90 - SUN_ELEVATION),
-  THREE.MathUtils.degToRad(SUN_AZIMUTH),
+  THREE.MathUtils.degToRad(90 - LOOK.sun.elevation),
+  THREE.MathUtils.degToRad(LOOK.sun.azimuth),
 );
-sky.material.uniforms.sunPosition.value.copy(sunDir);
+const skydome = createSkyDome(300);
+applySkyLook(skydome, LOOK.sky, sunDir);
+scene.add(skydome);
 
 // Exponential fog reads as air with depth in it; linear fog reads as a curtain.
 // Light touch: enough haze for depth, not so much that a low camera looking
 // toward a low sun washes the whole frame out.
 // Very light. The ground plane is 150 units across and the camera sees most
 // of it, so anything denser than this turns the entire frame to milk.
-scene.fog = new THREE.FogExp2(0xa8bdd4, 0.0032);
+scene.fog = new THREE.FogExp2(LOOK.fog.color, LOOK.fog.density);
 
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
 camera.position.set(-12.5, 10.5, 23);
@@ -152,7 +161,7 @@ controls.maxDistance = 62;
 const labels = new CSS2DRenderer({ element: document.getElementById("labels") });
 
 // Soft shadows plus AO is the whole art direction. No voxels, no density.
-const sun = new THREE.DirectionalLight(0xfff0d0, 4.6);
+const sun = new THREE.DirectionalLight(LOOK.sun.color, LOOK.sun.intensity);
 sun.position.copy(sunDir).multiplyScalar(70);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -162,8 +171,8 @@ sun.shadow.normalBias = 0.03;
 const cam = sun.shadow.camera;
 cam.left = -32; cam.right = 32; cam.top = 32; cam.bottom = -32; cam.far = 90;
 // Sky-coloured bounce, warm ground bounce. Cheap global illumination.
-scene.add(sun, new THREE.HemisphereLight(0x7fa8d8, 0x5a4630, 0.85));
-scene.add(new THREE.AmbientLight(0x7d8fa8, 0.16));
+scene.add(sun, new THREE.HemisphereLight(LOOK.hemi.sky, LOOK.hemi.ground, LOOK.hemi.intensity));
+scene.add(new THREE.AmbientLight(LOOK.ambient.color, LOOK.ambient.intensity));
 
 /**
  * A procedural dirt/gravel texture, drawn once into a canvas.
@@ -199,10 +208,13 @@ function groundTexture(base, speck, size = 256) {
 }
 
 const groundTex = groundTexture("#6f6350", ["#5b503f", "#7d7059", "#4e4536", "#877a61"]);
-groundTex.repeat.set(26, 26);
+groundTex.repeat.set(90, 90);
 
+// 520 units, not 150. At 150 the far edge of the plane sat inside the frame as
+// a hard horizon line with sky under it -- the single clearest tell that this
+// was a diagram on a table rather than a place. It is cheap: one quad.
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(150, 150),
+  new THREE.PlaneGeometry(520, 520),
   new THREE.MeshStandardMaterial({ map: groundTex, roughness: 1 }),
 );
 ground.rotation.x = -Math.PI / 2;
@@ -245,6 +257,9 @@ if (!location.search.includes("ao=0")) {
  */
 composer.addPass(new OutputPass());
 composer.addPass(new SMAAPass());
+const gradePass = new ShaderPass(GradeShader);
+applyGrade(gradePass, LOOK.grade);
+composer.addPass(gradePass);
 
 function resize() {
   const w = innerWidth, h = innerHeight;

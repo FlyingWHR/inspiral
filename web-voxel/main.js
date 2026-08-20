@@ -13,12 +13,16 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 
 import { VoxelWorld } from "./voxel/chunk.js";
 import { BLOCKS, colorOf, nameOf } from "./voxel/blocks.js";
 import { generateScene, clearPlaces } from "./scene/generate.js";
 import { getArchetype } from "./scene/archetypes.js";
+import { getLook } from "./scene/looks.js";
+import { createSkyDome, applySkyLook } from "./scene/skydome.js";
+import { GradeShader, applyGrade } from "./scene/grade.js";
 import { ChunkMesher } from "./chunkmesh.js";
 import { Player, PALETTE } from "./player.js";
 import { findPath, standable, groundAt } from "./voxel/pathfind.js";
@@ -50,35 +54,74 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+/**
+ * THE LOOK. Everything about how this world is lit, coloured and graded comes
+ * from one profile chosen by archetype -- see scene/looks.js. A tavern and a
+ * council chamber run identical code and do not look remotely alike, which is
+ * the point: it is the "it learns your IP" claim made visible in one frame.
+ *
+ * `?look=tavern` forces a profile regardless of scene, for shooting comparisons.
+ */
+const LOOK = getLook(new URLSearchParams(location.search).get("look") ?? ARCH.id);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = LOOK.exposure;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(ARCH.sky ?? 0x8fb3d9);
-scene.fog = new THREE.Fog(ARCH.sky ?? 0x8fb3d9, 60, 190);
+// FogExp2, and the colour comes from the look rather than from the sky, so an
+// interior can have close brown air while an outdoor scene has pale blue depth.
+scene.fog = new THREE.FogExp2(LOOK.fog.color, LOOK.fog.density);
 
 const camera = new THREE.PerspectiveCamera(74, 1, 0.08, 400);
 const labels = new CSS2DRenderer({ element: document.getElementById("labels") });
 
-const sun = new THREE.DirectionalLight(0xffe9cf, 3.1);
-sun.position.set(-60, 90, 40);
+// Sun direction from the profile's own elevation/azimuth. Interiors keep a sun
+// because a shaft through a window is what makes a room feel like it has an
+// outside; they just turn its intensity and its visible disc down.
+const sunDir = new THREE.Vector3().setFromSphericalCoords(
+  1,
+  THREE.MathUtils.degToRad(90 - LOOK.sun.elevation),
+  THREE.MathUtils.degToRad(LOOK.sun.azimuth),
+);
+
+const skydome = createSkyDome(320);
+applySkyLook(skydome, LOOK.sky, sunDir);
+scene.add(skydome);
+
+const sun = new THREE.DirectionalLight(LOOK.sun.color, LOOK.sun.intensity);
+sun.position.copy(sunDir).multiplyScalar(110);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.radius = 3;
+sun.shadow.radius = LOOK.sun.shadowRadius;
 sun.shadow.bias = -0.0009;
 sun.shadow.normalBias = 0.06;
 const sc = sun.shadow.camera;
-sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 220;
+sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 260;
 scene.add(sun, sun.target);
-// A roof blocks the sun, so an enclosed scene needs its own fill or it reads
-// as a cave. Lanterns are set dressing; this is what makes the room legible.
-const INDOOR = Boolean(ARCH.indoor);
-scene.add(new THREE.HemisphereLight(0xbcd6ef, 0x50432f, INDOOR ? 0.7 : 1.35));
-scene.add(new THREE.AmbientLight(INDOOR ? 0xffe4c4 : 0x8593a8, INDOOR ? 0.85 : 0.34));
-if (INDOOR) {
-  const fill = new THREE.PointLight(0xffdba8, 55, 55, 2);
-  fill.position.set(0, 18, 0);
-  scene.add(fill);
+
+scene.add(new THREE.HemisphereLight(LOOK.hemi.sky, LOOK.hemi.ground, LOOK.hemi.intensity));
+scene.add(new THREE.AmbientLight(LOOK.ambient.color, LOOK.ambient.intensity));
+
+/**
+ * Practicals: the fire in the tavern, the chandelier in the ballroom, the ring
+ * light in the studio. A roof blocks the sun, so an enclosed scene without
+ * these reads as a cave.
+ *
+ * The count is FIXED whether or not they flicker. three bakes the number of
+ * visible lights into every material's shader permutation key, so a practical
+ * that switches `visible` off recompiles the whole scene mid-frame. Flicker
+ * drives INTENSITY and leaves visibility alone.
+ */
+let flickerT = 0;
+const practicals = [];
+if (LOOK.practicals) {
+  const P = LOOK.practicals;
+  for (const [x, y, z] of [[0, 15, 0], [-14, 9, -10], [14, 9, 10]]) {
+    const l = new THREE.PointLight(P.color, P.intensity, P.distance, 2);
+    l.position.set(x, y, z);
+    l.userData.baseIntensity = P.intensity;
+    scene.add(l);
+    practicals.push(l);
+  }
 }
 
 const composer = new EffectComposer(renderer);
@@ -93,6 +136,11 @@ if (!location.search.includes("ao=0")) {
   } catch (e) { console.warn("GTAO off:", e); }
 }
 composer.addPass(new OutputPass());
+// The grade runs AFTER OutputPass, i.e. after tone mapping and the colour-space
+// conversion, so what it adjusts is what pixelstats measures.
+const gradePass = new ShaderPass(GradeShader);
+applyGrade(gradePass, LOOK.grade);
+if (!location.search.includes("grade=0")) composer.addPass(gradePass);
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -518,10 +566,25 @@ function frame(dt) {
   stepActors(dt);
   mesher.update(2);
   deconflictPlates();
-  // keep the shadow frustum around the player instead of the whole ward
-  sun.position.set(camera.position.x - 60, 90, camera.position.z + 40);
+  // Keep the shadow frustum around the player instead of the whole ward, but
+  // keep the DIRECTION the look asked for -- this used to hardcode an offset,
+  // which quietly overrode every profile's sun angle every frame.
+  // The dome is smaller than the far plane, so it has to travel with the eye.
+  skydome.position.copy(camera.position);
+  sun.position.copy(camera.position).addScaledVector(sunDir, 110);
   sun.target.position.set(camera.position.x, 0, camera.position.z);
   sun.target.updateMatrixWorld();
+
+  // Firelight. Intensity only -- never `visible`, which would recompile every
+  // material in the scene on the frame it changed.
+  if (practicals.length && LOOK.practicals?.flicker) {
+    flickerT += dt;
+    for (let i = 0; i < practicals.length; i++) {
+      const l = practicals[i];
+      const w = Math.sin(flickerT * 7.3 + i * 2.1) * 0.6 + Math.sin(flickerT * 17.1 + i) * 0.4;
+      l.intensity = l.userData.baseIntensity * (1 + w * LOOK.practicals.flicker);
+    }
+  }
   composer.render();
   labels.render(scene, camera);
 }

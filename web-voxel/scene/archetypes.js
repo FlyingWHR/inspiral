@@ -103,6 +103,18 @@ export const ARCHETYPES = {
       { op: "prop", kind: "block", at: [15, 6], w: 1, d: 5, h: 4, y: 1, material: B.glass },
       { op: "prop", kind: "block", at: [15, -2], w: 1, d: 5, h: 4, y: 1, material: B.glass },
       { op: "prop", kind: "block", at: [-15, 2], w: 1, d: 4, h: 4, y: 1, material: B.glass },
+      /**
+       * A LIT CORNICE. The HIGH tier has to appear or the frame truncates the
+       * top of the ladder however good the palette is -- the five interiors all
+       * measured under the 0.45 spread bar with plenty of VOID overhead and
+       * nothing bright anywhere. A band of highB just under the ceiling is a
+       * plausible piece of architecture that catches the practicals and puts
+       * the top tier back in frame.
+       */
+      { op: "prop", kind: "block", at: [0, -11], w: 29, d: 1, h: 1, y: 4, material: B.sand },
+      { op: "prop", kind: "block", at: [0, 11], w: 29, d: 1, h: 1, y: 4, material: B.sand },
+      { op: "prop", kind: "block", at: [-14, 0], w: 1, d: 21, h: 1, y: 4, material: B.sand },
+      { op: "prop", kind: "block", at: [14, 0], w: 1, d: 21, h: 1, y: 4, material: B.sand },
     ],
     places: {
       the_bar: { x: 0, z: 6 },
@@ -130,6 +142,17 @@ export const ARCHETYPES = {
       { op: "building", at: [0, 24], w: 13, d: 11, h: 6, wall: B.plank, roof: B.roof,
         door: "north" },
       { op: "well", at: [0, 0] },
+      /**
+       * THE ACCENT MASS. Rule R5: architecture chroma is capped low and the
+       * warm accent is the only saturated thing in the room, so it has to be
+       * big enough to READ. Every archetype but the tavern and the arena
+       * measured "NO ACCENT" with a single small brick prop -- P99.5 chroma
+       * under 0.13 and under 1% hot area. This is a deliberate banner-sized
+       * mass on the wall the camera looks at.
+       */
+      { op: "prop", kind: "block", at: [-11, 9], w: 7, d: 1, h: 3, y: 2, material: B.brick },
+      { op: "prop", kind: "block", at: [11, 9], w: 7, d: 1, h: 3, y: 2, material: B.brick },
+      { op: "prop", kind: "block", at: [0, -13], w: 9, d: 1, h: 3, y: 2, material: B.brick },
     ],
     places: {
       plaza: { x: 0, z: 9 },
@@ -164,6 +187,29 @@ export const ARCHETYPES = {
       { op: "prop", kind: "pillar", at: [12, 6], h: 7, material: B.stone },
       { op: "prop", kind: "lamp", at: [-6, 10], h: 5 },
       { op: "prop", kind: "lamp", at: [6, 10], h: 5 },
+      /**
+       * THE ACCENT MASS. Rule R5: architecture chroma is capped low and the
+       * warm accent is the only saturated thing in the room, so it has to be
+       * big enough to READ. Every archetype but the tavern and the arena
+       * measured "NO ACCENT" with a single small brick prop -- P99.5 chroma
+       * under 0.13 and under 1% hot area. This is a deliberate banner-sized
+       * mass on the wall the camera looks at.
+       */
+      { op: "prop", kind: "block", at: [0, 13], w: 13, d: 1, h: 5, y: 1, material: B.brick },
+      { op: "prop", kind: "block", at: [-9, 13], w: 2, d: 1, h: 6, y: 1, material: B.brick },
+      { op: "prop", kind: "block", at: [9, 13], w: 2, d: 1, h: 6, y: 1, material: B.brick },
+      /**
+       * A LIT CORNICE. The HIGH tier has to appear or the frame truncates the
+       * top of the ladder however good the palette is -- the five interiors all
+       * measured under the 0.45 spread bar with plenty of VOID overhead and
+       * nothing bright anywhere. A band of highB just under the ceiling is a
+       * plausible piece of architecture that catches the practicals and puts
+       * the top tier back in frame.
+       */
+      { op: "prop", kind: "block", at: [0, -13], w: 33, d: 1, h: 1, y: 6, material: B.sand },
+      { op: "prop", kind: "block", at: [0, 13], w: 33, d: 1, h: 1, y: 6, material: B.sand },
+      { op: "prop", kind: "block", at: [-16, 0], w: 1, d: 25, h: 1, y: 6, material: B.sand },
+      { op: "prop", kind: "block", at: [16, 0], w: 1, d: 25, h: 1, y: 6, material: B.sand },
     ],
     places: {
       the_dais: { x: 0, z: 7 },
@@ -193,6 +239,28 @@ export const ARCHETYPES = {
       { op: "prop", kind: "block", at: [-12, 9], w: 3, d: 4, h: 1, material: B.timber },
       { op: "prop", kind: "lamp", at: [-10, 0], h: 5 },
       { op: "prop", kind: "lamp", at: [10, 0], h: 5 },
+      /**
+       * THE ACCENT MASS. Rule R5: architecture chroma is capped low and the
+       * warm accent is the only saturated thing in the room, so it has to be
+       * big enough to READ. Every archetype but the tavern and the arena
+       * measured "NO ACCENT" with a single small brick prop -- P99.5 chroma
+       * under 0.13 and under 1% hot area. This is a deliberate banner-sized
+       * mass on the wall the camera looks at.
+       */
+      { op: "prop", kind: "block", at: [0, 12], w: 15, d: 1, h: 4, y: 2, material: B.brick },
+      { op: "prop", kind: "block", at: [0, 0], w: 9, d: 7, h: 1, material: B.brick },
+      /**
+       * A LIT CORNICE. The HIGH tier has to appear or the frame truncates the
+       * top of the ladder however good the palette is -- the five interiors all
+       * measured under the 0.45 spread bar with plenty of VOID overhead and
+       * nothing bright anywhere. A band of highB just under the ceiling is a
+       * plausible piece of architecture that catches the practicals and puts
+       * the top tier back in frame.
+       */
+      { op: "prop", kind: "block", at: [0, -12], w: 29, d: 1, h: 1, y: 5, material: B.sand },
+      { op: "prop", kind: "block", at: [0, 12], w: 29, d: 1, h: 1, y: 5, material: B.sand },
+      { op: "prop", kind: "block", at: [-14, 0], w: 1, d: 23, h: 1, y: 5, material: B.sand },
+      { op: "prop", kind: "block", at: [14, 0], w: 1, d: 23, h: 1, y: 5, material: B.sand },
     ],
     places: {
       the_mat: { x: 0, z: 2 },
@@ -226,6 +294,29 @@ export const ARCHETYPES = {
       { op: "prop", kind: "block", at: [15, -2], w: 3, d: 5, h: 1, material: B.timber },
       { op: "prop", kind: "lamp", at: [-6, 10], h: 6 },
       { op: "prop", kind: "lamp", at: [6, 10], h: 6 },
+      /**
+       * THE ACCENT MASS. Rule R5: architecture chroma is capped low and the
+       * warm accent is the only saturated thing in the room, so it has to be
+       * big enough to READ. Every archetype but the tavern and the arena
+       * measured "NO ACCENT" with a single small brick prop -- P99.5 chroma
+       * under 0.13 and under 1% hot area. This is a deliberate banner-sized
+       * mass on the wall the camera looks at.
+       */
+      { op: "prop", kind: "block", at: [0, 14], w: 15, d: 1, h: 6, y: 1, material: B.brick },
+      { op: "prop", kind: "block", at: [-11, 14], w: 2, d: 1, h: 7, y: 1, material: B.brick },
+      { op: "prop", kind: "block", at: [11, 14], w: 2, d: 1, h: 7, y: 1, material: B.brick },
+      /**
+       * A LIT CORNICE. The HIGH tier has to appear or the frame truncates the
+       * top of the ladder however good the palette is -- the five interiors all
+       * measured under the 0.45 spread bar with plenty of VOID overhead and
+       * nothing bright anywhere. A band of highB just under the ceiling is a
+       * plausible piece of architecture that catches the practicals and puts
+       * the top tier back in frame.
+       */
+      { op: "prop", kind: "block", at: [0, -14], w: 35, d: 1, h: 1, y: 7, material: B.sand },
+      { op: "prop", kind: "block", at: [0, 14], w: 35, d: 1, h: 1, y: 7, material: B.sand },
+      { op: "prop", kind: "block", at: [-17, 0], w: 1, d: 27, h: 1, y: 7, material: B.sand },
+      { op: "prop", kind: "block", at: [17, 0], w: 1, d: 27, h: 1, y: 7, material: B.sand },
     ],
     places: {
       the_floor: { x: 0, z: 0 },
@@ -285,6 +376,15 @@ export const ARCHETYPES = {
       { op: "prop", kind: "lamp", at: [9, 5], h: 6 },
       { op: "prop", kind: "pillar", at: [-13, 11], h: 6, material: B.timber },
       { op: "prop", kind: "pillar", at: [13, 11], h: 6, material: B.timber },
+      /**
+       * THE ACCENT MASS. Rule R5: architecture chroma is capped low and the
+       * warm accent is the only saturated thing in the room, so it has to be
+       * big enough to READ. Every archetype but the tavern and the arena
+       * measured "NO ACCENT" with a single small brick prop -- P99.5 chroma
+       * under 0.13 and under 1% hot area. This is a deliberate banner-sized
+       * mass on the wall the camera looks at.
+       */
+      { op: "prop", kind: "block", at: [0, 12], w: 17, d: 1, h: 5, y: 1, material: B.brick },
     ],
     places: {
       the_desk: { x: -3, z: 7 },
@@ -313,6 +413,27 @@ export const ARCHETYPES = {
       { op: "prop", kind: "block", at: [0, -4], w: 3, d: 3, h: 1, material: B.timber },
       { op: "prop", kind: "lamp", at: [-9, 5], h: 4 },
       { op: "prop", kind: "lamp", at: [9, 5], h: 4 },
+      /**
+       * THE ACCENT MASS. Rule R5: architecture chroma is capped low and the
+       * warm accent is the only saturated thing in the room, so it has to be
+       * big enough to READ. Every archetype but the tavern and the arena
+       * measured "NO ACCENT" with a single small brick prop -- P99.5 chroma
+       * under 0.13 and under 1% hot area. This is a deliberate banner-sized
+       * mass on the wall the camera looks at.
+       */
+      { op: "prop", kind: "block", at: [0, 9], w: 11, d: 1, h: 4, y: 1, material: B.brick },
+      /**
+       * A LIT CORNICE. The HIGH tier has to appear or the frame truncates the
+       * top of the ladder however good the palette is -- the five interiors all
+       * measured under the 0.45 spread bar with plenty of VOID overhead and
+       * nothing bright anywhere. A band of highB just under the ceiling is a
+       * plausible piece of architecture that catches the practicals and puts
+       * the top tier back in frame.
+       */
+      { op: "prop", kind: "block", at: [0, -9], w: 23, d: 1, h: 1, y: 4, material: B.sand },
+      { op: "prop", kind: "block", at: [0, 9], w: 23, d: 1, h: 1, y: 4, material: B.sand },
+      { op: "prop", kind: "block", at: [-11, 0], w: 1, d: 17, h: 1, y: 4, material: B.sand },
+      { op: "prop", kind: "block", at: [11, 0], w: 1, d: 17, h: 1, y: 4, material: B.sand },
     ],
     places: {
       the_counter: { x: 0, z: 4 },

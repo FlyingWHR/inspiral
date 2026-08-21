@@ -46,7 +46,7 @@ Node 22+ (developed on 24.19.0).
 
 ```bash
 npm install          # once
-npm test             # 153 tests, headless, no engine, no key
+npm test             # 258 tests, headless, no engine, no key
 ```
 
 **The world, three ways.** Same canon, same tick loop, same cast — the surface
@@ -96,6 +96,24 @@ layer.
 
 ---
 
+## The evidence a judge asks for
+
+Three commands, in the order the questions usually come:
+
+```bash
+npm run prove        # what stops working without a Mind: 0 arcs -> 2, live
+npm run authorship   # what share of the rendered dialogue the model wrote
+npm run platform     # what we actually use of the Minds platform, read live
+```
+
+`prove` onboards the same un-hinted source twice, once with the host switched
+off and once against a live Mind, and prints the two bibles side by side. It is
+the only thing here that a Mind is strictly required for, which is why it is the
+headline. `authorship` prints the host-written share of rendered lines.
+`platform` reads identity, balance, usage by day, spend by tool, equipped apps,
+circle and conversation lanes straight from the Builder API — it runs without a
+key and says so rather than failing.
+
 ## Looking at it, and measuring it
 
 A world that scores 3/10 on UX does not need opinions, it needs numbers.
@@ -115,6 +133,30 @@ position on shipping generated assets in a jam submission could not be
 established. The measurement half was free, and it paid for itself in one run
 by proving that a "visual improvement" we had already shipped was blowing 20.6%
 of its pixels to white.
+
+**Two colour-space notes, both of which cost real time to find.**
+
+three.js converts sRGB hex for you: `new THREE.Color('#775541')` already lands
+in the linear working space, and calling `.convertSRGBToLinear()` on top makes
+everything muddy. We do not do that anywhere, and the one `colorSpace`
+assignment in the codebase is on a CanvasTexture, where it is required.
+
+The mirror-image mistake is the one that actually bit us. The voxel mesher was
+writing sRGB bytes **straight into three's vertex-colour attribute**, which is
+read as linear — converting zero times where the documented trap is converting
+twice. `0x77` entered as linear 0.467 and left the display transform near sRGB
+0.71: every block lighter than authored and about half as saturated. It hid an
+entire colour system, and it means any visual judgement made before the fix was
+measured through the wrong transform. One `srgbToLinear` in `mesher.js` moved
+chroma P99.5 from 0.100 to 0.130 and arc95 from 53 to 296 degrees.
+
+**The value ladder is absolute.** Block colours are not tinted, blended or
+derived from anything that came before — each block is assigned a SLOT and takes
+that slot's OKLab lightness (VOID 0.19 / DARK 0.32 / MID 0.48 / LIGHT 0.64 /
+HIGH 0.80). BACKDROP is the sky and is the one value the ladder deliberately
+leaves free. The ladder only reaches the *frame* if the darkest and lightest
+tiers actually appear, so the face-shading ramp bottoms out at 0.30 to put VOID
+under every overhang, and the interiors carry a lit cornice so HIGH is in shot.
 
 **Per-archetype visual identity.** Eight look profiles in
 `web-voxel/scene/looks.js`, one per scene archetype, each with its own exposure,
@@ -319,7 +361,7 @@ web-voxel/       voxel/ (storage, meshing, raycast,
                  physics, pathfind), ward.js, main.js ← no renderer import
 ops/             com.inspiral.clock.plist            ← optional always-on
 tests/           validator.test.ts, tick.test.ts, mint.test.ts,
-                 voxel.test.ts, visitors.test.ts    ← 95 tests
+                 voxel.test.ts, visitors.test.ts    ← 258 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 

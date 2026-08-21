@@ -34,6 +34,34 @@ const SETTLE = Number(arg("settle", "4500"));
 
 const scenes = ONLY ? ONLY.split(",").map((s) => s.trim()).filter(Boolean) : LOOK_IDS;
 
+/**
+ * A COMPOSED CAMERA PER ARCHETYPE.
+ *
+ * These used to shoot from the player's spawn, which is a gameplay position and
+ * not a photograph. The measurable consequence was "NO ACCENT" on all eight
+ * frames while the accent materials were sitting in the world a few metres out
+ * of shot -- the hero frame from the same tavern, composed by hand, measured
+ * 3.2% hot area against this camera's 1.4%.
+ *
+ * Interiors look down a diagonal from a corner: foreground furniture, cast in
+ * the middle, the lit and accented wall behind. Exteriors sit high and off to
+ * one side so the ground plane reads as a plane and the roofline as an edge
+ * against the backdrop.
+ *
+ * `look` is [x, z]; yaw is derived with the surface's own convention.
+ */
+const CAMERAS = {
+  tavern:          { pos: [-12.5, 15.2, -9.5], look: [7, 9],   pitch: -0.09 },
+  council_chamber: { pos: [-12.0, 15.6, -10.0], look: [6, 8],  pitch: -0.10 },
+  ballroom:        { pos: [-13.0, 15.6, -10.0], look: [7, 8],  pitch: -0.10 },
+  studio:          { pos: [-11.0, 15.2, -9.0],  look: [6, 7],  pitch: -0.07 },
+  training_hall:   { pos: [-12.0, 15.4, -10.0], look: [6, 8],  pitch: -0.09 },
+  cafe:            { pos: [-10.5, 15.0, -8.5],  look: [5, 7],  pitch: -0.07 },
+  market_plaza:    { pos: [22, 24, 26],  look: [0, 0], pitch: -0.42 },
+  arena:           { pos: [24, 26, 28],  look: [0, 0], pitch: -0.45 },
+};
+const DEFAULT_CAM = { pos: [18, 22, 22], look: [0, 0], pitch: -0.40 };
+
 /** Wait for the dev server to answer rather than sleeping a guessed interval. */
 async function waitForServer(url, timeoutMs = 45000) {
   const deadline = Date.now() + timeoutMs;
@@ -79,6 +107,19 @@ async function shoot(browser, scene) {
     // A black frame usually means the module graph threw before first render;
     // say so loudly rather than writing a black PNG and calling it a look.
     if (errors.length) console.error(`  ${scene}: page errors -> ${errors[0].slice(0, 160)}`);
+
+    const cam = CAMERAS[scene] ?? DEFAULT_CAM;
+    await page.evaluate((C) => {
+      const w = globalThis.__ward;
+      // Move the body, not the camera: player.update() rewrites the camera from
+      // body.position every frame and discards anything set directly.
+      w.player.flying = true;
+      w.player.body.position = C.pos;
+      w.player.body.velocity = [0, 0, 0];
+      w.player.yaw = Math.atan2(-(C.look[0] - C.pos[0]), -(C.look[1] - C.pos[2]));
+      w.player.pitch = C.pitch;
+    }, cam);
+    await page.waitForTimeout(2600);
 
     await page.screenshot({ path: `${OUT}/${scene}.png` });
     await page.close();

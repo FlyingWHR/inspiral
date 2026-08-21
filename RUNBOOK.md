@@ -49,7 +49,20 @@ rather than having been decorated once.
 | **5b what a Mind is for** | terminal | **`npm run prove`** | — |
 | 6 post → reaction | terminal | `npm run ingest --post` | — |
 | 7 second surface | terminal | `npm run chat` | attaches to 8787 |
+| **7b one system, eight worlds** | **voxel** | **`npm run shots`** (stills) | — |
 | 8 closing beat | **voxel** | `npm run voxel` | **8788** |
+
+**If time runs short, protect these two and cut everything else.**
+
+1. **5b, `npm run prove`** — the headline. It is the only thing in the film that
+   answers "what stops working without a Mind", live, on camera: the same
+   un-hinted source onboarded twice, 0 arcs against 2. Everything else in the
+   project runs with the host switched off. This does not.
+2. **7b, the tavern/council cut** — the only shot that proves the system
+   generalises rather than having been decorated once. Four seconds, two stills.
+
+Shot 3 is the emotional one and shot 8 is the most fun, but neither is load
+bearing for the eligibility argument. Cut 1, 4, 6 and 7 before you cut 5b.
 
 All of them can run at once — different ports, different databases, no
 conflict. Shots 5 and 6 use `./data/tradeclash.db`, which is separate from both
@@ -266,9 +279,11 @@ Cut between two frames:
 docs/screens/looks/tavern.png          docs/screens/looks/council_chamber.png
 ```
 
-Same generator, same code path, same three characters. The tavern is warm, dim
-and firelit at 34% saturation with a blue-minus-red of −62 through the middle of
-frame; the council chamber is cold and hard at 18% with +20 down the left wall.
+Same generator, same code path, same three characters. The tavern is warm, dim and firelit; the council chamber is cold stone with the
+red of office on the wall behind the dais. Measured: the tavern runs 3.3% of its
+area at accent chroma against a 0.45-plus value spread, the council chamber sits
+at arc95 327 degrees with a cool structure and one warm banner. Nothing was
+relit by hand -- the archetype chose the palette, the palette chose the slots.
 Nothing was relit by hand — the archetype chose the profile.
 
 Say: *"Same engine, same cast, same code. The IP picked the room, and the room
@@ -343,24 +358,27 @@ npm run clock:status                    # how much real history has accumulated
 
 ## The screenshot set
 
-Every still in `docs/screens/` is reproducible, and every one is measured:
+Every still in `docs/screens/` is reproducible and measured. Nothing in it
+predates the colour system or the colour-space fix.
 
 ```bash
 npm run shots:ward     # 01-05, driven through the real UI
 npm run shots:voxel    # 07-09
 npm run shots          # the eight archetype looks
-npm run pixelstats -- docs/screens
+npm run directions     # the four art directions of the tavern
+npm run pixelstats -- docs/screens          # exposure
+npm run huestats -- docs/screens            # hue and chroma
+python3 docs/art/diagnose.py docs/screens/looks/*.png   # the study's own tool
 ```
 
-The bar a still has to clear before it goes in front of a design judge: under
-0.5% blown, no crushed shadows, saturation under 25, and a real tonal spread
-rather than everything sitting in one sixth of the range.
+The bar before a still goes in front of a design judge: **under 0.5% blown, no
+crushed shadows**, and the colour system's own four measures as close to clean
+as the scene allows.
 
-`06-chat-surface-same-canon.png` is the one exception, and deliberately so. It
-measures L=21.6, which would be a failure for a rendered frame; it is a terminal
-capture, and a terminal is supposed to be dark. The risk there is a projector,
-not the histogram — reshoot it with a light terminal theme if the room is bright.
+`06-chat-surface-same-canon.png` is the one deliberate exception — a terminal
+capture is dark by nature and the thresholds are calibrated for rendered
+frames. Reshoot it with a light terminal theme if the room is bright.
 
-`12-before-visual-pass.png` and `13-after-visual-pass.png` are kept only as the
-record of a regression: `13` was shipped and described as an improvement while
-blowing 20.6% of its pixels to white. Neither belongs in the film.
+`12-before-visual-pass.png` and `13-after-visual-pass.png` are kept **only** as
+the record of a regression that was shipped and described as an improvement
+while 20.6% of its pixels were blown to white. Neither belongs in the film.

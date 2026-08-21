@@ -88,14 +88,18 @@ try {
   await page.evaluate(() => {
     const w = globalThis.__ward;
     w.player.flying = true;
-    const [x, y, z] = [34, 46, 42];
+    // Steeper and closer than the first framing: at a shallower angle the
+    // bright Saffron backdrop filled the top third and the shot measured 3.03%
+    // blown against a 0.5% floor. Looking further down trades sky for ward,
+    // which is also the more informative picture.
+    const [x, y, z] = [27, 50, 33];
     w.player.body.position = [x, y, z];
     w.player.body.velocity = [0, 0, 0];
     // The surface's own convention, lifted from Player: yaw is measured from
     // -Z with atan2 over the NEGATED deltas. Guessing it put the ward in the
     // bottom-right corner of a frame that was otherwise empty fog.
     w.player.yaw = Math.atan2(-(0 - x), -(0 - z));
-    w.player.pitch = -Math.atan2(y - 8, Math.hypot(x, z));
+    w.player.pitch = -Math.atan2(y - 2, Math.hypot(x, z));
   });
   await page.waitForTimeout(2500);
   await shot("07-voxel-ward-aerial");

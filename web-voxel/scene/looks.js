@@ -97,7 +97,8 @@ export const LOOKS = {
    * noon is a tavern nobody keeps a grudge in.
    */
   tavern: merge({
-    exposure: 1.15,
+    // 1.15 measured 0.54% blown once the cornice went in -- just over the bar.
+    exposure: 1.04,
     sky: { zenith: 0x140f0b, horizon: 0x2a1d12, ground: 0x140e09, sunTint: 0xffb45e, sunSize: 0.0, haze: 0.55 },
     sun: { color: 0xffd2a0, intensity: 1.5, elevation: 18, azimuth: 205, shadowRadius: 9 },
     hemi: { sky: 0x6b5642, ground: 0x2e2016, intensity: 1.05 },
@@ -142,13 +143,17 @@ export const LOOKS = {
    * outside the windows, so the two temperatures meet in the middle of the room.
    */
   ballroom: merge({
-    exposure: 1.08,
+    // Trimmed from 1.08; 0.82 still measured 0.887% blown.
+    exposure: 0.66,
     sky: { zenith: 0x160f22, horizon: 0x2e2140, ground: 0x140e1c, sunTint: 0xffd9a0, sunSize: 0.0, haze: 0.45 },
     sun: { color: 0x9fb6ff, intensity: 1.1, elevation: 40, azimuth: 250, shadowRadius: 8 },
     hemi: { sky: 0x7e6c95, ground: 0x4a3628, intensity: 1.15 },
     ambient: { color: 0xf6e3c6, intensity: 0.85 },
     fog: { color: 0x40354c, density: 0.0068 },
-    practicals: { color: 0xffd79a, intensity: 82, distance: 40, flicker: 0.02 },
+    // The ballroom's remaining blown pixels were the chandeliers themselves, not
+    // the room, so the trim belongs on the practicals rather than on exposure --
+    // dropping exposure further would just make the room dark to fix a lamp.
+    practicals: { color: 0xffd79a, intensity: 54, distance: 40, flicker: 0.02 },
     grade: { lift: 0.05, gamma: 1.0, gain: 1.05, saturation: 0.8, vignette: 0.36 },
   }),
 
@@ -187,7 +192,11 @@ export const LOOKS = {
    * scene. This is the profile the old ward was reaching for and missing.
    */
   market_plaza: merge({
-    exposure: 0.92,
+    // 0.52. Saffron Market is the brightest palette (backdrop L 0.72, highB
+    // L 0.81) and this is the most open scene, so it is the one that clips
+    // first with no tone-map roll-off. Earlier readings of "blown 0" for this
+    // shot were a column-alignment bug in my own parsing, not a pass.
+    exposure: 0.52,
     sky: { zenith: 0x4d86c6, horizon: 0xc8dcee, ground: 0x746255, sunTint: 0xfff4dc, sunSize: 0.045, haze: 0.42 },
     sun: { color: 0xfff1d2, intensity: 3.4, elevation: 42, azimuth: 128, shadowRadius: 4 },
     hemi: { sky: 0xa8c8ea, ground: 0x5c4d38, intensity: 1.05 },
@@ -201,7 +210,9 @@ export const LOOKS = {
    * individuals and the floor is the brightest thing in frame.
    */
   arena: merge({
-    exposure: 0.95,
+    // 0.58, not 0.95: with the accent banners and the bright Saffron backdrop
+    // this scene measured 3.13% blown at the shared gain.
+    exposure: 0.58,
     sky: { zenith: 0x6b7d92, horizon: 0xb9c6d2, ground: 0x6a6258, sunTint: 0xe8eef5, sunSize: 0.0, haze: 0.6 },
     sun: { color: 0xdfe8f2, intensity: 2.7, elevation: 60, azimuth: 140, shadowRadius: 10 },
     hemi: { sky: 0xb4c4d4, ground: 0x585044, intensity: 1.3 },

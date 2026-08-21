@@ -34,7 +34,12 @@
  * tier arriving for free on every overhang in the world. Top faces stay at 1.0
  * so lit planes reach HIGH.
  */
-const FACE_LIGHT = { px: 0.88, nx: 0.62, py: 1.0, ny: 0.3, pz: 0.8, nz: 0.54 };
+const FACE_LIGHT = { px: 0.85, nx: 0.62, py: 0.93, ny: 0.3, pz: 0.78, nz: 0.54 };
+// py is 0.93, not 1.0. With NoToneMapping there is no highlight roll-off, so a
+// top face at full multiplier under a light gain above 1 simply clips: the
+// voxel aerial, which is mostly sunlit top faces, measured 3-4.8% blown against
+// a 0.5% floor at both framings tried. Trimming the top of the ramp costs a
+// little HIGH and buys back the headroom that tone mapping used to provide.
 
 /** Stable per-quad jitter in [-1,1] from its position, so it never shimmers. */
 function jitter(x, y, z) {

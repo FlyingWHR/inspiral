@@ -101,7 +101,15 @@ const BACKDROP_FOG = backdropFor(ARCH.id);
  * 3.1 it measures 0.638% and fails the under-0.5% bar for another 0.037 of
  * value spread. Not worth it.
  */
-const GAIN = Number(QS.get("gain") ?? "2.6");
+/**
+ * `LOOK.exposure` used to drive toneMappingExposure. With NoToneMapping that
+ * value is simply ignored by three, so it becomes the per-archetype trim on the
+ * light gain instead -- otherwise the eight scenes share one exposure and the
+ * bright exteriors blow out while the interiors sit dark. Adding cornices and
+ * accent masses pushed the arena to 3.13% blown against a 0.5% floor, which is
+ * what surfaced this.
+ */
+const GAIN = Number(QS.get("gain") ?? "2.6") * (LOOK.exposure ?? 1);
 /**
  * How much of the light budget the COOL FILL gets, against the warm key.
  *

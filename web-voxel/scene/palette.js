@@ -176,8 +176,16 @@ export const ARCHETYPE_PALETTE = {
 
   // Soft dawn light through glass; the gentlest room in the set.
   cafe: { palette: "saltHarbourDawn" },
-  // Outdoor, dusk, a crowd that should read as one dark mass.
-  arena: { palette: "thornwoodNightfall" },
+  /**
+   * Outdoor spectacle. Thornwood was the obvious literary fit -- dusk, canopy,
+   * one lamp -- and it measured worst of the eight at 0.300 frame spread,
+   * because it is the deliberately low-key palette whose ladder tops out at
+   * L 0.72 and an open scene is mostly sky. Saffron's bright backdrop gives the
+   * tiers something to be dark against. Thornwood Nightfall is therefore
+   * currently unused, and that is on purpose: four palettes that fit beat five
+   * with one forced.
+   */
+  arena: { palette: "saffronMarket", swap: { structA: "structC", structC: "structA" } },
 
   // Gold on violet rather than gold on brown: structC (violet-blue) leads and
   // the warm accent stays, so it is the tavern's ladder wearing evening dress.

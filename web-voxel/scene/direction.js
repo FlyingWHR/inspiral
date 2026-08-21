@@ -2,6 +2,12 @@
  * FOUR ART DIRECTIONS, so the next visual decision is a choice rather than a
  * third guess.
  *
+ * `hearth` is the one that ships. The other three exist to be compared against
+ * it, and their bloom was trimmed after the colour system landed: with
+ * NoToneMapping there is no highlight roll-off, so the settings that looked
+ * right over the old washed-out palette pushed `lantern` to 0.81% blown and
+ * `woodcut` to 0.76% against the 0.5% floor.
+ *
  * We have now guessed twice at what "attractive" means here and been wrong
  * twice. Rather than guess again, these are four coherent, named directions
  * rendered from the identical scene. Each one commits to a reference, and each
@@ -51,7 +57,7 @@ export const DIRECTIONS = {
     reference: "Sable, graphic-novel flatness",
     shading: "toon",
     toonSteps: 3,
-    bloom: { strength: 0.22, radius: 0.5, threshold: 0.92 },
+    bloom: { strength: 0.16, radius: 0.5, threshold: 0.94 },
     dust: { count: 420, opacity: 0.3 },
     shaft: { opacity: 0.035, width: 2.8 },
     dof: null,
@@ -72,7 +78,7 @@ export const DIRECTIONS = {
     reference: "Teardown volumetrics, candlelit interiors",
     shading: "standard",
     roughness: 0.96,
-    bloom: { strength: 0.6, radius: 0.78, threshold: 0.84 },
+    bloom: { strength: 0.36, radius: 0.78, threshold: 0.9 },
     dust: { count: 1600, opacity: 0.72 },
     shaft: { opacity: 0.085, width: 3.6 },
     dof: { focus: 11, aperture: 0.0016, maxblur: 0.0055 },

@@ -31,7 +31,8 @@
     "pixelstats": "node tools/visual/pixelstats.mjs",
     "platform": "node --env-file-if-exists=.env --import tsx scripts/platform.ts",
     "shots:ward": "node tools/visual/wardshots.mjs --out=docs/screens",
-    "shots:voxel": "node tools/visual/voxelshots.mjs --out=docs/screens"
+    "shots:voxel": "node tools/visual/voxelshots.mjs --out=docs/screens",
+    "directions": "node tools/visual/directions.mjs --out=docs/screens/directions"
   },
   "dependencies": {
     "@animocabrands/minds-client-lib": "0.1.3",

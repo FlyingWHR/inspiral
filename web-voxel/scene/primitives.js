@@ -214,15 +214,24 @@ export function tiers(world, { inner = 14, rows = 4, material = B.stone, step = 
   }
 }
 
-/** Small furniture: a counter, a table, a pillar, a lamp. */
-export function prop(world, { at: [x, z], kind, material = B.timber, h = 1, w = 1, d = 1 }) {
+/**
+ * Small furniture: a counter, a table, a pillar, a lamp.
+ *
+ * `y` lifts the whole prop off the floor. Without it everything in a room has
+ * to grow up from the floorboards, which means no ceiling beams, no shelf of
+ * bottles, no sconce at head height -- and a room whose entire upper half is
+ * blank plaster. That emptiness is most of why these interiors read as
+ * unfinished rather than as low-poly.
+ */
+export function prop(world, { at: [x, z], kind, material = B.timber, h = 1, w = 1, d = 1, y: yOff = 0 }) {
+  const base = GROUND + yOff;
   if (kind === "pillar") {
-    for (let y = GROUND + 1; y <= GROUND + h; y++) world.set(x, y, z, material);
+    for (let y = base + 1; y <= base + h; y++) world.set(x, y, z, material);
     return;
   }
   if (kind === "lamp") {
-    for (let y = GROUND + 1; y < GROUND + h; y++) world.set(x, y, z, B.timber);
-    world.set(x, GROUND + h, z, B.lantern);
+    for (let y = base + 1; y < base + h; y++) world.set(x, y, z, B.timber);
+    world.set(x, base + h, z, B.lantern);
     return;
   }
   // "block": a counter, table or bench -- a slab of the given footprint.
@@ -230,5 +239,5 @@ export function prop(world, { at: [x, z], kind, material = B.timber, h = 1, w = 
   const z0 = z - (d >> 1), z1 = z + (d >> 1);
   for (let xx = x0; xx <= x1; xx++)
     for (let zz = z0; zz <= z1; zz++)
-      for (let y = GROUND + 1; y <= GROUND + h; y++) world.set(xx, y, zz, material);
+      for (let y = base + 1; y <= base + h; y++) world.set(xx, y, zz, material);
 }

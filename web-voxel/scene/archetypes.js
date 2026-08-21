@@ -40,18 +40,59 @@ export const ARCHETYPES = {
       { op: "terrain", floorR: 20, floor: B.timber, surround: B.dirt, roll: 0.4 },
       { op: "enclosure", kind: "room", w: 30, d: 24, height: 6, material: B.plaster,
         roofMaterial: B.roof, gate: 2 },
-      // the bar runs along the back wall
+
+      // --- the bar, along the back wall -----------------------------------
       { op: "prop", kind: "block", at: [0, 9], w: 15, d: 2, h: 1, material: B.plank },
       { op: "prop", kind: "block", at: [0, 11], w: 17, d: 1, h: 3, material: B.brick },
-      // hearth in the corner, the warmest seat in the room
-      { op: "prop", kind: "block", at: [-12, 8], w: 4, d: 3, h: 2, material: B.brick },
-      { op: "prop", kind: "lamp", at: [-12, 6], h: 3 },
-      // tables
+      // bottles on the back shelf: single emissive blocks at eye height, which
+      // is what makes a bar read as a bar rather than as a long brown box
+      { op: "prop", kind: "block", at: [-5, 11], w: 1, d: 1, h: 1, y: 3, material: B.glass },
+      { op: "prop", kind: "block", at: [-3, 11], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [-1, 11], w: 1, d: 1, h: 1, y: 3, material: B.glass },
+      { op: "prop", kind: "block", at: [2, 11], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [4, 11], w: 1, d: 1, h: 1, y: 3, material: B.glass },
+      { op: "prop", kind: "block", at: [6, 11], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      // barrels behind the bar
+      { op: "prop", kind: "block", at: [-8, 10], w: 2, d: 2, h: 2, material: B.timber },
+      { op: "prop", kind: "block", at: [9, 10], w: 2, d: 2, h: 2, material: B.timber },
+
+      // --- the hearth, the warmest seat in the room -----------------------
+      { op: "prop", kind: "block", at: [-13, 8], w: 4, d: 4, h: 1, material: B.cobble },
+      { op: "prop", kind: "block", at: [-13, 10], w: 5, d: 1, h: 5, material: B.brick },
+      // the fire itself, and its glow. Emissive blocks, not a texture.
+      { op: "prop", kind: "block", at: [-13, 8], w: 2, d: 1, h: 1, material: B.lantern },
+
+      // --- ceiling beams --------------------------------------------------
+      // A blank ceiling is half the frame doing nothing. Beams give the upper
+      // half structure and catch the light from the lanterns below.
+      { op: "prop", kind: "block", at: [0, -8], w: 29, d: 1, h: 1, y: 4, material: B.timber },
+      { op: "prop", kind: "block", at: [0, -2], w: 29, d: 1, h: 1, y: 4, material: B.timber },
+      { op: "prop", kind: "block", at: [0, 4], w: 29, d: 1, h: 1, y: 4, material: B.timber },
+
+      // --- tables, benches and stools -------------------------------------
       { op: "prop", kind: "block", at: [-8, 0], w: 3, d: 3, h: 1, material: B.timber },
+      { op: "prop", kind: "block", at: [-8, -3], w: 3, d: 1, h: 1, material: B.plank },
+      { op: "prop", kind: "block", at: [-8, 3], w: 3, d: 1, h: 1, material: B.plank },
       { op: "prop", kind: "block", at: [8, 0], w: 3, d: 3, h: 1, material: B.timber },
-      { op: "prop", kind: "block", at: [0, -6], w: 4, d: 3, h: 1, material: B.timber },
-      { op: "prop", kind: "lamp", at: [-8, -8], h: 4 },
-      { op: "prop", kind: "lamp", at: [8, -8], h: 4 },
+      { op: "prop", kind: "block", at: [8, -3], w: 3, d: 1, h: 1, material: B.plank },
+      { op: "prop", kind: "block", at: [8, 3], w: 3, d: 1, h: 1, material: B.plank },
+      { op: "prop", kind: "block", at: [0, -7], w: 5, d: 2, h: 1, material: B.timber },
+      { op: "prop", kind: "block", at: [-4, -7], w: 1, d: 1, h: 1, material: B.plank },
+      { op: "prop", kind: "block", at: [4, -7], w: 1, d: 1, h: 1, material: B.plank },
+
+      // --- light: sconces at head height, lanterns hung from the beams -----
+      { op: "prop", kind: "block", at: [-14, 2], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [14, 2], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [-14, -6], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [14, -6], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [-6, -2], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [6, -2], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+
+      // --- the window ------------------------------------------------------
+      // One shaft of cold daylight in a warm room. It is the only cool thing in
+      // frame, which is what stops the whole tavern reading as one orange wash,
+      // and it gives the god-ray something to come from.
+      { op: "prop", kind: "block", at: [15, 4], w: 1, d: 3, h: 3, y: 2, material: B.glass },
     ],
     places: {
       the_bar: { x: 0, z: 6 },

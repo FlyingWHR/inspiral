@@ -337,8 +337,22 @@ export class WebSurface implements SurfaceAdapter {
     return null;
   }
 
-  private serve(urlPath: string, res: import("node:http").ServerResponse): void {
-    const generated = this.serveExtra(urlPath.split("?")[0] ?? urlPath);
+  private serve(rawPath: string, res: import("node:http").ServerResponse): void {
+    /**
+     * STRIP THE QUERY BEFORE TOUCHING THE FILESYSTEM.
+     *
+     * This did not, and so every URL with a query string 404'd: `/?dir=hearth`
+     * asked the disk for a file literally named `?dir=hearth`. `serveExtra`
+     * below already split it off, which is why the bug hid -- generated routes
+     * worked and static ones did not.
+     *
+     * It cost more than a 404. The 404 body is the plain text "not found" on a
+     * white page, which screenshots as a pure white frame: L=255, saturation 0,
+     * 99.98% blown. That frame was mistaken for a rendering fault in the post
+     * pipeline and explained away as a pass-ordering quirk. It was this.
+     */
+    const urlPath = rawPath.split("?")[0] || "/";
+    const generated = this.serveExtra(urlPath);
     if (generated) {
       res.writeHead(200, { "content-type": generated.type, "cache-control": "no-cache" });
       res.end(generated.body);

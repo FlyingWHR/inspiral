@@ -14,6 +14,8 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 
 import { VoxelWorld } from "./voxel/chunk.js";
@@ -23,6 +25,8 @@ import { getArchetype } from "./scene/archetypes.js";
 import { getLook } from "./scene/looks.js";
 import { createSkyDome, applySkyLook } from "./scene/skydome.js";
 import { GradeShader, applyGrade } from "./scene/grade.js";
+import { getDirection } from "./scene/direction.js";
+import { voxelMaterial, makeDust, driftDust, makeShaft } from "./scene/stylise.js";
 import { ChunkMesher } from "./chunkmesh.js";
 import { Player } from "./player.js";
 import { paletteFor } from "./scene/palettes.js";
@@ -63,7 +67,13 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
  *
  * `?look=tavern` forces a profile regardless of scene, for shooting comparisons.
  */
-const LOOK = getLook(new URLSearchParams(location.search).get("look") ?? ARCH.id);
+const QS = new URLSearchParams(location.search);
+const LOOK = getLook(QS.get("look") ?? ARCH.id);
+/**
+ * The art direction, on top of the look. The look says what the light is doing
+ * in this room; the direction says what kind of picture we are making at all.
+ */
+const DIR = getDirection(QS.get("dir"));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = LOOK.exposure;
 
@@ -125,6 +135,44 @@ if (LOOK.practicals) {
   }
 }
 
+/**
+ * Rim light: a dim, cool light from behind the camera's subject. It costs one
+ * directional light and it is what stops a character melting into the wall
+ * behind them -- the cheapest legibility win available in a dark interior.
+ */
+if (DIR.rim) {
+  const rim = new THREE.DirectionalLight(DIR.rim.color, DIR.rim.intensity);
+  rim.position.copy(sunDir).multiplyScalar(-60).setY(28);
+  scene.add(rim);
+}
+
+// Air. Dust first, then the shaft it hangs in.
+const dust = DIR.dust ? makeDust(DIR.dust.count) : null;
+if (dust) {
+  dust.material.opacity = DIR.dust.opacity;
+  scene.add(dust);
+}
+if (DIR.shaft && ARCH.indoor) {
+  scene.add(
+    makeShaft({
+      from: [15, 19, 4],
+      to: [-2, 13, -2],
+      width: DIR.shaft.width,
+      opacity: DIR.shaft.opacity,
+      /**
+       * COOL, deliberately, whatever the room's sun is.
+       *
+       * The shaft was taking the look's sun colour, which in a tavern is warm,
+       * so the one element that exists to give the frame a second temperature
+       * came out the same orange as everything else. Daylight through a window
+       * is cold next to firelight; that contrast is the whole reason the window
+       * is in the build list.
+       */
+      color: 0xbfd8ff,
+    }),
+  );
+}
+
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 let gtao = null;
@@ -136,11 +184,32 @@ if (!location.search.includes("ao=0")) {
     composer.addPass(gtao);
   } catch (e) { console.warn("GTAO off:", e); }
 }
+/**
+ * Bloom, which wrecked the frames once before. That failure was a physical sky
+ * brighter than any threshold, so bloom smeared it over everything; the sky is
+ * a gradient dome now and these are interiors. The threshold is high enough
+ * that only genuinely emissive blocks -- lanterns, the fire, bottles -- cross
+ * it. If blown% climbs in pixelstats, this is the first thing to suspect.
+ */
+if (DIR.bloom) {
+  const b = new UnrealBloomPass(
+    new THREE.Vector2(innerWidth, innerHeight),
+    DIR.bloom.strength, DIR.bloom.radius, DIR.bloom.threshold,
+  );
+  composer.addPass(b);
+}
+if (DIR.dof) {
+  composer.addPass(new BokehPass(scene, camera, {
+    focus: DIR.dof.focus, aperture: DIR.dof.aperture, maxblur: DIR.dof.maxblur,
+  }));
+}
 composer.addPass(new OutputPass());
 // The grade runs AFTER OutputPass, i.e. after tone mapping and the colour-space
 // conversion, so what it adjusts is what pixelstats measures.
 const gradePass = new ShaderPass(GradeShader);
-applyGrade(gradePass, LOOK.grade);
+// The direction's grade wins where it speaks: a direction that did not also
+// own the grade would be fighting the look profile for the same knobs.
+applyGrade(gradePass, { ...LOOK.grade, ...(DIR.grade ?? {}) });
 if (!location.search.includes("grade=0")) composer.addPass(gradePass);
 
 function resize() {
@@ -158,10 +227,7 @@ const world = new VoxelWorld();
 generateScene(world, ARCH.id, { seed: 1 });
 clearPlaces(world, ARCH.id);
 
-const voxelMaterial = new THREE.MeshStandardMaterial({
-  vertexColors: true, roughness: 0.94, metalness: 0,
-});
-const mesher = new ChunkMesher(world, scene, voxelMaterial);
+const mesher = new ChunkMesher(world, scene, voxelMaterial(DIR));
 mesher.queueDirty();
 
 /**
@@ -606,8 +672,9 @@ function frame(dt) {
 
   // Firelight. Intensity only -- never `visible`, which would recompile every
   // material in the scene on the frame it changed.
+  flickerT += dt;
+  if (dust) driftDust(dust, flickerT);
   if (practicals.length && LOOK.practicals?.flicker) {
-    flickerT += dt;
     for (let i = 0; i < practicals.length; i++) {
       const l = practicals[i];
       const w = Math.sin(flickerT * 7.3 + i * 2.1) * 0.6 + Math.sin(flickerT * 17.1 + i) * 0.4;

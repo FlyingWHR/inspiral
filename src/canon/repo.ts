@@ -473,6 +473,47 @@ export class CanonRepo {
   }
 
   /**
+   * Open a visit. `visitor_interactions` counts interactions, not visits --
+   * digest.ts even labels `interactions.length` as "visits", which is wrong --
+   * so sessions are their own table.
+   */
+  openSession(fanId: string, arrivalEventId: string, greetingCached: boolean): void {
+    this.db
+      .prepare(
+        `INSERT INTO visitor_sessions (fan_id, started_ts, arrival_event_id, greeting_cached)
+         VALUES (?, ?, ?, ?)`,
+      )
+      .run(fanId, this.now(), arrivalEventId, greetingCached ? 1 : 0);
+  }
+
+  /** Close the most recent open visit, if there is one. */
+  closeSession(fanId: string): void {
+    this.db
+      .prepare(
+        `UPDATE visitor_sessions SET ended_ts = ?
+          WHERE id = (SELECT id FROM visitor_sessions
+                       WHERE fan_id = ? AND ended_ts IS NULL
+                       ORDER BY started_ts DESC LIMIT 1)`,
+      )
+      .run(this.now(), fanId);
+  }
+
+  sessionsFor(fanId: string): {
+    id: number; fan_id: string; started_ts: string; ended_ts: string | null;
+    arrival_event_id: string; greeting_cached: number;
+  }[] {
+    return this.db
+      .prepare("SELECT * FROM visitor_sessions WHERE fan_id = ? ORDER BY started_ts ASC")
+      .all(fanId) as never;
+  }
+
+  allVisitors(): { fan_id: string; display_name: string; first_seen: string; synthetic: number; profile: string | null }[] {
+    return this.db
+      .prepare("SELECT fan_id, display_name, first_seen, synthetic, profile FROM visitors ORDER BY first_seen ASC")
+      .all() as never;
+  }
+
+  /**
    * Record what an event ACTUALLY moved, after clamping.
    *
    * `adjustRelationship` clamps to canon ranges on write, so a requested -25
@@ -517,6 +558,23 @@ export class CanonRepo {
       )
       .run(r.fanId, r.characterId, r.eventId, r.citedEventId, this.now(), r.kind,
            r.resolved ? 1 : 0, r.visitorInitiated ? 1 : 0);
+  }
+
+  /**
+   * How much requested state movement the clamps absorbed, 0..1.
+   *
+   * Anti-metric: above 0.20 the world has run out of range and every stance
+   * move it appears to make is fictional. Expect this to breach on a world
+   * whose relationships are already pinned at the extremes.
+   */
+  clampRatio(): number {
+    const r = this.db
+      .prepare("SELECT SUM(clamped) AS c, SUM(rel_movement + stance_movement) AS m FROM event_effects")
+      .get() as { c: number | null; m: number | null };
+    const clamped = r?.c ?? 0;
+    const realised = r?.m ?? 0;
+    const total = clamped + realised;
+    return total > 0 ? clamped / total : 0;
   }
 
   /** Every recorded recall, newest first. */

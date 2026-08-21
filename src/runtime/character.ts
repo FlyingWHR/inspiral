@@ -79,7 +79,13 @@ export interface RenderedBehavior {
 }
 
 /** Minimum absence before a visitor counts as having been away. */
-const GAP_MS = 12 * 3_600_000;
+/**
+ * How long an absence has to be before a character treats a visitor as
+ * "returning". Exported because the affinity metric gates on the same
+ * threshold: if someone tunes this, the fiction and the measurement must move
+ * together, and a second copy of the number is how they drift apart.
+ */
+export const GAP_MS = 12 * 3_600_000;
 
 /**
  * Actions that name the history behind them.

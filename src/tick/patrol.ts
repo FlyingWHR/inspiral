@@ -29,8 +29,8 @@
  *     `visitorLeaves` now, which writes the event.
  */
 
-import { onboardVisitor, visitorAction, type TickContext } from "./runTick.js";
-import { visitorLeaves } from "./visitors.js";
+import { visitorAction, type TickContext } from "./runTick.js";
+import { visitorArrive, visitorLeaves } from "./visitors.js";
 import { log } from "../log.js";
 
 /**
@@ -162,7 +162,16 @@ export async function patrolVisit(
   const { repo } = ctx;
   repo.ensureVisitor(profile.id, profile.name, { profile: profile.id });
 
-  await onboardVisitor(ctx, profile.id, profile.name);
+  /**
+   * Go through `visitorArrive`, not `onboardVisitor` directly.
+   *
+   * The first version called onboardVisitor, which skipped the whole real
+   * arrival path: no session row, and no cached-greeting branch. The result was
+   * a patrol that generated stances and citations but reported zero sessions,
+   * so cadence was structurally zero and the hollow-return rate -- the one
+   * quantity T4 predicts in advance -- had nothing to count.
+   */
+  const arrival = await visitorArrive(ctx, { id: profile.id, name: profile.name });
 
   // The gate counts ALL invocations, patrol and tick alike, because starving
   // the ticks to feed the patrol would stop the world moving -- a self-inflicted
@@ -182,7 +191,7 @@ export async function patrolVisit(
   }
 
   visitorLeaves(ctx, { id: profile.id, name: profile.name });
-  return { spentInvocation: pledged, pledged };
+  return { spentInvocation: pledged || !arrival.cached, pledged };
 }
 
 function pledgeText(profile: PatrolProfile, target: string): string {

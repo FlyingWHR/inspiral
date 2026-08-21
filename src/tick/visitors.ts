@@ -124,19 +124,23 @@ export async function visitorArrive(
     const rec = recording(ctx);
     const outcome = await onboardVisitor(rec.ctx, who.id, who.name);
     remember(ctx, who.id, rec.seen);
+    repo.openSession(who.id, arrivalEventId(outcome), false);
     return { outcome, cached: false, first: true };
   }
 
   const stored = recall(ctx, who.id);
   if (stored && stored.fp === fingerprint(ctx, who.id)) {
     // Nothing has happened since they left. Say the same thing, for free.
-    repo.appendEvent({
+    // This is the HOLLOW RETURN, and the session records it as such: it is the
+    // f1 fatigue term and the thing T4 predicts the rate of in advance.
+    const cachedArrival = repo.appendEvent({
       source: "visitor",
       actors: [`fan:${who.id}`],
       type: "visitor_arrived",
       payload: { summary: `${who.name} came back. Nothing had changed since they left.` },
       significance_hint: 0.05,
     });
+    repo.openSession(who.id, cachedArrival.event_id, true);
     for (const b of stored.behaviors) await ctx.surface?.present(b);
     log.info(`${who.name} returned to an unchanged ward -- replayed, no invocation spent`);
     return {
@@ -149,6 +153,7 @@ export async function visitorArrive(
   const rec = recording(ctx);
   const outcome = await visitorAction(rec.ctx, who.id, "returned to the ward after days away");
   remember(ctx, who.id, rec.seen);
+  repo.openSession(who.id, arrivalEventId(outcome), false);
   return { outcome, cached: false, first: false };
 }
 
@@ -165,9 +170,19 @@ export async function visitorDoes(
   return outcome;
 }
 
+/**
+ * The id of the arrival that opened a session. A skipped tick has no applied
+ * directives, so the session still opens -- the visit happened even if the host
+ * did not answer -- just without an anchor event.
+ */
+function arrivalEventId(outcome: TickOutcome): string {
+  return outcome.status === "applied" ? (outcome.applied[0]?.event.event_id ?? "") : "";
+}
+
 /** Somebody leaves. Free. */
 export function visitorLeaves(ctx: TickContext, who: VisitorIdentity): void {
   ctx.repo.setPresence(who.id, false);
+  ctx.repo.closeSession(who.id);
   ctx.repo.appendEvent({
     source: "visitor",
     actors: [`fan:${who.id}`],

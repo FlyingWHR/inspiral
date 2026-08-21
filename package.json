@@ -34,7 +34,8 @@
     "shots:voxel": "node tools/visual/voxelshots.mjs --out=docs/screens",
     "directions": "node tools/visual/directions.mjs --out=docs/screens/directions",
     "huestats": "node tools/visual/huestats.mjs",
-    "shots:chat": "node tools/visual/chatshot.mjs --out=docs/screens"
+    "shots:chat": "node tools/visual/chatshot.mjs --out=docs/screens",
+    "affinity": "node --env-file-if-exists=.env --import tsx scripts/affinity.ts"
   },
   "dependencies": {
     "@animocabrands/minds-client-lib": "0.1.3",

@@ -1,4 +1,5 @@
 import { rankSignificance } from "../canon/significance.js";
+import { roleOf, fillSlate, type ContentRole } from "./roles.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { CanonRepo } from "../canon/repo.js";
@@ -64,6 +65,27 @@ function trackedLink(repo: CanonRepo, e: WorldEvent, opts: ClipOptions): string 
  * storyline cannot take every slot -- a feed of five posts about the same
  * quarrel reads as a bug.
  */
+/**
+ * A visitor's real choice, and specifically NOT a patrol visitor's.
+ *
+ * Handing an owner a clip draft about a bot is the pipeline generating fake
+ * social proof, which is the worst failure available to this project. The
+ * synthetic tag is checked here rather than trusted to a naming convention.
+ */
+function realVisitorIn(e: { actors: string[] }, repo?: CanonRepo): boolean {
+  const fan = e.actors.find((a) => a.startsWith("fan:"));
+  if (!fan) return false;
+  if (!repo) return true;
+  return !repo.isSynthetic(fan.slice(4));
+}
+
+/** The role a clip would play, with synthetic visitors barred from `community`. */
+function clipRole(repo: CanonRepo, e: { type: string; actors: string[]; payload: Record<string, unknown> }): ContentRole | null {
+  const r = roleOf(e as never);
+  if (r === "community" && !realVisitorIn(e, repo)) return null;
+  return r;
+}
+
 export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
   const rc = repo.rankContexts();
   const limit = opts.limit ?? 3;
@@ -80,19 +102,56 @@ export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
     // pillars of the evidence model never firing at all.
     .filter((e) => rankSignificance(e, rc.get(e.event_id)) >= minSig)
     .filter((e) => Date.parse(e.ts) >= cutoff)
-    .sort(
-      (a, b) =>
-        rankSignificance(b, rc.get(b.event_id)) - rankSignificance(a, rc.get(a.event_id)) ||
-        Date.parse(b.ts) - Date.parse(a.ts),
-    );
+    /**
+     * Ranked on EVIDENCE, with the host's own opinion demoted to a tiebreak:
+     * computed significance, then whether the world has actually cited it,
+     * then whether a real (non-synthetic) visitor's real choice is in it, then
+     * recency, and only then `significance_hint`.
+     */
+    .sort((a, b) => {
+      const sa = rankSignificance(a, rc.get(a.event_id));
+      const sb = rankSignificance(b, rc.get(b.event_id));
+      if (sb !== sa) return sb - sa;
+      const ca = rc.get(a.event_id)?.citedBy ?? 0;
+      const cb = rc.get(b.event_id)?.citedBy ?? 0;
+      if (cb !== ca) return cb - ca;
+      const ra = realVisitorIn(a) ? 1 : 0;
+      const rb = realVisitorIn(b) ? 1 : 0;
+      if (rb !== ra) return rb - ra;
+      const ta = Date.parse(a.ts);
+      const tb = Date.parse(b.ts);
+      if (tb !== ta) return tb - ta;
+      return b.significance_hint - a.significance_hint;
+    });
 
-  const usedArcs = new Set<string>();
+  /**
+   * Dedupe by arc BEFORE the quota, not after.
+   *
+   * Doing it afterwards meant the quota could pick a clip and the arc filter
+   * could then silently drop it, so the slate came back short and -- in the
+   * case the demo-beat test caught -- the beat from the owner's own feed was
+   * chosen and then discarded because an earlier pick shared its storyline.
+   */
+  const seenArcs = new Set<string>();
+  const deduped = candidates.filter((e) => {
+    const arcId = typeof e.payload.arc_id === "string" ? e.payload.arc_id : null;
+    if (!arcId) return true;
+    if (seenArcs.has(arcId)) return false;
+    seenArcs.add(arcId);
+    return true;
+  });
+
+  /**
+   * A PORTFOLIO, NOT A RANKING. Asking every clip to be the best clip is the
+   * mistake the whole attention frame is about, so the slate is filled against
+   * a role quota over the window and only then by rank.
+   */
+  const slate = fillSlate(deduped, (e) => clipRole(repo, e), Math.max(limit, 1));
+
   const out: Clip[] = [];
-  for (const e of candidates) {
+  for (const e of slate) {
     if (out.length >= limit) break;
     const arcId = typeof e.payload.arc_id === "string" ? e.payload.arc_id : null;
-    if (arcId && usedArcs.has(arcId)) continue;
-    if (arcId) usedArcs.add(arcId);
 
     const arc = arcId ? repo.getArc(arcId) : undefined;
     const clip: Clip = {
@@ -105,6 +164,14 @@ export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
     if (arc) clip.context = arc.title;
     out.push(clip);
   }
+  /**
+   * SELECTION is a portfolio; PRESENTATION is still a ranking. The quota
+   * decides WHICH clips the owner gets so the slate is not six variations on
+   * the loudest thing that happened, but they are handed over strongest-first
+   * because that is the order a person reads a list in.
+   */
+  out.sort((a, b) => b.significance - a.significance || Date.parse(b.ts) - Date.parse(a.ts));
+
   return out;
 }
 

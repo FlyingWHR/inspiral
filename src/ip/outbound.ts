@@ -1,3 +1,4 @@
+import { rankSignificance } from "../canon/significance.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { CanonRepo } from "../canon/repo.js";
@@ -73,11 +74,13 @@ export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
   const candidates = repo
     .recentEvents(200)
     .filter((e) => !NOISE.has(e.type))
-    .filter((e) => e.significance_hint >= minSig)
+    // Re-ranked, not raw: see canon/significance.ts. A host marking its own
+    // beat 0.95 must not be able to outrank a consequence the world actually had.
+    .filter((e) => rankSignificance(e) >= minSig)
     .filter((e) => Date.parse(e.ts) >= cutoff)
     .sort(
       (a, b) =>
-        b.significance_hint - a.significance_hint || Date.parse(b.ts) - Date.parse(a.ts),
+        rankSignificance(b) - rankSignificance(a) || Date.parse(b.ts) - Date.parse(a.ts),
     );
 
   const usedArcs = new Set<string>();
@@ -94,7 +97,7 @@ export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
       ts: e.ts,
       headline: describeEvent(e),
       link: trackedLink(repo, e, opts),
-      significance: e.significance_hint,
+      significance: rankSignificance(e),
     };
     if (arc) clip.context = arc.title;
     out.push(clip);
@@ -168,8 +171,8 @@ export function showrunnerNote(repo: CanonRepo, hours = 24): string {
 
   L.push("WHAT HAPPENED");
   const worth = events
-    .filter((e) => !NOISE.has(e.type) && e.significance_hint >= 0.45)
-    .sort((a, b) => b.significance_hint - a.significance_hint)
+    .filter((e) => !NOISE.has(e.type) && rankSignificance(e) >= 0.45)
+    .sort((a, b) => rankSignificance(b) - rankSignificance(a))
     .slice(0, 6);
   if (worth.length === 0) L.push("  (a quiet window -- nothing anyone will bring up later)");
   for (const e of worth) L.push(`  [${e.event_id}] ${describeEvent(e)}`);

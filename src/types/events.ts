@@ -78,8 +78,16 @@ export const WorldEvent = z.object({
   payload: z.record(z.unknown()).default({}),
   /**
    * The host's own guess at how much this should matter later, 0..1.
-   * ADVISORY ONLY. Canon recomputes real significance on read, so a host that
-   * flatters itself cannot inflate its way into permanent memory.
+   *
+   * ADVISORY ONLY, and enforced as such: nothing reads this field directly.
+   * `rankSignificance()` in canon/significance.ts computes significance from
+   * evidence the host does not control -- event type, how many parties, whether
+   * it changed state, where it came from, and how often later events cite it --
+   * and lets this hint move the result by at most +/-0.15.
+   *
+   * For a long time that was a comment describing behaviour that did not exist
+   * and every read site used the raw number. See SCHEMA.md, "Re-ranking on
+   * read", and tests/significance.test.ts.
    */
   significance_hint: z.number().min(0).max(1).default(0.5),
 });

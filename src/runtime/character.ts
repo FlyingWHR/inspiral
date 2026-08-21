@@ -1,3 +1,4 @@
+import { rankSignificance } from "../canon/significance.js";
 import type { CanonRepo } from "../canon/repo.js";
 import type { CharacterSheet, NotableMoment, Relationship, ToneRules } from "../types/canon.js";
 import type { Directive } from "../types/directive.js";
@@ -141,14 +142,16 @@ export function findGrievance(
     .filter((e) => {
       if (e.actors[0] === undefined || !rivals.has(e.actors[0])) return false;
       if (!e.actors.includes(characterId)) return false;
-      if (e.significance_hint < 0.4) return false;
+      // Re-ranked on read (canon/significance.ts): the grievance a character
+      // brings up has to be one the world agrees was significant.
+      if (rankSignificance(e) < 0.4) return false;
       // You cannot complain about someone backing down. Only hostile acts.
       if (!GRIEVABLE.has(e.type)) return false;
       return Date.parse(e.ts) >= sinceMs;
     })
     .sort((a, b) => {
-      if (b.significance_hint !== a.significance_hint)
-        return b.significance_hint - a.significance_hint;
+      const [ra, rb] = [rankSignificance(a), rankSignificance(b)];
+      if (rb !== ra) return rb - ra;
       return Date.parse(b.ts) - Date.parse(a.ts);
     });
 

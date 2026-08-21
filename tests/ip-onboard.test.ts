@@ -54,11 +54,47 @@ describe("IPSource", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  it("derives significance from engagement when the item does not state it", () => {
+  /**
+   * This test used to assert the opposite -- that a post with 90,000 likes
+   * scored higher than one with 3. That was the ingest path quietly making
+   * platform engagement the objective function of a project whose whole
+   * argument is that optimising for engagement is the mistake.
+   */
+  it("ignores engagement entirely when deriving significance", () => {
     const quiet = normalizeItem({ text: "x", metrics: { likes: 3 } }, "a", "h");
-    const loud = normalizeItem({ text: "x", metrics: { likes: 90000, comments: 8000 } }, "b", "h");
-    expect(loud.significance!).toBeGreaterThan(quiet.significance!);
-    expect(loud.significance!).toBeLessThanOrEqual(0.95);
+    const viral = normalizeItem(
+      { text: "x", metrics: { likes: 900000, comments: 80000, views: 40000000 } }, "b", "h",
+    );
+    expect(viral.significance).toBe(quiet.significance);
+  });
+
+  it("scores narrative consequence instead", () => {
+    const idle = normalizeItem({ text: "nice weather" }, "a", "h");
+    // Two named actors, a declared impact, part of a running arc, and language
+    // of something ending: this is what a writers' room would call significant.
+    const consequential = normalizeItem(
+      {
+        text: "She refused the seat and the alliance ended in front of everyone.",
+        actors: ["vance", "okonkwo"],
+        arc_id: "arc_ledger",
+        impact: { affinity: -40, tension: 60 },
+      },
+      "b",
+      "h",
+    );
+    expect(consequential.significance!).toBeGreaterThan(idle.significance!);
+    expect(consequential.significance!).toBeLessThanOrEqual(0.95);
+    expect(idle.significance!).toBeGreaterThanOrEqual(0.15);
+  });
+
+  it("a viral post with no consequences scores no higher than a quiet one", () => {
+    const viral = normalizeItem(
+      { text: "look at this", metrics: { likes: 5_000_000 } }, "a", "h",
+    );
+    const consequential = normalizeItem(
+      { text: "He resigned.", actors: ["a", "b"], impact: { trust: -50 } }, "b", "h",
+    );
+    expect(consequential.significance!).toBeGreaterThan(viral.significance!);
   });
 
   it("network sources fail loudly rather than looking like a quiet account", async () => {

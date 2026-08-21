@@ -82,7 +82,39 @@ convention people remember.
 | `actors` | 1–8 entries. A character id, or a visitor as `fan:<id>`. **`actors[0]` is the initiator** — the whole grievance system depends on this. |
 | `type` | Closed vocabulary (below). Not free text. |
 | `payload` | Small object. `payload.summary` is the human-readable line used in digests and transcripts. |
-| `significance_hint` | The host's own guess at how much this should matter later. **Advisory.** Canon re-ranks on read, so a host cannot flatter its way into permanent memory. |
+| `significance_hint` | The host's own guess at how much this should matter later. **Advisory, and bounded.** See below. |
+
+### Re-ranking on read
+
+`significance_hint` is what the host *claims*. It is never what anything reads.
+
+Every read site — clip selection, the showrunner's note, the grievance a
+character brings up — calls `rankSignificance()` in `src/canon/significance.ts`,
+which computes an **evidence** score from facts the host does not control and
+then lets the hint nudge it by at most ±0.15:
+
+```
+real = evidence + (hint − 0.5) × 0.30
+```
+
+Evidence is five things, all observable in the log:
+
+| | |
+| --- | --- |
+| **type** | the vocabulary is not flat — an alliance breaking outranks a rumour |
+| **reach** | two named parties is a relationship event; one is a mood |
+| **effect** | did applying it actually move canon state |
+| **provenance** | `source: ingest` came from the owner's real feed; `source: seed` is day-zero scaffolding |
+| **uptake** | how many later events cite it — the strongest signal, and the one a host can least game |
+
+So a host that marks its own rumour `0.99` still loses to a two-party alliance
+break marked `0.5`, and an event nobody ever refers to again decays in the
+ranking however it was labelled at birth. `tests/significance.test.ts` holds
+that guarantee, including the bound itself.
+
+This section previously described the behaviour without it existing — every
+read site used the raw hint. If you are reading this to check whether the
+document matches the code, the answer is now yes, and the test is the proof.
 
 ### Event types
 

@@ -221,15 +221,78 @@ function splitList(v: string | undefined): string[] | undefined {
   return out.length ? out : undefined;
 }
 
+
+/**
+ * SIGNIFICANCE IS NARRATIVE CONSEQUENCE, NOT REACH.
+ *
+ * This used to be `likes + 3*comments + views/1000`, log-scaled. Which meant
+ * that a project whose entire argument is that optimising for engagement is the
+ * mistake had platform engagement as its hidden objective function: the most
+ * liked post became the most memorable event, and the cast would preferentially
+ * cite whatever had performed best. That is the thing we say not to do, wired
+ * into the ingest path.
+ *
+ * Metrics are now read for display only and never scored. What raises
+ * significance is what would raise it in a writers' room:
+ *
+ *   IT HAS CONSEQUENCES     an explicit `impact` on affinity, trust or tension.
+ *                           The item itself claims something changed.
+ *   IT INVOLVES OTHERS      an event naming two people is a relationship event;
+ *                           one naming nobody is a mood.
+ *   IT BELONGS TO A STORY   an `arc_id` means it advances something already
+ *                           running, which is what the tick loop escalates.
+ *   IT IS IRREVERSIBLE      language of commitment, refusal, ending, first and
+ *                           last. A door closing is more consequential than a
+ *                           door being described.
+ *
+ * A post with a million views and none of those properties scores the floor,
+ * and that is the correct answer.
+ */
+const CONSEQUENCE_WORDS = [
+  "refus", "resign", "quit", "ended", "broke", "banned", "expelled", "seiz",
+  "never again", "for the last time", "for the first time", "no longer",
+  "admitted", "confess", "apolog", "withdrew", "cancel", "sold", "lost",
+  "won", "declared", "accused", "denied", "promised", "swore", "betray",
+];
+
+/** Kinds differ in how much weight they can carry before anything else. */
+const KIND_BASE: Record<string, number> = {
+  profile: 0.2,
+  comment: 0.25,
+  post: 0.35,
+  video: 0.4,
+  match: 0.5,
+  pinned: 0.55,
+};
+
+export function consequenceScore(r: Partial<RawItem> & Record<string, unknown>): number {
+  let score = KIND_BASE[String(r.kind ?? "post")] ?? 0.35;
+
+  const impact = r.impact as RawItem["impact"] | undefined;
+  if (impact && typeof impact === "object") {
+    const magnitude = Math.abs(impact.affinity ?? 0) + Math.abs(impact.trust ?? 0) +
+      Math.abs(impact.tension ?? 0);
+    if (magnitude > 0) score += Math.min(0.22, 0.06 + magnitude / 260);
+  }
+
+  const actors = Array.isArray(r.actors) ? r.actors.length : 0;
+  if (actors >= 2) score += Math.min(0.14, 0.08 + (actors - 2) * 0.03);
+
+  if (r.arc_id !== undefined && r.arc_id !== null && String(r.arc_id) !== "") score += 0.1;
+
+  const text = String(r.text ?? "").toLowerCase();
+  const hits = CONSEQUENCE_WORDS.filter((w) => text.includes(w)).length;
+  if (hits) score += Math.min(0.12, hits * 0.05);
+
+  return Math.max(0.15, Math.min(0.95, Number(score.toFixed(3))));
+}
+
 /** Fill in what a loose fixture leaves out. The one place defaults are decided. */
 export function normalizeItem(
   r: Partial<RawItem> & Record<string, unknown>,
   fallbackId: string,
   handle: string,
 ): RawItem {
-  const metrics = r.metrics ?? {};
-  const engagement =
-    (metrics.likes ?? 0) + (metrics.comments ?? 0) * 3 + (metrics.views ?? 0) / 1000;
   // A markdown header yields strings for everything, so a `significance: 0.9`
   // line has to survive as a number or the item silently drops below every
   // downstream threshold.
@@ -240,11 +303,10 @@ export function normalizeItem(
     ts: String(r.ts ?? new Date(0).toISOString()),
     author: String(r.author ?? handle),
     text: String(r.text ?? "").trim(),
-    // Log-scaled so one viral video does not make everything else invisible.
     significance:
       typeof stated === "number" && Number.isFinite(stated)
         ? stated
-        : Math.min(0.95, 0.25 + Math.log10(1 + engagement) / 8),
+        : consequenceScore(r),
   };
   if (r.url) item.url = String(r.url);
   if (r.metrics) item.metrics = r.metrics;

@@ -461,15 +461,121 @@ export class CanonRepo {
   // VISITORS
   // -------------------------------------------------------------------------
 
-  ensureVisitor(fanId: string, displayName = ""): void {
+  ensureVisitor(fanId: string, displayName = "", synthetic?: { profile: string }): void {
     const now = this.now();
     this.db
       .prepare(
-        `INSERT INTO visitors (fan_id, first_seen, last_seen, display_name, present)
-         VALUES (?, ?, ?, ?, 1)
+        `INSERT INTO visitors (fan_id, first_seen, last_seen, display_name, present, synthetic, profile)
+         VALUES (?, ?, ?, ?, 1, ?, ?)
          ON CONFLICT(fan_id) DO UPDATE SET last_seen = excluded.last_seen, present = 1`,
       )
-      .run(fanId, now, now, displayName);
+      .run(fanId, now, now, displayName, synthetic ? 1 : 0, synthetic?.profile ?? null);
+  }
+
+  /**
+   * Record what an event ACTUALLY moved, after clamping.
+   *
+   * `adjustRelationship` clamps to canon ranges on write, so a requested -25
+   * against a relationship already at -79 moves 21 points and silently discards
+   * 4. Nothing recorded the discard, which meant "did this change anything" --
+   * the EFFECT pillar of significance -- was unanswerable and `changedState`
+   * was permanently false at every call site.
+   */
+  recordEffect(
+    eventId: string,
+    e: { rel?: number; stance?: number; clamped?: number; arcTransition?: string; irreversible?: number },
+  ): void {
+    this.db
+      .prepare(
+        `INSERT INTO event_effects (event_id, ts, rel_movement, stance_movement, arc_transition, irreversible, clamped)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(event_id) DO UPDATE SET
+           rel_movement    = rel_movement + excluded.rel_movement,
+           stance_movement = stance_movement + excluded.stance_movement,
+           clamped         = clamped + excluded.clamped,
+           arc_transition  = CASE WHEN excluded.arc_transition <> 'none'
+                                  THEN excluded.arc_transition ELSE arc_transition END`,
+      )
+      .run(eventId, this.now(), e.rel ?? 0, e.stance ?? 0, e.arcTransition ?? "none",
+           e.irreversible ?? 0, e.clamped ?? 0);
+  }
+
+  /**
+   * Record that a performance cited a prior event -- the UPTAKE signal. Other
+   * beats, later, referring back is the part of significance a host can least
+   * game, and it was the other permanently-dead term.
+   */
+  recordRecall(r: {
+    fanId: string; characterId: string; eventId: string; citedEventId: string;
+    kind: string; resolved: boolean; visitorInitiated: boolean;
+  }): void {
+    this.db
+      .prepare(
+        `INSERT INTO recall_citations
+           (fan_id, character_id, event_id, cited_event_id, ts, kind, resolved, visitor_initiated)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(r.fanId, r.characterId, r.eventId, r.citedEventId, this.now(), r.kind,
+           r.resolved ? 1 : 0, r.visitorInitiated ? 1 : 0);
+  }
+
+  /** Every recorded recall, newest first. */
+  recallCitations(): {
+    fan_id: string; character_id: string; event_id: string; cited_event_id: string;
+    ts: string; kind: string; resolved: number; visitor_initiated: number;
+  }[] {
+    return this.db
+      .prepare("SELECT * FROM recall_citations ORDER BY ts DESC")
+      .all() as never;
+  }
+
+  /**
+   * Evidence context for every event, in two queries rather than one per event.
+   * Read sites pass this into `rankSignificance`; without it the EFFECT and
+   * UPTAKE terms are structurally dead, and the measured spread between "this
+   * mattered" and "nothing is known about this" was 0.02.
+   */
+  rankContexts(): Map<string, { citedBy: number; changedState: boolean }> {
+    const out = new Map<string, { citedBy: number; changedState: boolean }>();
+    for (const r of this.db
+      .prepare("SELECT cited_event_id AS id, COUNT(*) AS n FROM recall_citations GROUP BY cited_event_id")
+      .all() as { id: string; n: number }[]) {
+      out.set(r.id, { citedBy: r.n, changedState: false });
+    }
+    for (const r of this.db
+      .prepare("SELECT event_id AS id, rel_movement + stance_movement AS m FROM event_effects")
+      .all() as { id: string; m: number }[]) {
+      const cur = out.get(r.id) ?? { citedBy: 0, changedState: false };
+      cur.changedState = r.m > 0;
+      out.set(r.id, cur);
+    }
+    return out;
+  }
+
+  /**
+   * Synthetic visitors, and only those. The patrol is a control arm: its rows
+   * must never be merged into anything a judge is shown, so the tag lives in
+   * the schema rather than in a naming convention somebody forgets.
+   */
+  isSynthetic(fanId: string): boolean {
+    const r = this.db.prepare("SELECT synthetic FROM visitors WHERE fan_id = ?").get(fanId) as
+      | { synthetic: number }
+      | undefined;
+    return Boolean(r?.synthetic);
+  }
+
+  syntheticFanIds(): string[] {
+    return (this.db.prepare("SELECT fan_id FROM visitors WHERE synthetic = 1").all() as
+      { fan_id: string }[]).map((r) => r.fan_id);
+  }
+
+  /** Host invocations in the trailing window, for the patrol's own budget gate. */
+  invocationsSince(hours: number): number {
+    const since = new Date(Date.parse(this.now()) - hours * 3_600_000).toISOString();
+    const r = this.db
+      .prepare("SELECT COUNT(*) AS c FROM host_invocations WHERE ts >= ?")
+      .get(since) as { c: number };
+    return r?.c ?? 0;
   }
 
   /** Mark a visitor as in the world or gone from it. */

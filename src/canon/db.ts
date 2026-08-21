@@ -179,7 +179,64 @@ CREATE TABLE IF NOT EXISTS last_directives (
 );
 `;
 
-const SCHEMA_VERSION = 1;
+/**
+ * The affinity tables, from docs/affinity/002-affinity-tables.sql.
+ *
+ * Kept as a separate string rather than folded into DDL so the provenance is
+ * obvious: this is the spec's DDL, and the spec is the place to change it.
+ */
+const AFFINITY_DDL = `
+CREATE TABLE IF NOT EXISTS recall_citations (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  fan_id            TEXT    NOT NULL,
+  character_id      TEXT    NOT NULL,
+  event_id          TEXT    NOT NULL,   -- the performance that did the citing
+  cited_event_id    TEXT    NOT NULL,   -- the receipt being cited
+  ts                TEXT    NOT NULL,
+  kind              TEXT    NOT NULL,   -- moment | grievance | relationship
+  resolved          INTEGER NOT NULL DEFAULT 0,
+  visitor_initiated INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_rc_fan   ON recall_citations(fan_id, ts);
+CREATE INDEX IF NOT EXISTS idx_rc_cited ON recall_citations(cited_event_id);
+CREATE TABLE IF NOT EXISTS visitor_sessions (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  fan_id              TEXT    NOT NULL,
+  started_ts          TEXT    NOT NULL,
+  ended_ts            TEXT,
+  arrival_event_id    TEXT    NOT NULL,
+  referrer_event_id   TEXT,
+  greeting_cached     INTEGER NOT NULL DEFAULT 0,
+  cites_delivered     INTEGER NOT NULL DEFAULT 0,
+  stance_abs_delta    REAL    NOT NULL DEFAULT 0,
+  stance_signed_delta REAL    NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_vs_fan ON visitor_sessions(fan_id, started_ts);
+CREATE TABLE IF NOT EXISTS event_effects (
+  event_id        TEXT PRIMARY KEY,
+  ts              TEXT    NOT NULL,
+  rel_movement    REAL    NOT NULL DEFAULT 0,
+  stance_movement REAL    NOT NULL DEFAULT 0,
+  arc_transition  TEXT    NOT NULL DEFAULT 'none',
+  irreversible    REAL    NOT NULL DEFAULT 0,
+  clamped         REAL    NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_ee_ts ON event_effects(ts);
+CREATE TABLE IF NOT EXISTS clip_drafts (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id    TEXT    NOT NULL,
+  role        TEXT,                      -- reach|value|identity|trust|conversion|community
+  arc_id      TEXT,
+  drafted_ts  TEXT    NOT NULL,
+  headline    TEXT    NOT NULL DEFAULT '',
+  link        TEXT    NOT NULL DEFAULT '',
+  published   INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_cd_ts   ON clip_drafts(drafted_ts);
+CREATE INDEX IF NOT EXISTS idx_cd_role ON clip_drafts(role, drafted_ts);
+`;
+
+const SCHEMA_VERSION = 2;
 
 /**
  * Open (and if needed create) the canon database.
@@ -194,9 +251,25 @@ export function openDb(path: string): DB {
   db.pragma("foreign_keys = ON");
   db.exec(DDL);
 
+  db.exec(AFFINITY_DDL);
+
   const row = db.pragma("user_version", { simple: true }) as number;
+  if (row < 2) {
+    /**
+     * 1 -> 2. SQLite has no ADD COLUMN IF NOT EXISTS, so the two visitor
+     * columns cannot live in the idempotent DDL and have to be probed for.
+     * `synthetic` is the tag that keeps patrol history out of every number a
+     * judge is shown; it is permanent and load-bearing, not a debug flag.
+     */
+    const cols = (db.pragma("table_info(visitors)") as { name: string }[]).map((c) => c.name);
+    if (!cols.includes("synthetic")) {
+      db.exec("ALTER TABLE visitors ADD COLUMN synthetic INTEGER NOT NULL DEFAULT 0");
+    }
+    if (!cols.includes("profile")) {
+      db.exec("ALTER TABLE visitors ADD COLUMN profile TEXT");
+    }
+  }
   if (row < SCHEMA_VERSION) {
-    // Only one version so far. Future migrations slot in here.
     db.pragma(`user_version = ${SCHEMA_VERSION}`);
   }
   return db;

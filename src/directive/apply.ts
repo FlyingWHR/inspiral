@@ -67,17 +67,34 @@ function summarise(d: Directive, repo: CanonRepo): string {
 function applyDelta(delta: CanonDelta, repo: CanonRepo, event: WorldEvent): void {
   switch (delta.op) {
     case "relationship_delta": {
-      repo.adjustRelationship(
-        delta.from_id,
-        delta.to_id,
-        {
-          affinity: delta.affinity,
-          trust: delta.trust,
-          tension: delta.tension,
-          note: delta.note,
-        },
-        event.event_id,
-      );
+      {
+        // Measure realised movement against requested, so the clamp discard is
+        // recorded rather than lost. An event that moved nothing did not matter,
+        // whatever its hint claims -- see canon/significance.ts.
+        const before = repo.getRelationship(delta.from_id, delta.to_id);
+        const after = repo.adjustRelationship(
+          delta.from_id,
+          delta.to_id,
+          {
+            affinity: delta.affinity,
+            trust: delta.trust,
+            tension: delta.tension,
+            note: delta.note,
+          },
+          event.event_id,
+        );
+        const b = before ?? { affinity: 0, trust: 50, tension: 0 };
+        const realised =
+          Math.abs(after.affinity - b.affinity) +
+          Math.abs(after.trust - b.trust) +
+          Math.abs(after.tension - b.tension);
+        const requested =
+          Math.abs(delta.affinity ?? 0) + Math.abs(delta.trust ?? 0) + Math.abs(delta.tension ?? 0);
+        repo.recordEffect(event.event_id, {
+          rel: realised,
+          clamped: Math.max(0, requested - realised),
+        });
+      }
       break;
     }
 
@@ -137,7 +154,15 @@ function applyDelta(delta: CanonDelta, repo: CanonRepo, event: WorldEvent): void
     }
 
     case "visitor_stance": {
-      repo.adjustStance(delta.fan_id, delta.character_id, delta.sentiment);
+      {
+        const moved = repo.adjustStance(delta.fan_id, delta.character_id, delta.sentiment);
+        // adjustStance returns the new value, so realised movement is the
+        // difference the clamp actually allowed.
+        repo.recordEffect(event.event_id, {
+          stance: Math.abs(moved),
+          clamped: Math.max(0, Math.abs(delta.sentiment) - Math.abs(moved)),
+        });
+      }
       repo.addInteraction(delta.fan_id, {
         event_id: event.event_id,
         ts: event.ts,

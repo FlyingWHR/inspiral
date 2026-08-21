@@ -136,21 +136,26 @@ export function findGrievance(
 
   const rivals = new Map(outgoing.map((r, i) => [r.to_id, i]));
   const sinceMs = since ? Date.parse(since) : Number.NEGATIVE_INFINITY;
+  const rc = repo.rankContexts();
 
   const candidates = repo
     .eventsInvolving(characterId, 60)
     .filter((e) => {
       if (e.actors[0] === undefined || !rivals.has(e.actors[0])) return false;
       if (!e.actors.includes(characterId)) return false;
-      // Re-ranked on read (canon/significance.ts): the grievance a character
-      // brings up has to be one the world agrees was significant.
-      if (rankSignificance(e) < 0.4) return false;
+      // Re-ranked on read WITH CONTEXT (canon/significance.ts): the grievance a
+      // character brings up has to be one the world agrees was significant, and
+      // "the world kept referring to it" is the strongest evidence there is.
+      if (rankSignificance(e, rc.get(e.event_id)) < 0.4) return false;
       // You cannot complain about someone backing down. Only hostile acts.
       if (!GRIEVABLE.has(e.type)) return false;
       return Date.parse(e.ts) >= sinceMs;
     })
     .sort((a, b) => {
-      const [ra, rb] = [rankSignificance(a), rankSignificance(b)];
+      const [ra, rb] = [
+        rankSignificance(a, rc.get(a.event_id)),
+        rankSignificance(b, rc.get(b.event_id)),
+      ];
       if (rb !== ra) return rb - ra;
       return Date.parse(b.ts) - Date.parse(a.ts);
     });

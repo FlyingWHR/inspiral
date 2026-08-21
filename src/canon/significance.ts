@@ -63,7 +63,13 @@ const TYPE_WEIGHT: Record<string, number> = {
   concession: 0.55,
   arc_resolved: 0.7,
   arc_opened: 0.58,
-  arc_advanced: 0.5,
+  /**
+   * 0.18, not 0.5. `arc_advanced` is a stage counter ticking over, and it is
+   * also where every `hold` lands via ACTION_EVENT_TYPE -- 80 of the 134 events
+   * in the live log are holds, and at 0.5 thirty-one of them cleared the clip
+   * bar. A character declining to act is not a beat worth clipping.
+   */
+  arc_advanced: 0.18,
   // public acts with a witness
   snub: 0.5,
   notice_posted: 0.45,
@@ -100,10 +106,23 @@ export interface RankContext {
  * so a test can assert that evidence and hint are genuinely separable.
  */
 export function evidenceScore(
-  e: Pick<WorldEvent, "type" | "actors"> & { source?: string },
+  e: Pick<WorldEvent, "type" | "actors"> & { source?: string; payload?: Record<string, unknown> },
   ctx: RankContext = {},
 ): number {
   let score = TYPE_WEIGHT[e.type] ?? DEFAULT_WEIGHT;
+
+  /**
+   * A HOLD IS NOT AN EVENT. `ACTION_EVENT_TYPE` maps the `hold` action onto
+   * `arc_advanced`, so keying on `type` alone gave every "this character did
+   * nothing this tick" the weight of a story beat. The original action survives
+   * in the payload, which is the only place the two can be told apart.
+   *
+   * This is the engagement-formula problem in a new costume: without it, a hold
+   * with a flattering hint of 0.85 scored 0.73 and outranked real consequences.
+   */
+  if (e.payload && (e.payload as { action?: string }).action === "hold") {
+    score = Math.min(score, 0.1);
+  }
 
   const actors = Array.isArray(e.actors) ? e.actors.length : 0;
   if (actors >= 2) score += 0.08;
@@ -133,7 +152,10 @@ export function evidenceScore(
  * frozen at write time would be wrong by the second time anyone asked.
  */
 export function rankSignificance(
-  e: Pick<WorldEvent, "type" | "actors" | "significance_hint"> & { source?: string },
+  e: Pick<WorldEvent, "type" | "actors" | "significance_hint"> & {
+    source?: string;
+    payload?: Record<string, unknown>;
+  },
   ctx: RankContext = {},
 ): number {
   const evidence = evidenceScore(e, ctx);

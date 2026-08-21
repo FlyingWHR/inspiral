@@ -70,6 +70,36 @@ async function dispatch(
     try {
       const behavior = performDirective(repo, a.directive);
       if (!behavior) continue;
+
+      /**
+       * RECORD THE RECALL. This is where a performance that cites a prior
+       * event actually reaches a surface, and it is the only place both halves
+       * are in scope: `a.event` is the citing performance, `behavior.cites` are
+       * the receipts it quoted.
+       *
+       * Until this existed, `recall_citations` was empty, so the UPTAKE term in
+       * canon/significance.ts could never fire and the whole spread between an
+       * event the world keeps referring to and one nobody has ever mentioned
+       * was 0.02. The mechanism was right and disconnected.
+       */
+      for (const citedId of behavior.cites) {
+        try {
+          const target = String(a.directive.target ?? "");
+          repo.recordRecall({
+            fanId: target.startsWith("fan:") ? target.slice(4) : "",
+            characterId: a.directive.actor,
+            eventId: a.event.event_id,
+            citedEventId: citedId,
+            kind: "moment",
+            resolved: Boolean(repo.getEvent(citedId)),
+            visitorInitiated: target.startsWith("fan:"),
+          });
+        } catch (e) {
+          // Instrumentation must never break a beat.
+          log.warn(`recall not recorded: ${(e as Error).message}`);
+        }
+      }
+
       await surface.present(behavior);
       if (behavior.post_draft && surface.postNotice) {
         await surface.postNotice(behavior.post_draft, a.directive.actor);

@@ -65,6 +65,7 @@ function trackedLink(repo: CanonRepo, e: WorldEvent, opts: ClipOptions): string 
  * quarrel reads as a bug.
  */
 export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
+  const rc = repo.rankContexts();
   const limit = opts.limit ?? 3;
   const minSig = opts.minSignificance ?? 0.5;
   const cutoff = opts.hours
@@ -74,13 +75,15 @@ export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
   const candidates = repo
     .recentEvents(200)
     .filter((e) => !NOISE.has(e.type))
-    // Re-ranked, not raw: see canon/significance.ts. A host marking its own
-    // beat 0.95 must not be able to outrank a consequence the world actually had.
-    .filter((e) => rankSignificance(e) >= minSig)
+    // Re-ranked WITH CONTEXT. Passing no context left `citedBy` at 0 and
+    // `changedState` at false for every event, which is the two ungameable
+    // pillars of the evidence model never firing at all.
+    .filter((e) => rankSignificance(e, rc.get(e.event_id)) >= minSig)
     .filter((e) => Date.parse(e.ts) >= cutoff)
     .sort(
       (a, b) =>
-        rankSignificance(b) - rankSignificance(a) || Date.parse(b.ts) - Date.parse(a.ts),
+        rankSignificance(b, rc.get(b.event_id)) - rankSignificance(a, rc.get(a.event_id)) ||
+        Date.parse(b.ts) - Date.parse(a.ts),
     );
 
   const usedArcs = new Set<string>();
@@ -97,7 +100,7 @@ export function selectClips(repo: CanonRepo, opts: ClipOptions = {}): Clip[] {
       ts: e.ts,
       headline: describeEvent(e),
       link: trackedLink(repo, e, opts),
-      significance: rankSignificance(e),
+      significance: rankSignificance(e, rc.get(e.event_id)),
     };
     if (arc) clip.context = arc.title;
     out.push(clip);
@@ -151,6 +154,7 @@ export function defaultClipPath(repo: CanonRepo, dir = "./data/clips"): string {
  * Reads canon only. Costs nothing.
  */
 export function showrunnerNote(repo: CanonRepo, hours = 24): string {
+  const rc = repo.rankContexts();
   const cutoff = Date.parse(repo.now()) - hours * 3_600_000;
   const events = repo.recentEvents(300).filter((e) => Date.parse(e.ts) >= cutoff);
   const world = repo.getMeta("world_name") ?? "the world";
@@ -171,8 +175,8 @@ export function showrunnerNote(repo: CanonRepo, hours = 24): string {
 
   L.push("WHAT HAPPENED");
   const worth = events
-    .filter((e) => !NOISE.has(e.type) && rankSignificance(e) >= 0.45)
-    .sort((a, b) => rankSignificance(b) - rankSignificance(a))
+    .filter((e) => !NOISE.has(e.type) && rankSignificance(e, rc.get(e.event_id)) >= 0.45)
+    .sort((a, b) => rankSignificance(b, rc.get(b.event_id)) - rankSignificance(a, rc.get(a.event_id)))
     .slice(0, 6);
   if (worth.length === 0) L.push("  (a quiet window -- nothing anyone will bring up later)");
   for (const e of worth) L.push(`  [${e.event_id}] ${describeEvent(e)}`);

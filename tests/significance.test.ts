@@ -80,3 +80,43 @@ describe("provenance is evidence the host does not control", () => {
     expect(seeded).toBeLessThan(happened);
   });
 });
+
+/**
+ * DEFECT 1 REGRESSION GUARD.
+ *
+ * The evidence model was correct and completely disconnected: all seven call
+ * sites passed a single argument, so `citedBy` defaulted to 0 and
+ * `changedState` to false everywhere. Measured against the live log, a genuine
+ * confrontation scored 0.830 context-less and 0.850 with effect and two
+ * citations -- a 0.02 spread between "this mattered" and "nothing is known
+ * about this". These assert the spread is now worth having.
+ */
+describe("context is supplied, not defaulted", () => {
+  const confrontation = {
+    type: "confrontation", actors: ["a", "b"], significance_hint: 0.5, source: "tick",
+  } as never;
+
+  it("separates a cited, effective event from an inert one by a usable margin", () => {
+    const inert = rankSignificance(confrontation);
+    const mattered = rankSignificance(confrontation, { citedBy: 2, changedState: true });
+    expect(mattered - inert).toBeGreaterThan(0.12);
+  });
+
+  it("a hold cannot outrank a real confrontation however it is hinted", () => {
+    const flatteredHold = rankSignificance({
+      type: "arc_advanced", actors: ["a"], significance_hint: 0.85,
+      payload: { action: "hold" },
+    } as never);
+    expect(flatteredHold).toBeLessThan(rankSignificance(confrontation));
+    // 31 of 80 holds in the live log cleared the 0.45 clip bar before this.
+    expect(flatteredHold).toBeLessThan(0.45);
+  });
+
+  it("a hold that somehow gets cited still stays out of the clip drafts", () => {
+    const cited = rankSignificance(
+      { type: "arc_advanced", actors: ["a"], significance_hint: 0.85, payload: { action: "hold" } } as never,
+      { citedBy: 3, changedState: true },
+    );
+    expect(cited).toBeLessThan(0.45);
+  });
+});

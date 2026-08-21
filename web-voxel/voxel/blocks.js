@@ -26,6 +26,25 @@ export const BLOCKS = [
 
 export const BLOCK_IDS = Object.fromEntries(BLOCKS.map((b, i) => [b.name, i]));
 
+/** The block names in table order, so the palette can build a parallel array. */
+export const BLOCK_NAMES = BLOCKS.map((b) => b.name);
+
+/**
+ * Re-skin the block table from a palette.
+ *
+ * The colours above are the ORIGINALS and they are kept only as a fallback for
+ * a caller that never sets a palette. They were measured as the source of the
+ * hue collapse -- nine of twelve between hue 40 and 89, nothing above chroma
+ * 0.1158 -- so nothing should be rendering them any more.
+ *
+ * `null` entries are left alone, which is how `air` keeps its place.
+ */
+export function setBlockColors(colors) {
+  for (let i = 0; i < BLOCKS.length && i < colors.length; i++) {
+    if (colors[i] !== null && colors[i] !== undefined) BLOCKS[i].color = colors[i];
+  }
+}
+
 export const isSolid = (id) => id !== AIR && (BLOCKS[id]?.solid ?? false);
 export const colorOf = (id) => BLOCKS[id]?.color ?? 0xff00ff;
 export const nameOf = (id) => BLOCKS[id]?.name ?? "unknown";

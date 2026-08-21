@@ -92,7 +92,17 @@ export const ARCHETYPES = {
       // One shaft of cold daylight in a warm room. It is the only cool thing in
       // frame, which is what stops the whole tavern reading as one orange wash,
       // and it gives the god-ray something to come from.
-      { op: "prop", kind: "block", at: [15, 4], w: 1, d: 3, h: 3, y: 2, material: B.glass },
+      // A BANK of windows, not a porthole.
+      //
+      // Emberlight Tavern is specified as a warm key against a cool night seen
+      // through glazing, and the cool counterpoint is supposed to arrive as
+      // glass and backdrop, not as tinted fill light. Trying to supply it with
+      // a blue hemisphere instead cost value and cancelled the accent -- warm
+      // and cool light are complementary and they mix to mud. With one small
+      // window there was simply nothing cool in frame to counterpoint with.
+      { op: "prop", kind: "block", at: [15, 6], w: 1, d: 5, h: 4, y: 1, material: B.glass },
+      { op: "prop", kind: "block", at: [15, -2], w: 1, d: 5, h: 4, y: 1, material: B.glass },
+      { op: "prop", kind: "block", at: [-15, 2], w: 1, d: 4, h: 4, y: 1, material: B.glass },
     ],
     places: {
       the_bar: { x: 0, z: 6 },

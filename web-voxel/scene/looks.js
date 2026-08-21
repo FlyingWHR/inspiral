@@ -52,13 +52,40 @@ const BASE = {
   grade: { lift: 0.02, gamma: 1.0, gain: 0.98, saturation: 1.0, vignette: 0.22 },
 };
 
+/**
+ * PULL LIGHT COLOUR TOWARD NEUTRAL.
+ *
+ * These profiles were tuned to make the OLD block palette -- nine materials
+ * between hue 40 and 89 -- look warm and lit. The palette now carries its own
+ * temperature, and heavily tinted light simply overwrites it: the first render
+ * after adopting the ladder came back at arc95 48 degrees, essentially
+ * unchanged, because an orange ambient at 0.92 turns a blue-grey wall into a
+ * brown one before it reaches the frame.
+ *
+ * So the division of labour is now explicit. THE PALETTE SUPPLIES HUE; THE LOOK
+ * SUPPLIES THE QUANTITY AND DIRECTION OF LIGHT. Intensities, angles, fog
+ * densities and grades below are untouched -- only the light COLOURS are pulled
+ * 72% toward white. Practicals keep more of their tint, because a hearth really
+ * is orange and it is a local source rather than a wash.
+ */
+const towardWhite = 0.72;
+const neutral = (hex, amount) => {
+  const k = amount ?? towardWhite;
+  const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+  const mix = (c) => Math.round(c + (255 - c) * k);
+  return (mix(r) << 16) | (mix(g) << 8) | mix(b);
+};
+
 const merge = (over) => ({
   ...BASE,
   ...over,
   sky: { ...BASE.sky, ...(over.sky ?? {}) },
-  sun: { ...BASE.sun, ...(over.sun ?? {}) },
-  hemi: { ...BASE.hemi, ...(over.hemi ?? {}) },
-  ambient: { ...BASE.ambient, ...(over.ambient ?? {}) },
+  sun: (() => { const v = { ...BASE.sun, ...(over.sun ?? {}) }; return { ...v, color: neutral(v.color) }; })(),
+  hemi: (() => {
+    const v = { ...BASE.hemi, ...(over.hemi ?? {}) };
+    return { ...v, sky: neutral(v.sky), ground: neutral(v.ground) };
+  })(),
+  ambient: (() => { const v = { ...BASE.ambient, ...(over.ambient ?? {}) }; return { ...v, color: neutral(v.color) }; })(),
   fog: { ...BASE.fog, ...(over.fog ?? {}) },
   grade: { ...BASE.grade, ...(over.grade ?? {}) },
 });

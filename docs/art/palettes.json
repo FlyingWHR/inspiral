@@ -1,0 +1,1163 @@
+{
+  "system": {
+    "valueLadder": {
+      "VOID": 0.19,
+      "DARK": 0.32,
+      "MID": 0.48,
+      "LIGHT": 0.64,
+      "HIGH": 0.8,
+      "BACKDROP": null
+    },
+    "slots": [
+      {
+        "slot": "void",
+        "tier": "VOID",
+        "role": "Deep occlusion, gaps between blocks, under-eaves, the inside of doorways."
+      },
+      {
+        "slot": "groundA",
+        "tier": "DARK",
+        "role": "Primary ground plane / floor."
+      },
+      {
+        "slot": "groundB",
+        "tier": "DARK",
+        "role": "Secondary dark mass \u2014 different hue, SAME value. Variety without breaking the mass."
+      },
+      {
+        "slot": "structA",
+        "tier": "MID",
+        "role": "Primary structure: walls, main volumes."
+      },
+      {
+        "slot": "structB",
+        "tier": "MID",
+        "role": "Secondary structure: a second material."
+      },
+      {
+        "slot": "structC",
+        "tier": "MID",
+        "role": "Counter-temperature structure. Trim, beams, shaded planes. Small area."
+      },
+      {
+        "slot": "fieldA",
+        "tier": "LIGHT",
+        "role": "The dominant large field \u2014 the colour the eye averages the scene to."
+      },
+      {
+        "slot": "fieldB",
+        "tier": "LIGHT",
+        "role": "Field variant."
+      },
+      {
+        "slot": "highA",
+        "tier": "HIGH",
+        "role": "Lit / upward-facing planes under the key light."
+      },
+      {
+        "slot": "highB",
+        "tier": "HIGH",
+        "role": "Lit planes under the FILL light (opposite temperature to highA)."
+      },
+      {
+        "slot": "backdrop",
+        "tier": "BACKDROP",
+        "role": "Sky, fog, far plane. Never used as a block colour."
+      },
+      {
+        "slot": "accentHot",
+        "tier": "MID/LIGHT",
+        "role": "High-chroma warm accent. Budget: <=3% of screen area."
+      },
+      {
+        "slot": "accentCool",
+        "tier": "MID/LIGHT",
+        "role": "High-chroma cool accent. Budget: <=3% of screen area."
+      },
+      {
+        "slot": "emissive",
+        "tier": "HIGH+",
+        "role": "Light-source colour: fire, lamp, glow. Emissive material, not lit."
+      }
+    ]
+  },
+  "character": {
+    "chrDeep": {
+      "hex": "#3a1819",
+      "L": 0.26,
+      "Y": 0.0162,
+      "grey": "#222222",
+      "oklch": [
+        0.26,
+        0.055,
+        20
+      ],
+      "note": "Hair, boots, outline mass. Darker than any environment MID."
+    },
+    "chrCloth": {
+      "hex": "#902d5a",
+      "L": 0.459,
+      "Y": 0.0854,
+      "grey": "#535353",
+      "oklch": [
+        0.46,
+        0.14,
+        356
+      ],
+      "note": "Signature garment. RESERVED HUE BAND - see rule R4. Largest character mass."
+    },
+    "chrSkin": {
+      "hex": "#a86753",
+      "L": 0.58,
+      "Y": 0.1865,
+      "grey": "#787878",
+      "oklch": [
+        0.58,
+        0.09,
+        38
+      ],
+      "note": "Skin. Deliberately a SMALL mass - see the note on skin collisions."
+    },
+    "chrTrim": {
+      "hex": "#00b5b5",
+      "L": 0.7,
+      "Y": 0.3638,
+      "grey": "#a3a3a3",
+      "oklch": [
+        0.7,
+        0.1194,
+        195
+      ],
+      "note": "Secondary read: straps, pack, weapon wrap. Cool, so it survives warm rooms."
+    },
+    "chrLight": {
+      "hex": "#c3d4dd",
+      "L": 0.86,
+      "Y": 0.6391,
+      "grey": "#d1d1d1",
+      "oklch": [
+        0.86,
+        0.022,
+        230
+      ],
+      "note": "Cool ivory. Brightest thing at eye level, and hue-separated from every flame."
+    }
+  },
+  "palettes": {
+    "emberlight-tavern": {
+      "title": "Emberlight Tavern",
+      "mood": "A low room lit by one fire, with the cold blue night pressing at the windows.",
+      "temperature": "Warm key (hearth, H~55) against cool fill (night sky through glazing, H~250). Shadows are violet, not brown. The wood is deliberately DESATURATED so the fire can be the only saturated thing in the room.",
+      "colors": {
+        "void": {
+          "hex": "#170e25",
+          "tier": "VOID",
+          "role": "Deep occlusion, gaps between blocks, under-eaves, the inside of doorways.",
+          "L": 0.189,
+          "Y": 0.0063,
+          "grey": "#131313",
+          "oklch": [
+            0.19,
+            0.045,
+            300
+          ],
+          "clamped": false
+        },
+        "groundA": {
+          "hex": "#432c28",
+          "tier": "DARK",
+          "role": "Primary ground plane / floor.",
+          "L": 0.32,
+          "Y": 0.0315,
+          "grey": "#323232",
+          "oklch": [
+            0.32,
+            0.035,
+            30
+          ],
+          "clamped": false
+        },
+        "groundB": {
+          "hex": "#412638",
+          "tier": "DARK",
+          "role": "Secondary dark mass \u2014 different hue, SAME value. Variety without breaking the mass.",
+          "L": 0.31,
+          "Y": 0.028,
+          "grey": "#2f2f2f",
+          "oklch": [
+            0.31,
+            0.048,
+            340
+          ],
+          "clamped": false
+        },
+        "structA": {
+          "hex": "#775541",
+          "tier": "MID",
+          "role": "Primary structure: walls, main volumes.",
+          "L": 0.481,
+          "Y": 0.108,
+          "grey": "#5c5c5c",
+          "oklch": [
+            0.48,
+            0.055,
+            52
+          ],
+          "clamped": false
+        },
+        "structB": {
+          "hex": "#4d6053",
+          "tier": "MID",
+          "role": "Secondary structure: a second material.",
+          "L": 0.469,
+          "Y": 0.1057,
+          "grey": "#5b5b5b",
+          "oklch": [
+            0.47,
+            0.032,
+            155
+          ],
+          "clamped": false
+        },
+        "structC": {
+          "hex": "#4d586d",
+          "tier": "MID",
+          "role": "Counter-temperature structure. Trim, beams, shaded planes. Small area.",
+          "L": 0.459,
+          "Y": 0.0966,
+          "grey": "#585858",
+          "oklch": [
+            0.46,
+            0.036,
+            262
+          ],
+          "clamped": false
+        },
+        "fieldA": {
+          "hex": "#aa845c",
+          "tier": "LIGHT",
+          "role": "The dominant large field \u2014 the colour the eye averages the scene to.",
+          "L": 0.64,
+          "Y": 0.2582,
+          "grey": "#8b8b8b",
+          "oklch": [
+            0.64,
+            0.072,
+            68
+          ],
+          "clamped": false
+        },
+        "fieldB": {
+          "hex": "#a67e75",
+          "tier": "LIGHT",
+          "role": "Field variant.",
+          "L": 0.63,
+          "Y": 0.2431,
+          "grey": "#878787",
+          "oklch": [
+            0.63,
+            0.052,
+            34
+          ],
+          "clamped": false
+        },
+        "highA": {
+          "hex": "#dab884",
+          "tier": "HIGH",
+          "role": "Lit / upward-facing planes under the key light.",
+          "L": 0.8,
+          "Y": 0.5085,
+          "grey": "#bdbdbd",
+          "oklch": [
+            0.8,
+            0.078,
+            78
+          ],
+          "clamped": false
+        },
+        "highB": {
+          "hex": "#a3bed9",
+          "tier": "HIGH",
+          "role": "Lit planes under the FILL light (opposite temperature to highA).",
+          "L": 0.79,
+          "Y": 0.4962,
+          "grey": "#bbbbbb",
+          "oklch": [
+            0.79,
+            0.048,
+            248
+          ],
+          "clamped": false
+        },
+        "backdrop": {
+          "hex": "#1d2d4c",
+          "tier": "BACKDROP",
+          "role": "Sky, fog, far plane. Never used as a block colour.",
+          "L": 0.3,
+          "Y": 0.0266,
+          "grey": "#2d2d2d",
+          "oklch": [
+            0.3,
+            0.06,
+            262
+          ],
+          "clamped": false
+        },
+        "accentHot": {
+          "hex": "#d75a21",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma warm accent. Budget: <=3% of screen area.",
+          "L": 0.62,
+          "Y": 0.2187,
+          "grey": "#818181",
+          "oklch": [
+            0.62,
+            0.17,
+            42
+          ],
+          "clamped": false
+        },
+        "accentCool": {
+          "hex": "#00629e",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma cool accent. Budget: <=3% of screen area.",
+          "L": 0.481,
+          "Y": 0.112,
+          "grey": "#5e5e5e",
+          "oklch": [
+            0.48,
+            0.1234,
+            246
+          ],
+          "clamped": true
+        },
+        "emissive": {
+          "hex": "#ffda7d",
+          "tier": "HIGH+",
+          "role": "Light-source colour: fire, lamp, glow. Emissive material, not lit.",
+          "L": 0.901,
+          "Y": 0.7288,
+          "grey": "#dedede",
+          "oklch": [
+            0.9,
+            0.1193,
+            88
+          ],
+          "clamped": true
+        }
+      }
+    },
+    "cinder-council": {
+      "title": "Cinder Council",
+      "mood": "A cold stone chamber where the only warmth is institutional: candle, gold, and the red of office.",
+      "temperature": "Cool key (high clerestory daylight, H~240) with an almost neutral field. Warmth is rationed to two objects. This palette is the low-chroma end of the family and should feel austere, not dead \u2014 the chroma is low but the VALUE separation is the widest of the five.",
+      "colors": {
+        "void": {
+          "hex": "#0c1325",
+          "tier": "VOID",
+          "role": "Deep occlusion, gaps between blocks, under-eaves, the inside of doorways.",
+          "L": 0.19,
+          "Y": 0.0068,
+          "grey": "#141414",
+          "oklch": [
+            0.19,
+            0.038,
+            268
+          ],
+          "clamped": false
+        },
+        "groundA": {
+          "hex": "#273442",
+          "tier": "DARK",
+          "role": "Primary ground plane / floor.",
+          "L": 0.32,
+          "Y": 0.0328,
+          "grey": "#333333",
+          "oklch": [
+            0.32,
+            0.03,
+            250
+          ],
+          "clamped": false
+        },
+        "groundB": {
+          "hex": "#342c40",
+          "tier": "DARK",
+          "role": "Secondary dark mass \u2014 different hue, SAME value. Variety without breaking the mass.",
+          "L": 0.311,
+          "Y": 0.029,
+          "grey": "#303030",
+          "oklch": [
+            0.31,
+            0.038,
+            302
+          ],
+          "clamped": false
+        },
+        "structA": {
+          "hex": "#51606d",
+          "tier": "MID",
+          "role": "Primary structure: walls, main volumes.",
+          "L": 0.481,
+          "Y": 0.1122,
+          "grey": "#5e5e5e",
+          "oklch": [
+            0.48,
+            0.028,
+            244
+          ],
+          "clamped": false
+        },
+        "structB": {
+          "hex": "#4d5f5f",
+          "tier": "MID",
+          "role": "Secondary structure: a second material.",
+          "L": 0.471,
+          "Y": 0.1059,
+          "grey": "#5c5c5c",
+          "oklch": [
+            0.47,
+            0.022,
+            198
+          ],
+          "clamped": false
+        },
+        "structC": {
+          "hex": "#704e47",
+          "tier": "MID",
+          "role": "Counter-temperature structure. Trim, beams, shaded planes. Small area.",
+          "L": 0.459,
+          "Y": 0.0935,
+          "grey": "#565656",
+          "oklch": [
+            0.46,
+            0.048,
+            32
+          ],
+          "clamped": false
+        },
+        "fieldA": {
+          "hex": "#7c8f9d",
+          "tier": "LIGHT",
+          "role": "The dominant large field \u2014 the colour the eye averages the scene to.",
+          "L": 0.64,
+          "Y": 0.2636,
+          "grey": "#8c8c8c",
+          "oklch": [
+            0.64,
+            0.03,
+            240
+          ],
+          "clamped": false
+        },
+        "fieldB": {
+          "hex": "#8e897a",
+          "tier": "LIGHT",
+          "role": "Field variant.",
+          "L": 0.63,
+          "Y": 0.2505,
+          "grey": "#898989",
+          "oklch": [
+            0.63,
+            0.022,
+            92
+          ],
+          "clamped": false
+        },
+        "highA": {
+          "hex": "#afc1cd",
+          "tier": "HIGH",
+          "role": "Lit / upward-facing planes under the key light.",
+          "L": 0.801,
+          "Y": 0.5166,
+          "grey": "#bebebe",
+          "oklch": [
+            0.8,
+            0.026,
+            236
+          ],
+          "clamped": false
+        },
+        "highB": {
+          "hex": "#ccb79a",
+          "tier": "HIGH",
+          "role": "Lit planes under the FILL light (opposite temperature to highA).",
+          "L": 0.79,
+          "Y": 0.4904,
+          "grey": "#bababa",
+          "oklch": [
+            0.79,
+            0.046,
+            76
+          ],
+          "clamped": false
+        },
+        "backdrop": {
+          "hex": "#e5f1f7",
+          "tier": "BACKDROP",
+          "role": "Sky, fog, far plane. Never used as a block colour.",
+          "L": 0.951,
+          "Y": 0.8628,
+          "grey": "#efefef",
+          "oklch": [
+            0.95,
+            0.015,
+            232
+          ],
+          "clamped": false
+        },
+        "accentHot": {
+          "hex": "#a93622",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma warm accent. Budget: <=3% of screen area.",
+          "L": 0.499,
+          "Y": 0.1119,
+          "grey": "#5e5e5e",
+          "oklch": [
+            0.5,
+            0.155,
+            32
+          ],
+          "clamped": false
+        },
+        "accentCool": {
+          "hex": "#007f94",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma cool accent. Budget: <=3% of screen area.",
+          "L": 0.549,
+          "Y": 0.1732,
+          "grey": "#747474",
+          "oklch": [
+            0.55,
+            0.0967,
+            214
+          ],
+          "clamped": true
+        },
+        "emissive": {
+          "hex": "#ffcc69",
+          "tier": "HIGH+",
+          "role": "Light-source colour: fire, lamp, glow. Emissive material, not lit.",
+          "L": 0.871,
+          "Y": 0.6547,
+          "grey": "#d3d3d3",
+          "oklch": [
+            0.87,
+            0.13,
+            82
+          ],
+          "clamped": false
+        }
+      }
+    },
+    "saffron-market": {
+      "title": "Saffron Market",
+      "mood": "Midday. Bleached stone, hard blue shadow, and cloth doing all the shouting.",
+      "temperature": "Warm key (sun, H~85) against cool sky-fill (H~235). The classic exterior split: everything facing up is warm, everything in shadow is blue. Highest chroma budget of the five \u2014 but only in awnings and goods, never in architecture.",
+      "colors": {
+        "void": {
+          "hex": "#0e132d",
+          "tier": "VOID",
+          "role": "Deep occlusion, gaps between blocks, under-eaves, the inside of doorways.",
+          "L": 0.198,
+          "Y": 0.0075,
+          "grey": "#151515",
+          "oklch": [
+            0.2,
+            0.052,
+            272
+          ],
+          "clamped": false
+        },
+        "groundA": {
+          "hex": "#29354d",
+          "tier": "DARK",
+          "role": "Primary ground plane / floor.",
+          "L": 0.329,
+          "Y": 0.0355,
+          "grey": "#353535",
+          "oklch": [
+            0.33,
+            0.046,
+            264
+          ],
+          "clamped": false
+        },
+        "groundB": {
+          "hex": "#4c2623",
+          "tier": "DARK",
+          "role": "Secondary dark mass \u2014 different hue, SAME value. Variety without breaking the mass.",
+          "L": 0.319,
+          "Y": 0.0304,
+          "grey": "#313131",
+          "oklch": [
+            0.32,
+            0.058,
+            26
+          ],
+          "clamped": false
+        },
+        "structA": {
+          "hex": "#7b533f",
+          "tier": "MID",
+          "role": "Primary structure: walls, main volumes.",
+          "L": 0.481,
+          "Y": 0.1076,
+          "grey": "#5c5c5c",
+          "oklch": [
+            0.48,
+            0.062,
+            46
+          ],
+          "clamped": false
+        },
+        "structB": {
+          "hex": "#44634c",
+          "tier": "MID",
+          "role": "Secondary structure: a second material.",
+          "L": 0.468,
+          "Y": 0.1067,
+          "grey": "#5c5c5c",
+          "oklch": [
+            0.47,
+            0.052,
+            152
+          ],
+          "clamped": false
+        },
+        "structC": {
+          "hex": "#385b7e",
+          "tier": "MID",
+          "role": "Counter-temperature structure. Trim, beams, shaded planes. Small area.",
+          "L": 0.46,
+          "Y": 0.0983,
+          "grey": "#585858",
+          "oklch": [
+            0.46,
+            0.07,
+            250
+          ],
+          "clamped": false
+        },
+        "fieldA": {
+          "hex": "#a28c63",
+          "tier": "LIGHT",
+          "role": "The dominant large field \u2014 the colour the eye averages the scene to.",
+          "L": 0.65,
+          "Y": 0.2734,
+          "grey": "#8f8f8f",
+          "oklch": [
+            0.65,
+            0.062,
+            82
+          ],
+          "clamped": false
+        },
+        "fieldB": {
+          "hex": "#6b9a71",
+          "tier": "LIGHT",
+          "role": "Field variant.",
+          "L": 0.641,
+          "Y": 0.2743,
+          "grey": "#8f8f8f",
+          "oklch": [
+            0.64,
+            0.078,
+            148
+          ],
+          "clamped": false
+        },
+        "highA": {
+          "hex": "#d0c093",
+          "tier": "HIGH",
+          "role": "Lit / upward-facing planes under the key light.",
+          "L": 0.81,
+          "Y": 0.5322,
+          "grey": "#c1c1c1",
+          "oklch": [
+            0.81,
+            0.062,
+            90
+          ],
+          "clamped": false
+        },
+        "highB": {
+          "hex": "#98c6d9",
+          "tier": "HIGH",
+          "role": "Lit planes under the FILL light (opposite temperature to highA).",
+          "L": 0.8,
+          "Y": 0.5207,
+          "grey": "#bfbfbf",
+          "oklch": [
+            0.8,
+            0.055,
+            226
+          ],
+          "clamped": false
+        },
+        "backdrop": {
+          "hex": "#60aedf",
+          "tier": "BACKDROP",
+          "role": "Sky, fog, far plane. Never used as a block colour.",
+          "L": 0.72,
+          "Y": 0.3809,
+          "grey": "#a6a6a6",
+          "oklch": [
+            0.72,
+            0.105,
+            238
+          ],
+          "clamped": false
+        },
+        "accentHot": {
+          "hex": "#e25500",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma warm accent. Budget: <=3% of screen area.",
+          "L": 0.629,
+          "Y": 0.2267,
+          "grey": "#838383",
+          "oklch": [
+            0.63,
+            0.19,
+            42
+          ],
+          "clamped": false
+        },
+        "accentCool": {
+          "hex": "#00736b",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma cool accent. Budget: <=3% of screen area.",
+          "L": 0.5,
+          "Y": 0.1332,
+          "grey": "#666666",
+          "oklch": [
+            0.5,
+            0.0877,
+            186
+          ],
+          "clamped": true
+        },
+        "emissive": {
+          "hex": "#fae8a3",
+          "tier": "HIGH+",
+          "role": "Light-source colour: fire, lamp, glow. Emissive material, not lit.",
+          "L": 0.93,
+          "Y": 0.8068,
+          "grey": "#e8e8e8",
+          "oklch": [
+            0.93,
+            0.09,
+            96
+          ],
+          "clamped": false
+        }
+      }
+    },
+    "salt-harbour-dawn": {
+      "title": "Salt Harbour Dawn",
+      "mood": "Wet stone, low fog, and a rose sun that has not cleared the roofline yet.",
+      "temperature": "Inverted: the key is WARM and low-angle (H~35) but weak, and the ambient is a large cool dome (H~250). Chroma is the lowest of the family in the mid tiers and rises only at the top of the ladder, which is what reads as haze.",
+      "colors": {
+        "void": {
+          "hex": "#0a1326",
+          "tier": "VOID",
+          "role": "Deep occlusion, gaps between blocks, under-eaves, the inside of doorways.",
+          "L": 0.19,
+          "Y": 0.0067,
+          "grey": "#131313",
+          "oklch": [
+            0.19,
+            0.04,
+            264
+          ],
+          "clamped": false
+        },
+        "groundA": {
+          "hex": "#243543",
+          "tier": "DARK",
+          "role": "Primary ground plane / floor.",
+          "L": 0.32,
+          "Y": 0.0333,
+          "grey": "#333333",
+          "oklch": [
+            0.32,
+            0.034,
+            246
+          ],
+          "clamped": false
+        },
+        "groundB": {
+          "hex": "#392a3d",
+          "tier": "DARK",
+          "role": "Secondary dark mass \u2014 different hue, SAME value. Variety without breaking the mass.",
+          "L": 0.31,
+          "Y": 0.0286,
+          "grey": "#2f2f2f",
+          "oklch": [
+            0.31,
+            0.04,
+            320
+          ],
+          "clamped": false
+        },
+        "structA": {
+          "hex": "#515f71",
+          "tier": "MID",
+          "role": "Primary structure: walls, main volumes.",
+          "L": 0.481,
+          "Y": 0.1113,
+          "grey": "#5e5e5e",
+          "oklch": [
+            0.48,
+            0.034,
+            254
+          ],
+          "clamped": false
+        },
+        "structB": {
+          "hex": "#4b605a",
+          "tier": "MID",
+          "role": "Secondary structure: a second material.",
+          "L": 0.47,
+          "Y": 0.106,
+          "grey": "#5c5c5c",
+          "oklch": [
+            0.47,
+            0.028,
+            176
+          ],
+          "clamped": false
+        },
+        "structC": {
+          "hex": "#724d4b",
+          "tier": "MID",
+          "role": "Counter-temperature structure. Trim, beams, shaded planes. Small area.",
+          "L": 0.46,
+          "Y": 0.0939,
+          "grey": "#565656",
+          "oklch": [
+            0.46,
+            0.05,
+            22
+          ],
+          "clamped": false
+        },
+        "fieldA": {
+          "hex": "#818ca6",
+          "tier": "LIGHT",
+          "role": "The dominant large field \u2014 the colour the eye averages the scene to.",
+          "L": 0.64,
+          "Y": 0.2618,
+          "grey": "#8c8c8c",
+          "oklch": [
+            0.64,
+            0.042,
+            268
+          ],
+          "clamped": false
+        },
+        "fieldB": {
+          "hex": "#96809c",
+          "tier": "LIGHT",
+          "role": "Field variant.",
+          "L": 0.629,
+          "Y": 0.2432,
+          "grey": "#878787",
+          "oklch": [
+            0.63,
+            0.048,
+            320
+          ],
+          "clamped": false
+        },
+        "highA": {
+          "hex": "#dfb3a0",
+          "tier": "HIGH",
+          "role": "Lit / upward-facing planes under the key light.",
+          "L": 0.801,
+          "Y": 0.5047,
+          "grey": "#bcbcbc",
+          "oklch": [
+            0.8,
+            0.058,
+            44
+          ],
+          "clamped": false
+        },
+        "highB": {
+          "hex": "#a9bdd4",
+          "tier": "HIGH",
+          "role": "Lit planes under the FILL light (opposite temperature to highA).",
+          "L": 0.791,
+          "Y": 0.4958,
+          "grey": "#bbbbbb",
+          "oklch": [
+            0.79,
+            0.04,
+            254
+          ],
+          "clamped": false
+        },
+        "backdrop": {
+          "hex": "#9694b6",
+          "tier": "BACKDROP",
+          "role": "Sky, fog, far plane. Never used as a block colour.",
+          "L": 0.68,
+          "Y": 0.3104,
+          "grey": "#979797",
+          "oklch": [
+            0.68,
+            0.05,
+            288
+          ],
+          "clamped": false
+        },
+        "accentHot": {
+          "hex": "#f75d57",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma warm accent. Budget: <=3% of screen area.",
+          "L": 0.679,
+          "Y": 0.2829,
+          "grey": "#919191",
+          "oklch": [
+            0.68,
+            0.19,
+            26
+          ],
+          "clamped": false
+        },
+        "accentCool": {
+          "hex": "#007492",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma cool accent. Budget: <=3% of screen area.",
+          "L": 0.519,
+          "Y": 0.1457,
+          "grey": "#6b6b6b",
+          "oklch": [
+            0.52,
+            0.0977,
+            224
+          ],
+          "clamped": true
+        },
+        "emissive": {
+          "hex": "#ffcd94",
+          "tier": "HIGH+",
+          "role": "Light-source colour: fire, lamp, glow. Emissive material, not lit.",
+          "L": 0.879,
+          "Y": 0.6706,
+          "grey": "#d6d6d6",
+          "oklch": [
+            0.88,
+            0.0919,
+            70
+          ],
+          "clamped": true
+        }
+      }
+    },
+    "thornwood-nightfall": {
+      "title": "Thornwood Nightfall",
+      "mood": "Last blue light under a canopy, with one lamp doing the work of a sun.",
+      "temperature": "Low-key. The whole ladder is pulled DOWN and the top two tiers are compressed \u2014 only the emissive and the character's bone white are allowed above HIGH. This is the palette that proves the system: it is dark without being muddy because the mass separation is unchanged.",
+      "colors": {
+        "void": {
+          "hex": "#0e1129",
+          "tier": "VOID",
+          "role": "Deep occlusion, gaps between blocks, under-eaves, the inside of doorways.",
+          "L": 0.19,
+          "Y": 0.0065,
+          "grey": "#131313",
+          "oklch": [
+            0.19,
+            0.048,
+            276
+          ],
+          "clamped": false
+        },
+        "groundA": {
+          "hex": "#1f2f44",
+          "tier": "DARK",
+          "role": "Primary ground plane / floor.",
+          "L": 0.301,
+          "Y": 0.0274,
+          "grey": "#2e2e2e",
+          "oklch": [
+            0.3,
+            0.044,
+            256
+          ],
+          "clamped": false
+        },
+        "groundB": {
+          "hex": "#063428",
+          "tier": "DARK",
+          "role": "Secondary dark mass \u2014 different hue, SAME value. Variety without breaking the mass.",
+          "L": 0.291,
+          "Y": 0.0265,
+          "grey": "#2d2d2d",
+          "oklch": [
+            0.29,
+            0.052,
+            172
+          ],
+          "clamped": false
+        },
+        "structA": {
+          "hex": "#42536e",
+          "tier": "MID",
+          "role": "Primary structure: walls, main volumes.",
+          "L": 0.439,
+          "Y": 0.0847,
+          "grey": "#525252",
+          "oklch": [
+            0.44,
+            0.05,
+            260
+          ],
+          "clamped": false
+        },
+        "structB": {
+          "hex": "#345944",
+          "tier": "MID",
+          "role": "Secondary structure: a second material.",
+          "L": 0.429,
+          "Y": 0.0829,
+          "grey": "#515151",
+          "oklch": [
+            0.43,
+            0.056,
+            158
+          ],
+          "clamped": false
+        },
+        "structC": {
+          "hex": "#534662",
+          "tier": "MID",
+          "role": "Counter-temperature structure. Trim, beams, shaded planes. Small area.",
+          "L": 0.419,
+          "Y": 0.071,
+          "grey": "#4b4b4b",
+          "oklch": [
+            0.42,
+            0.048,
+            306
+          ],
+          "clamped": false
+        },
+        "fieldA": {
+          "hex": "#5d7f9b",
+          "tier": "LIGHT",
+          "role": "The dominant large field \u2014 the colour the eye averages the scene to.",
+          "L": 0.582,
+          "Y": 0.1987,
+          "grey": "#7b7b7b",
+          "oklch": [
+            0.58,
+            0.058,
+            244
+          ],
+          "clamped": false
+        },
+        "fieldB": {
+          "hex": "#588366",
+          "tier": "LIGHT",
+          "role": "Field variant.",
+          "L": 0.57,
+          "Y": 0.1927,
+          "grey": "#797979",
+          "oklch": [
+            0.57,
+            0.066,
+            154
+          ],
+          "clamped": false
+        },
+        "highA": {
+          "hex": "#77adc9",
+          "tier": "HIGH",
+          "role": "Lit / upward-facing planes under the key light.",
+          "L": 0.72,
+          "Y": 0.3803,
+          "grey": "#a6a6a6",
+          "oklch": [
+            0.72,
+            0.07,
+            232
+          ],
+          "clamped": false
+        },
+        "highB": {
+          "hex": "#98a886",
+          "tier": "HIGH",
+          "role": "Lit planes under the FILL light (opposite temperature to highA).",
+          "L": 0.71,
+          "Y": 0.364,
+          "grey": "#a3a3a3",
+          "oklch": [
+            0.71,
+            0.052,
+            128
+          ],
+          "clamped": false
+        },
+        "backdrop": {
+          "hex": "#5d6499",
+          "tier": "BACKDROP",
+          "role": "Sky, fog, far plane. Never used as a block colour.",
+          "L": 0.52,
+          "Y": 0.1374,
+          "grey": "#686868",
+          "oklch": [
+            0.52,
+            0.085,
+            278
+          ],
+          "clamped": false
+        },
+        "accentHot": {
+          "hex": "#d16e00",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma warm accent. Budget: <=3% of screen area.",
+          "L": 0.64,
+          "Y": 0.2471,
+          "grey": "#888888",
+          "oklch": [
+            0.64,
+            0.1566,
+            56
+          ],
+          "clamped": true
+        },
+        "accentCool": {
+          "hex": "#00818c",
+          "tier": "MID/LIGHT",
+          "role": "High-chroma cool accent. Budget: <=3% of screen area.",
+          "L": 0.551,
+          "Y": 0.1759,
+          "grey": "#747474",
+          "oklch": [
+            0.55,
+            0.0941,
+            206
+          ],
+          "clamped": true
+        },
+        "emissive": {
+          "hex": "#ffdca1",
+          "tier": "HIGH+",
+          "role": "Light-source colour: fire, lamp, glow. Emissive material, not lit.",
+          "L": 0.91,
+          "Y": 0.7502,
+          "grey": "#e1e1e1",
+          "oklch": [
+            0.91,
+            0.084,
+            80
+          ],
+          "clamped": true
+        }
+      }
+    }
+  }
+}

@@ -21,7 +21,20 @@
  */
 
 /** Directional shading: +Y, -Y, +X/-X, +Z/-Z. */
-const FACE_LIGHT = { px: 0.86, nx: 0.74, py: 1.0, ny: 0.5, pz: 0.93, nz: 0.66 };
+/**
+ * The face ramp, widened deliberately.
+ *
+ * The palette guarantees the MATERIALS span 0.61 of OKLab L. It only guarantees
+ * the FRAME does if the darkest and lightest tiers actually appear, and the
+ * study is explicit that VOID has to show up -- under eaves, in doorways, in
+ * the gaps between blocks. The old ramp bottomed out at 0.5, which lifts a MID
+ * wall to roughly L 0.34: nowhere near VOID at 0.19.
+ *
+ * At 0.30 a downward face of a MID block lands around L 0.19, which is the VOID
+ * tier arriving for free on every overhang in the world. Top faces stay at 1.0
+ * so lit planes reach HIGH.
+ */
+const FACE_LIGHT = { px: 0.88, nx: 0.62, py: 1.0, ny: 0.3, pz: 0.8, nz: 0.54 };
 
 /** Stable per-quad jitter in [-1,1] from its position, so it never shimmers. */
 function jitter(x, y, z) {
@@ -32,6 +45,9 @@ function jitter(x, y, z) {
 
 import { CHUNK } from "./chunk.js";
 import { colorOf, isSolid } from "./blocks.js";
+
+/** sRGB transfer function; matches three's SRGBToLinear. */
+const srgbToLinear = (c) => (c < 0.04045 ? c * 0.0773993808 : ((c + 0.055) / 1.055) ** 2.4);
 
 const DIMS = [CHUNK, CHUNK, CHUNK];
 
@@ -132,9 +148,27 @@ export function meshChunk(sample, ox, oy, oz) {
           // ±5% per quad. Enough to break up a flat wall, not enough to read
           // as noise.
           const tint = shade * (1 + jitter(p0[0], p0[1], p0[2]) * 0.05);
-          const r = (((hex >> 16) & 255) / 255) * tint;
-          const g = (((hex >> 8) & 255) / 255) * tint;
-          const bl = ((hex & 255) / 255) * tint;
+          /**
+           * CONVERT TO LINEAR before writing the vertex colour.
+           *
+           * three reads the `color` attribute as already being in the linear
+           * working space, so putting an sRGB byte straight in skips the
+           * transfer function: 0x77 enters as linear 0.467 and leaves the
+           * display transform at roughly sRGB 0.71. Everything renders lighter
+           * and, because the curve compresses the gaps between channels,
+           * measurably less saturated.
+           *
+           * This is the sibling of the trap the colour study warns about. It
+           * warns against converting TWICE; this path converted zero times, and
+           * it was halving the palette's chroma before a single post pass ran.
+           * The tell was mean chroma 0.025 against an authored architectural
+           * mean near 0.05 with every effect disabled.
+           *
+           * Face shading multiplies in linear space, which is where it belongs.
+           */
+          const r = srgbToLinear(((hex >> 16) & 255) / 255) * tint;
+          const g = srgbToLinear(((hex >> 8) & 255) / 255) * tint;
+          const bl = srgbToLinear((hex & 255) / 255) * tint;
           for (let k = 0; k < 4; k++) colors.push(r, g, bl);
 
           if (flip) indices.push(base, base + 2, base + 1, base, base + 3, base + 2);

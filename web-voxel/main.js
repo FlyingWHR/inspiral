@@ -19,13 +19,14 @@ import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 
 import { VoxelWorld } from "./voxel/chunk.js";
-import { BLOCKS, colorOf, nameOf } from "./voxel/blocks.js";
+import { BLOCKS, BLOCK_NAMES, setBlockColors, colorOf, nameOf } from "./voxel/blocks.js";
 import { generateScene, clearPlaces } from "./scene/generate.js";
 import { getArchetype } from "./scene/archetypes.js";
 import { getLook } from "./scene/looks.js";
 import { createSkyDome, applySkyLook } from "./scene/skydome.js";
 import { GradeShader, applyGrade } from "./scene/grade.js";
 import { getDirection } from "./scene/direction.js";
+import { blockColorsFor, backdropFor, voidFor, slotsFor } from "./scene/palette.js";
 import { voxelMaterial, makeDust, driftDust, makeShaft } from "./scene/stylise.js";
 import { ChunkMesher } from "./chunkmesh.js";
 import { Player } from "./player.js";
@@ -74,13 +75,85 @@ const LOOK = getLook(QS.get("look") ?? ARCH.id);
  * in this room; the direction says what kind of picture we are making at all.
  */
 const DIR = getDirection(QS.get("dir"));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+/**
+ * `?fx=0` renders the palette raw: no dust, no shaft, no bloom, no depth of
+ * field, no grade. Used to answer "is the palette reaching the frame, or is the
+ * post stack eating it" without guessing which pass is responsible.
+ */
+const FX = QS.get("fx") !== "0";
+const BACKDROP_FOG = backdropFor(ARCH.id);
+/**
+ * LIGHT GAIN, and why it exists.
+ *
+ * Every intensity in looks.js was tuned while the mesher was writing sRGB bytes
+ * into a linear vertex-colour attribute, i.e. against surfaces that were
+ * rendering roughly half a stop too bright. Fixing that conversion was correct
+ * and immediately cost the top of the value ladder: frame spread fell from
+ * 0.413 to 0.302 and the brightest mass centre from 0.69 to 0.59.
+ *
+ * So the intensities are re-scaled once, here, rather than re-tuned eight times
+ * in the profiles. With NoToneMapping there is no exposure control to reach
+ * for -- toneMappingExposure is only consulted by a tone-mapping function -- so
+ * the light itself has to carry it.
+ *
+ * 2.6 was chosen by sweep, not by eye. It is the largest value that still
+ * clears the exposure floor: at 2.6 the tavern hero measures 0.277% blown, at
+ * 3.1 it measures 0.638% and fails the under-0.5% bar for another 0.037 of
+ * value spread. Not worth it.
+ */
+const GAIN = Number(QS.get("gain") ?? "2.6");
+/**
+ * How much of the light budget the COOL FILL gets, against the warm key.
+ *
+ * Warm key plus cool fill is the structure the palette is written for, but the
+ * two are complementary, so an over-strong fill cancels chroma instead of
+ * counterpointing it: at full strength the frame gained hue variety (arc95 46
+ * -> 271 degrees) and lost both value and accent (spread 0.491 -> 0.370, hot
+ * area 5.2% -> 1.0%). The fill has to be present and subordinate.
+ */
+const FILL = Number(QS.get("fill") ?? "1.0");
+/**
+ * How far the fill is pulled toward white. The cool counterpoint belongs in the
+ * GEOMETRY -- glazing, backdrop, accentCool glass -- not in the fill light,
+ * which mixes complementary with the warm key and turns both to mud.
+ */
+const FILL_WHITE = Number(QS.get("fillwhite") ?? "0.7");
+
+/**
+ * Take the slot's HUE, not its brightness. A palette slot is a surface colour;
+ * a light's colour also carries how much energy it delivers, and Emberlight's
+ * backdrop is #1d2d4c at L=0.30 -- used directly as a hemisphere light it made
+ * the room darker than the version with no cool fill at all (frame spread fell
+ * to 0.354). Scaling the brightest channel up to near-full keeps the night-blue
+ * hue and restores the power.
+ */
+const litHue = (hex, top = 0.92) => {
+  const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+  const k = (255 * top) / Math.max(r, g, b, 1);
+  const c = (v) => Math.min(255, Math.round(v * k));
+  return (c(r) << 16) | (c(g) << 8) | c(b);
+};
+
+/**
+ * NO TONE MAPPING BY DEFAULT, which reverses an earlier decision.
+ *
+ * ACES desaturates and rolls off highlights. That was right when a physical sky
+ * was blowing the frame out; it is wrong against an authored flat-colour
+ * palette, because it pulls every block away from the hex it was authored as.
+ * The study says try NoToneMapping first and only add HDR headroom back if the
+ * emissives need it. `?tone=aces` puts it back for comparison.
+ */
+renderer.toneMapping =
+  QS.get("tone") === "aces" ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping;
 renderer.toneMappingExposure = LOOK.exposure;
 
 const scene = new THREE.Scene();
 // FogExp2, and the colour comes from the look rather than from the sky, so an
 // interior can have close brown air while an outdoor scene has pale blue depth.
-scene.fog = new THREE.FogExp2(LOOK.fog.color, LOOK.fog.density);
+// Fog toward the backdrop, not toward a hand-picked colour: anything else puts
+// a third value between the scene and the sky and softens the silhouette edge
+// the roofline is supposed to make.
+scene.fog = new THREE.FogExp2(BACKDROP_FOG, LOOK.fog.density);
 
 const camera = new THREE.PerspectiveCamera(74, 1, 0.08, 400);
 const labels = new CSS2DRenderer({ element: document.getElementById("labels") });
@@ -95,10 +168,23 @@ const sunDir = new THREE.Vector3().setFromSphericalCoords(
 );
 
 const skydome = createSkyDome(320);
-applySkyLook(skydome, LOOK.sky, sunDir);
+/**
+ * The sky is the palette's BACKDROP -- the one slot the ladder deliberately
+ * leaves free, because it has to be chosen against the lit top planes rather
+ * than fixed in advance. The dome's underside takes VOID so the horizon falls
+ * away into the darkest tier instead of into a second sky.
+ */
+const BACKDROP = backdropFor(ARCH.id);
+const VOIDC = voidFor(ARCH.id);
+applySkyLook(
+  skydome,
+  { ...LOOK.sky, zenith: BACKDROP, horizon: BACKDROP, ground: VOIDC },
+  sunDir,
+);
 scene.add(skydome);
 
-const sun = new THREE.DirectionalLight(LOOK.sun.color, LOOK.sun.intensity);
+// The key is the palette's emissive -- the fire indoors, the sun outdoors.
+const sun = new THREE.DirectionalLight(litHue(slotsFor(ARCH.id).emissive), LOOK.sun.intensity * GAIN);
 sun.position.copy(sunDir).multiplyScalar(110);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -109,8 +195,30 @@ const sc = sun.shadow.camera;
 sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 260;
 scene.add(sun, sun.target);
 
-scene.add(new THREE.HemisphereLight(LOOK.hemi.sky, LOOK.hemi.ground, LOOK.hemi.intensity));
-scene.add(new THREE.AmbientLight(LOOK.ambient.color, LOOK.ambient.intensity));
+/**
+ * LIGHT COLOUR COMES FROM THE PALETTE, NOT FROM THE LOOK.
+ *
+ * The look profiles keep intensity, angle and falloff -- how MUCH light, from
+ * where. Hue is the palette's job, and letting both own it is what produced two
+ * failed rounds: first the old orange ambient overwrote the new cool materials
+ * and nothing changed, then neutralising every light to near-white removed the
+ * cool fill and the room went back to a warm wash.
+ *
+ * Emberlight Tavern is specified as "warm key against cool night through
+ * glazing". That is not a lighting accident to be recovered by eye; it is two
+ * slots. The fill is BACKDROP -- literally the night sky leaking in -- and the
+ * bounce off the floor is groundA. Both are already inside the palette's chroma
+ * budget, so this cannot reintroduce the collapse.
+ */
+const toWhite = (hex, k) => {
+  const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+  const m = (c) => Math.round(c + (255 - c) * k);
+  return (m(r) << 16) | (m(g) << 8) | m(b);
+};
+const fillSky = toWhite(litHue(backdropFor(ARCH.id)), FILL_WHITE);
+const fillGround = litHue(slotsFor(ARCH.id).groundA, 0.55);
+scene.add(new THREE.HemisphereLight(fillSky, fillGround, LOOK.hemi.intensity * GAIN * FILL));
+scene.add(new THREE.AmbientLight(fillSky, LOOK.ambient.intensity * GAIN * FILL));
 
 /**
  * Practicals: the fire in the tavern, the chandelier in the ballroom, the ring
@@ -127,9 +235,9 @@ const practicals = [];
 if (LOOK.practicals) {
   const P = LOOK.practicals;
   for (const [x, y, z] of [[0, 15, 0], [-14, 9, -10], [14, 9, 10]]) {
-    const l = new THREE.PointLight(P.color, P.intensity, P.distance, 2);
+    const l = new THREE.PointLight(litHue(slotsFor(ARCH.id).emissive), P.intensity * GAIN, P.distance, 2);
     l.position.set(x, y, z);
-    l.userData.baseIntensity = P.intensity;
+    l.userData.baseIntensity = P.intensity * GAIN;
     scene.add(l);
     practicals.push(l);
   }
@@ -147,12 +255,12 @@ if (DIR.rim) {
 }
 
 // Air. Dust first, then the shaft it hangs in.
-const dust = DIR.dust ? makeDust(DIR.dust.count) : null;
+const dust = FX && DIR.dust ? makeDust(DIR.dust.count) : null;
 if (dust) {
   dust.material.opacity = DIR.dust.opacity;
   scene.add(dust);
 }
-if (DIR.shaft && ARCH.indoor) {
+if (FX && DIR.shaft && ARCH.indoor) {
   scene.add(
     makeShaft({
       from: [15, 19, 4],
@@ -191,14 +299,14 @@ if (!location.search.includes("ao=0")) {
  * that only genuinely emissive blocks -- lanterns, the fire, bottles -- cross
  * it. If blown% climbs in pixelstats, this is the first thing to suspect.
  */
-if (DIR.bloom) {
+if (FX && DIR.bloom) {
   const b = new UnrealBloomPass(
     new THREE.Vector2(innerWidth, innerHeight),
     DIR.bloom.strength, DIR.bloom.radius, DIR.bloom.threshold,
   );
   composer.addPass(b);
 }
-if (DIR.dof) {
+if (FX && DIR.dof) {
   composer.addPass(new BokehPass(scene, camera, {
     focus: DIR.dof.focus, aperture: DIR.dof.aperture, maxblur: DIR.dof.maxblur,
   }));
@@ -210,7 +318,7 @@ const gradePass = new ShaderPass(GradeShader);
 // The direction's grade wins where it speaks: a direction that did not also
 // own the grade would be fighting the look profile for the same knobs.
 applyGrade(gradePass, { ...LOOK.grade, ...(DIR.grade ?? {}) });
-if (!location.search.includes("grade=0")) composer.addPass(gradePass);
+if (FX && !location.search.includes("grade=0")) composer.addPass(gradePass);
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -224,6 +332,12 @@ resize();
 // --- the world ---------------------------------------------------------------
 
 const world = new VoxelWorld();
+/**
+ * RE-SKIN FIRST. The mesher bakes colours into vertex attributes, so the block
+ * table has to carry the palette before a single chunk is built.
+ */
+setBlockColors(blockColorsFor(ARCH.id, BLOCK_NAMES));
+
 generateScene(world, ARCH.id, { seed: 1 });
 clearPlaces(world, ARCH.id);
 

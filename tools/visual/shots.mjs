@@ -52,7 +52,14 @@ const scenes = ONLY ? ONLY.split(",").map((s) => s.trim()).filter(Boolean) : LOO
  */
 const CAMERAS = {
   tavern:          { pos: [-12.5, 15.2, -9.5], look: [7, 9],   pitch: -0.09 },
-  council_chamber: { pos: [-12.0, 15.6, -10.0], look: [6, 8],  pitch: -0.10 },
+  /**
+   * Straight down the central aisle, not across the corner. Adding columns for
+   * the geometry pass put one directly in front of the corner camera and it
+   * filled the frame -- value spread fell 0.446 to 0.307 and arc95 327 to 88.
+   * A symmetrical aisle is also simply the right shot for a room whose subject
+   * is procedure: columns flanking, rostrum at the end, nothing in the way.
+   */
+  council_chamber: { pos: [0, 15.8, -12.5], look: [0, 10], pitch: -0.05 },
   ballroom:        { pos: [-13.0, 15.6, -10.0], look: [7, 8],  pitch: -0.10 },
   studio:          { pos: [-11.0, 15.2, -9.0],  look: [6, 7],  pitch: -0.07 },
   training_hall:   { pos: [-12.0, 15.4, -10.0], look: [6, 8],  pitch: -0.09 },

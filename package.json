@@ -33,7 +33,8 @@
     "shots:ward": "node tools/visual/wardshots.mjs --out=docs/screens",
     "shots:voxel": "node tools/visual/voxelshots.mjs --out=docs/screens",
     "directions": "node tools/visual/directions.mjs --out=docs/screens/directions",
-    "huestats": "node tools/visual/huestats.mjs"
+    "huestats": "node tools/visual/huestats.mjs",
+    "shots:chat": "node tools/visual/chatshot.mjs --out=docs/screens"
   },
   "dependencies": {
     "@animocabrands/minds-client-lib": "0.1.3",

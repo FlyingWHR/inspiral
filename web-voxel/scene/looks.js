@@ -113,7 +113,9 @@ export const LOOKS = {
    * no bounce. The point is that standing in it feels like being judged.
    */
   council_chamber: merge({
-    exposure: 1.0,
+    // Trimmed after the geometry pass: the aisle framing puts the lit rostrum
+    // and both cornice runs in shot at once, which measured 0.655% blown.
+    exposure: 0.8,
     sky: { zenith: 0x0e1420, horizon: 0x2c3a4e, ground: 0x14181e, sunTint: 0xdfeaff, sunSize: 0.0, haze: 0.5 },
     sun: { color: 0xdcebff, intensity: 4.8, elevation: 68, azimuth: 95, shadowRadius: 2 },
     hemi: { sky: 0x7f93ad, ground: 0x2f343c, intensity: 1.2 },

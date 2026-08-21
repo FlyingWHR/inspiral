@@ -158,6 +158,19 @@ leaves free. The ladder only reaches the *frame* if the darkest and lightest
 tiers actually appear, so the face-shading ramp bottoms out at 0.30 to put VOID
 under every overhang, and the interiors carry a lit cornice so HIGH is in shot.
 
+**One visual family, both surfaces.** The voxel worlds take the colour system by
+assigning block slots. The ward could not — it is built from Kenney kit GLBs and
+every piece samples one shared 512x512 palette atlas, so tinting materials does
+nothing. The atlas itself is remapped at load instead: every colour in it is
+measured in OKLab, matched to the nearest tier of the ladder, and replaced by
+the slot that owns that tier. The kit's value structure survives; its hue does
+not. Without this the film had two visual families and a design panel notices
+that immediately without being able to say why.
+
+The cast is the exception, on purpose: character colours are the one thing the
+system holds byte-identical across all five palettes, so they are never
+re-skinned to whichever world they are standing in.
+
 **Per-archetype visual identity.** Eight look profiles in
 `web-voxel/scene/looks.js`, one per scene archetype, each with its own exposure,
 sky, sun, hemisphere, ambient, fog, practicals and colour grade. Both the ward

@@ -20,6 +20,8 @@ import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { getLook } from "/shared/looks.js";
 import { createSkyDome, applySkyLook } from "/shared/skydome.js";
 import { GradeShader, applyGrade } from "/shared/grade.js";
+import { slotsFor, backdropFor, voidFor } from "/shared/palette.js";
+import { recolorAtlas } from "/shared/recolor.js";
 
 const KIT = "/assets/castle/";
 const CHARS = "/assets/characters/";
@@ -105,12 +107,21 @@ const canvas = document.getElementById("stage");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 // The look has to exist before the renderer is configured -- exposure is the
 // first thing it sets. `?look=tavern` forces a profile for comparison shots.
-const LOOK = getLook(new URLSearchParams(location.search).get("look") ?? "market_plaza");
+const WARD_ARCHETYPE = "market_plaza";
+const SLOTS = slotsFor(WARD_ARCHETYPE);
+const LOOK = getLook(new URLSearchParams(location.search).get("look") ?? WARD_ARCHETYPE);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = LOOK.exposure;
+/**
+ * Same treatment as the voxel surface, and for the same two reasons: ACES
+ * desaturates and rolls off an authored flat palette, and `LOOK.exposure` is no
+ * longer a tone-mapping exposure at all -- it was repurposed as a per-archetype
+ * trim on light gain. Leaving it wired to toneMappingExposure here meant
+ * trimming Saffron Market for the voxel exteriors silently darkened the ward.
+ */
+renderer.toneMapping = THREE.NoToneMapping;
+const GAIN = 2.6 * (LOOK.exposure ?? 1);
 
 const scene = new THREE.Scene();
 /**
@@ -138,7 +149,12 @@ const sunDir = new THREE.Vector3().setFromSphericalCoords(
   THREE.MathUtils.degToRad(LOOK.sun.azimuth),
 );
 const skydome = createSkyDome(300);
-applySkyLook(skydome, LOOK.sky, sunDir);
+applySkyLook(
+  skydome,
+  { ...LOOK.sky, zenith: backdropFor(WARD_ARCHETYPE), horizon: backdropFor(WARD_ARCHETYPE),
+    ground: voidFor(WARD_ARCHETYPE) },
+  sunDir,
+);
 scene.add(skydome);
 
 // Exponential fog reads as air with depth in it; linear fog reads as a curtain.
@@ -146,7 +162,7 @@ scene.add(skydome);
 // toward a low sun washes the whole frame out.
 // Very light. The ground plane is 150 units across and the camera sees most
 // of it, so anything denser than this turns the entire frame to milk.
-scene.fog = new THREE.FogExp2(LOOK.fog.color, LOOK.fog.density);
+scene.fog = new THREE.FogExp2(backdropFor(WARD_ARCHETYPE), LOOK.fog.density);
 
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
 camera.position.set(-12.5, 10.5, 23);
@@ -161,7 +177,7 @@ controls.maxDistance = 62;
 const labels = new CSS2DRenderer({ element: document.getElementById("labels") });
 
 // Soft shadows plus AO is the whole art direction. No voxels, no density.
-const sun = new THREE.DirectionalLight(LOOK.sun.color, LOOK.sun.intensity);
+const sun = new THREE.DirectionalLight(LOOK.sun.color, LOOK.sun.intensity * GAIN);
 sun.position.copy(sunDir).multiplyScalar(70);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -171,8 +187,8 @@ sun.shadow.normalBias = 0.03;
 const cam = sun.shadow.camera;
 cam.left = -32; cam.right = 32; cam.top = 32; cam.bottom = -32; cam.far = 90;
 // Sky-coloured bounce, warm ground bounce. Cheap global illumination.
-scene.add(sun, new THREE.HemisphereLight(LOOK.hemi.sky, LOOK.hemi.ground, LOOK.hemi.intensity));
-scene.add(new THREE.AmbientLight(LOOK.ambient.color, LOOK.ambient.intensity));
+scene.add(sun, new THREE.HemisphereLight(LOOK.hemi.sky, LOOK.hemi.ground, LOOK.hemi.intensity * GAIN));
+scene.add(new THREE.AmbientLight(LOOK.ambient.color, LOOK.ambient.intensity * GAIN));
 
 /**
  * A procedural dirt/gravel texture, drawn once into a canvas.
@@ -207,7 +223,21 @@ function groundTexture(base, speck, size = 256) {
   return t;
 }
 
-const groundTex = groundTexture("#6f6350", ["#5b503f", "#7d7059", "#4e4536", "#877a61"]);
+/**
+ * Ground from the palette, not from hand-picked hex. groundA/B are the DARK
+ * tier, which is where a ground plane belongs -- it reads dark in almost every
+ * game frame worth looking at, and putting it at MID is what flattens a scene.
+ */
+const hex6 = (n) => "#" + n.toString(16).padStart(6, "0");
+/**
+ * groundB, not groundA. Both are the DARK tier, but Saffron's groundA is a deep
+ * blue -- correct as the hard shadow colour it was authored for, and wrong
+ * stretched across a 520-unit plane, where it reads as open water rather than
+ * as ground. groundB is the earth of the same tier.
+ */
+const groundTex = groundTexture(hex6(SLOTS.groundB), [
+  hex6(SLOTS.groundA), hex6(SLOTS.structA), hex6(SLOTS.void), hex6(SLOTS.structB),
+]);
 groundTex.repeat.set(90, 90);
 
 // 520 units, not 150. At 150 the far edge of the plane sat inside the frame as
@@ -223,7 +253,11 @@ scene.add(ground);
 
 // Cobble: paler, tighter speckle, so the square reads as laid stone against
 // the dirt around it.
-const plazaTex = groundTexture("#938770", ["#7e7360", "#a79a80", "#6d6353"]);
+// The plaza is laid stone: one tier up from the surrounding ground so the
+// square reads as a distinct mass rather than a change of speckle.
+const plazaTex = groundTexture(hex6(SLOTS.structB), [
+  hex6(SLOTS.structA), hex6(SLOTS.fieldA), hex6(SLOTS.groundA),
+]);
 plazaTex.repeat.set(7, 7);
 const plaza = new THREE.Mesh(
   new THREE.CircleGeometry(9.5, 48),
@@ -280,13 +314,45 @@ const cache = new Map();
 const load = (url) =>
   cache.get(url) ?? cache.set(url, loader.loadAsync(url)).get(url);
 
-function dressShadows(obj) {
+/**
+ * The recoloured kit atlas, built once and shared by every piece.
+ *
+ * Every Kenney mesh samples one 512x512 palette atlas, so tinting materials
+ * individually achieves nothing -- they all point at the same texture. Remapping
+ * the texture re-skins the whole kit in one pass, and keeps its value structure
+ * because the remap is by OKLab lightness.
+ */
+let atlasTex = null;
+async function kitAtlas() {
+  if (atlasTex) return atlasTex;
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = KIT + "Textures/colormap.png";
+  });
+  atlasTex = new THREE.CanvasTexture(recolorAtlas(img, SLOTS));
+  atlasTex.colorSpace = THREE.SRGBColorSpace;
+  atlasTex.flipY = false;             // glTF UV convention
+  atlasTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return atlasTex;
+}
+
+function dressShadows(obj, tex) {
   obj.traverse((o) => {
     if (!o.isMesh) return;
     o.castShadow = true;
     o.receiveShadow = true;
-    // Kenney's atlas is authored flat; a little roughness stops the plastic look.
-    if (o.material) { o.material.roughness = 0.82; o.material.metalness = 0.0; }
+    if (o.material) {
+      // Clone: the GLTF cache hands out shared materials, and assigning a map
+      // to a shared instance would re-skin pieces that already rendered.
+      o.material = o.material.clone();
+      if (tex) o.material.map = tex;
+      o.material.color.setHex(0xffffff);   // let the atlas carry the colour
+      o.material.roughness = 0.82;
+      o.material.metalness = 0.0;
+      o.material.needsUpdate = true;
+    }
   });
 }
 const sizeOf = (o) => new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());
@@ -304,7 +370,7 @@ async function stack(parts, x, z, yaw) {
   group.scale.setScalar(KIT_SCALE);
   group.position.set(x, 0, z);
   group.rotation.y = yaw;
-  dressShadows(group);
+  dressShadows(group, await kitAtlas());
   scene.add(group);
   return group;
 }
@@ -314,7 +380,7 @@ async function prop(name, x, z, yaw, scale = KIT_SCALE) {
   o.position.set(x, 0, z);
   o.rotation.y = yaw;
   o.scale.setScalar(scale);
-  dressShadows(o);
+  dressShadows(o, await kitAtlas());
   scene.add(o);
 }
 
@@ -333,6 +399,15 @@ async function addActor({ id, name, kind, title }, at) {
   const fit = PERSON_HEIGHT / Math.max(sizeOf(root).y, 0.001);
   root.scale.setScalar(fit);
   root.position.set(at.x, 0, at.z);
+  /**
+   * NO ATLAS FOR THE CAST, deliberately.
+   *
+   * Character colours are the one thing the colour system holds byte-identical
+   * across all five palettes -- the cast has to read the same in every world,
+   * so re-skinning them to whichever environment they happen to stand in is
+   * exactly backwards. Kenney's character atlas already sits outside the
+   * environment hue band, which is the property that matters.
+   */
   dressShadows(root);
   scene.add(root);
 

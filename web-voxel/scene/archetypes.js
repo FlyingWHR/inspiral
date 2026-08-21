@@ -115,6 +115,38 @@ export const ARCHETYPES = {
       { op: "prop", kind: "block", at: [0, 11], w: 29, d: 1, h: 1, y: 4, material: B.sand },
       { op: "prop", kind: "block", at: [-14, 0], w: 1, d: 21, h: 1, y: 4, material: B.sand },
       { op: "prop", kind: "block", at: [14, 0], w: 1, d: 21, h: 1, y: 4, material: B.sand },
+      /**
+       * GEOMETRY, second pass. The palette fixed the colour of the boxes; these
+       * are the boxes. Only the tavern and the council chamber get this -- they
+       * are the two that carry the film, and the other six are not worth the
+       * silhouette budget for four seconds of screen time.
+       */
+      /**
+       * THE GALLERY IS GONE, deliberately.
+       *
+       * A raised gallery along the west wall was the largest thing this pass
+       * added and it made the room worse in both directions at once: it filled
+       * the right third of the hero frame as one pale slab and hid the bar
+       * behind it, and the measurements agreed -- arc95 fell from 295 degrees
+       * to 117 and the frame went from clean to failing on value. Keep the
+       * small things that read as furniture; drop the big thing that reads as
+       * an obstruction.
+       */
+      // kegs stacked by the bar
+      { op: "prop", kind: "block", at: [-11, 9], w: 2, d: 2, h: 2, material: B.timber },
+      { op: "prop", kind: "block", at: [-11, 9], w: 1, d: 1, h: 3, y: 2, material: B.timber },
+      // a hood over the hearth, which is what makes a fireplace read as one
+      { op: "prop", kind: "block", at: [-13, 8], w: 5, d: 4, h: 1, y: 3, material: B.brick },
+      { op: "prop", kind: "block", at: [-13, 8], w: 3, d: 2, h: 1, y: 4, material: B.brick },
+      // cross-braces between the ceiling beams
+      { op: "prop", kind: "block", at: [-7, -5], w: 1, d: 7, h: 1, y: 4, material: B.timber },
+      { op: "prop", kind: "block", at: [7, 1], w: 1, d: 7, h: 1, y: 4, material: B.timber },
+      // a chandelier ring over the middle of the room
+      { op: "prop", kind: "block", at: [0, -1], w: 5, d: 1, h: 1, y: 3, material: B.timber },
+      { op: "prop", kind: "block", at: [0, -1], w: 1, d: 5, h: 1, y: 3, material: B.timber },
+      { op: "prop", kind: "block", at: [-2, -1], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [2, -1], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
+      { op: "prop", kind: "block", at: [0, -3], w: 1, d: 1, h: 1, y: 3, material: B.lantern },
     ],
     places: {
       the_bar: { x: 0, z: 6 },
@@ -210,6 +242,29 @@ export const ARCHETYPES = {
       { op: "prop", kind: "block", at: [0, 13], w: 33, d: 1, h: 1, y: 6, material: B.sand },
       { op: "prop", kind: "block", at: [-16, 0], w: 1, d: 25, h: 1, y: 6, material: B.sand },
       { op: "prop", kind: "block", at: [16, 0], w: 1, d: 25, h: 1, y: 6, material: B.sand },
+      /**
+       * GEOMETRY, second pass -- see the note in the tavern. A chamber that is
+       * a box with a dais in it does not read as a place where anyone is
+       * judged; it needs height, repetition and somewhere for the room to sit.
+       */
+      // tiered benches down both long sides: repetition is the whole look
+      { op: "prop", kind: "block", at: [-13, 0], w: 4, d: 19, h: 1, material: B.stone },
+      { op: "prop", kind: "block", at: [-15, 0], w: 3, d: 19, h: 1, y: 1, material: B.stone },
+      { op: "prop", kind: "block", at: [13, 0], w: 4, d: 19, h: 1, material: B.stone },
+      { op: "prop", kind: "block", at: [15, 0], w: 3, d: 19, h: 1, y: 1, material: B.stone },
+      // columns, evenly spaced, tall enough to lose their tops in the dark
+      { op: "prop", kind: "block", at: [-10, -8], w: 2, d: 2, h: 7, material: B.cobble },
+      { op: "prop", kind: "block", at: [-10, 0], w: 2, d: 2, h: 7, material: B.cobble },
+      { op: "prop", kind: "block", at: [-10, 8], w: 2, d: 2, h: 7, material: B.cobble },
+      { op: "prop", kind: "block", at: [10, -8], w: 2, d: 2, h: 7, material: B.cobble },
+      { op: "prop", kind: "block", at: [10, 0], w: 2, d: 2, h: 7, material: B.cobble },
+      { op: "prop", kind: "block", at: [10, 8], w: 2, d: 2, h: 7, material: B.cobble },
+      // the rostrum, raised twice so whoever stands there is above the room
+      { op: "prop", kind: "block", at: [0, 9], w: 11, d: 5, h: 1, material: B.stone },
+      { op: "prop", kind: "block", at: [0, 10], w: 7, d: 3, h: 1, y: 1, material: B.stone },
+      { op: "prop", kind: "block", at: [0, 10], w: 3, d: 1, h: 1, y: 2, material: B.timber },
+      // steps up to it
+      { op: "prop", kind: "block", at: [0, 6], w: 5, d: 1, h: 1, material: B.cobble },
     ],
     places: {
       the_dais: { x: 0, z: 7 },

@@ -46,13 +46,37 @@ id**, which then resolves against an append-only log.
 is a test failure, not a bad vibe. That is the invention, and it is what
 separates this from a chatbot with a personality prompt.
 
-## 3. Judge it in five commands
+## 3. The shape it is becoming
+
+Inspiral started as a world you visit. The data above is the argument against
+that: a destination needs its own audience, and memory is a retention feature
+you cannot apply to people who never arrived.
+
+So the same canon is now also served as a **layer** — `npm run serve` — for a
+product that already has traffic and stakes. Customer one is Trade Clash, whose
+contract was already written: `IMatchFeed` yields `MatchId`, `BotIds` and
+`WinnerSide` on the authoritative sim tick, so one finished match is one
+`confrontation` and a season is a rivalry nobody authored.
+
+```
+POST /v1/matches   something happened          (the webhook)
+POST /v1/stakes    somebody took a side        (the retention hook)
+GET  /v1/rivalry   what is between these two   (the caster's question)
+GET  /v1/memory    what is remembered about X  (the return visit)
+GET  /w/<world>    the log, as a page          (public, shareable)
+```
+
+The public permalink is the part that matters most: every citation this project
+produced was previously unshareable, because the page it pointed at did not
+exist. A receipt nobody can open is a claim with a hex string after it.
+
+## 4. Judge it in five commands
 
 Everything below runs offline with no API key, except `prove`, which is the one
 thing a Mind is strictly required for.
 
 ```bash
-npm install && npm test        # 311 tests, ~2s, no key, no network
+npm install && npm test        # 326 tests, ~2s, no key, no network
 npm run problem                # is this a real problem?    1418 / 14 / 1
 npm run prove                  # what needs a Mind?         1 arc -> 6-8, live
 npm run scale                  # what does it cost at size? cast x5.3 -> calls x1.00
@@ -60,7 +84,7 @@ npm run clock:status           # history nobody watched accumulate
 npm run demo                   # the whole loop, ~2s, exits 0
 ```
 
-## 4. Against the criteria
+## 5. Against the criteria
 
 **Minds integration.** One Mind runs the whole district as a showrunner; every
 character is a projection of it. Four conversation lanes, live-verified use of
@@ -84,7 +108,7 @@ against you, the rendered line carries the `event_id`, and the citation is
 verified against the log. Plus one Mind for any cast size as an *economic*
 argument, and a clock whose whole job is to be boring for a week.
 
-**Execution.** 311 tests in ~2s, offline. Typecheck clean. Four surfaces on one
+**Execution.** 326 tests in ~2s, offline. Typecheck clean. Four surfaces on one
 seam — terminal, three.js ward, first-person diggable voxel world, chat. Canon
 is append-only, enforced by SQLite triggers rather than by convention. `runTick`
 never throws.
@@ -94,7 +118,7 @@ never with traffic — and `npm run scale` measures it rather than asserting it.
 Latency is answered structurally: the Mind is not in the interaction loop, and
 three tests fail the moment a human is made to wait on it.
 
-## 5. What is not built, stated plainly
+## 6. What is not built, stated plainly
 
 - **Social ingestion adapters throw**, and the Minds Bazaar was checked before
   saying so. The only X route on the platform (`Twitter CLI`) works by scraping
@@ -106,6 +130,15 @@ three tests fail the moment a human is made to wait on it.
   [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md).
 - **Telegram approval** is real code tested against a fake transport; the
   network hop is unproven.
+- **Identity is asserted, not authenticated.** A durable id in localStorage,
+  never recycled between people — which is a real fix for the bug that made the
+  world greet a stranger with someone else's history — and still a claim, not a
+  login. A host product with real sign-in should pass its verified id through;
+  Trade Clash already signs a wallet message.
+- **The retention thesis is untested.** With durable ids the A/B is now runnable
+  — half of returning visitors get memory, half get a generic greeting — and it
+  has not been run. Nobody knows yet whether being remembered brings anyone
+  back, including us.
 - **The affinity metric reads n=0 real visitors.** It is measurement
   infrastructure for a claim, not the claim. Synthetic patrol visitors are
   labelled and excluded from every cohort number.
@@ -117,7 +150,7 @@ three tests fail the moment a human is made to wait on it.
 
 The full list, including everything still owed, is in the README.
 
-## 6. Links
+## 7. Links
 
 | | |
 |---|---|

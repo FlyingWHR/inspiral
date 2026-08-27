@@ -55,6 +55,45 @@ npm run demo         # the whole loop, ~2s, no key, no network
 npm run clock:status # history nobody watched accumulate
 ```
 
+## The memory layer (`npm run serve`)
+
+The rest of this README describes a world you visit. That shape needs its own
+audience, and an audience is the one thing there is no evidence of anybody
+wanting. `npm run problem` is the argument against it in the owner's own
+numbers: 1,418 sessions, median length **0.0 seconds**, 14 people who cared
+enough to pick a side. Memory is a retention feature, and you cannot retain
+people you never acquired.
+
+So the same canon is also served as a **layer** — for a product that already has
+traffic, stakes and recurring outcomes.
+
+```bash
+INSPIRAL_API_KEY=... npm run serve -- --db ./data/tradeclash.db
+```
+
+| | |
+|---|---|
+| `POST /v1/matches` | something happened — the webhook |
+| `POST /v1/stakes` | somebody took a side — the retention hook |
+| `GET /v1/rivalry?a=&b=` | what is between these two — the caster's question |
+| `GET /v1/memory?fan=` | what is remembered about X — the return visit |
+| `GET /w/<world>` and `/w/<world>/e/<id>` | the log, as a page — **public** |
+
+Customer one is Trade Clash, and its contract was already written:
+`IMatchFeed` gives `MatchId`, `BotIds` and `WinnerSide`, decided on the
+authoritative sim tick. One finished match is one `confrontation` in canon, and
+a season of them is a rivalry nobody had to author.
+
+**The public pages matter more than they look.** Every citation this project has
+ever produced was unshareable — clip drafts pointed at a permalink that did not
+exist. A receipt nobody can open is not evidence, it is a claim with a hex
+string after it.
+
+Writes and personal memory need `X-Inspiral-Key` and **fail closed**: with no
+key configured the public pages still serve and every authenticated route
+answers 503. `match_id` is idempotent, because webhooks retry and a retried
+match that moved the rivalry twice would silently inflate a grudge.
+
 ## Build What Creators Need Next
 
 The jam's brief, answered in its own terms.
@@ -88,7 +127,7 @@ Node 22+ (developed on 24.19.0).
 
 ```bash
 npm install          # once
-npm test             # 311 tests, headless, no engine, no key
+npm test             # 326 tests, headless, no engine, no key
 ```
 
 **The world, three ways.** Same canon, same tick loop, same cast — the surface
@@ -472,7 +511,7 @@ web-voxel/       voxel/ (storage, meshing, raycast,
                  physics, pathfind), ward.js, main.js ← no renderer import
 ops/             com.inspiral.clock.plist            ← optional always-on
 tests/           validator.test.ts, tick.test.ts, mint.test.ts,
-                 voxel.test.ts, visitors.test.ts    ← 311 tests
+                 voxel.test.ts, visitors.test.ts    ← 326 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 

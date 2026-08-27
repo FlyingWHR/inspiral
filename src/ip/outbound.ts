@@ -46,16 +46,28 @@ export interface ClipOptions {
   platform?: string;
 }
 
+/**
+ * The link on a clip has to be the link the server actually serves.
+ *
+ * This used to build `/w/<world>?e=<id>` against a default host of
+ * `inspiral.world`, which resolved to nothing because no such page existed
+ * anywhere. Now `MemoryApi` serves `/w/<world>/e/<id>` for real, so the two
+ * shapes have to agree -- otherwise every clip an owner posts is a 404 and the
+ * receipt on it is decoration.
+ *
+ * Default host is the local memory API rather than a domain nobody owns:
+ * pointing at something running is more honest than pointing at an aspiration.
+ * Set INSPIRAL_CLIP_BASE to wherever it is actually deployed.
+ */
 function trackedLink(repo: CanonRepo, e: WorldEvent, opts: ClipOptions): string {
-  const base = opts.baseUrl ?? process.env.INSPIRAL_CLIP_BASE ?? "https://inspiral.world";
+  const base = opts.baseUrl ?? process.env.INSPIRAL_CLIP_BASE ?? "http://localhost:8790";
   const world = slug(repo.getMeta("world_name") ?? "world");
   const q = new URLSearchParams({
-    e: e.event_id,
     utm_source: opts.platform ?? "manual",
     utm_medium: "clip",
     utm_campaign: world,
   });
-  return `${base.replace(/\/+$/, "")}/w/${world}?${q.toString()}`;
+  return `${base.replace(/\/+$/, "")}/w/${world}/e/${e.event_id}?${q.toString()}`;
 }
 
 /**

@@ -61,8 +61,17 @@ describe("clip selection", () => {
     expect(clip).toBeDefined();
     const url = new URL(clip!.link);
     expect(url.origin).toBe("https://example.test");
-    expect(url.pathname).toBe("/w/trade-clash");
-    expect(url.searchParams.get("e")).toBe(clip!.event_id);
+    /**
+     * The shape the memory API actually serves, not a shape we wish it served.
+     * These drifted once already: clips built `/w/<world>?e=<id>` while the
+     * server route was `/w/<world>/e/<id>`, so every posted clip would have
+     * 404'd and the receipt on it would have been decoration. Asserted against
+     * the server's own route pattern so they cannot drift apart again.
+     */
+    const SERVER_ROUTE = /^\/w\/[^/]+\/e\/([A-Za-z0-9_]{1,64})$/;
+    const m = SERVER_ROUTE.exec(url.pathname);
+    expect(m, `${url.pathname} is not a route MemoryApi serves`).not.toBeNull();
+    expect(m![1]).toBe(clip!.event_id);
     expect(url.searchParams.get("utm_source")).toBe("x");
     expect(url.searchParams.get("utm_medium")).toBe("clip");
     w.repo.close();

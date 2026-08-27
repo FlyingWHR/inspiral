@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { loadConfig } from "../src/config.js";
 import { CanonRepo } from "../src/canon/repo.js";
 import { setLogLevel } from "../src/log.js";
 
@@ -85,6 +86,14 @@ console.log(`  ${pad("days elapsed")}${(wall / 24).toFixed(2)}   (${wall.toFixed
 console.log(`  ${pad("log spans")}${(spanned / 24).toFixed(2)} days   ${first ?? "-"} .. ${last ?? "-"}`);
 console.log(`  ${pad("ticks")}${repo.getMeta("tick_no") ?? 0}`);
 console.log(`  ${pad("events")}${events.length}`);
+/**
+ * Which host authored this history is NOT recorded per event -- the schema
+ * predates the question and migrating the one file in this repo that cannot be
+ * regenerated is not worth the answer. What is recorded, on Minds' side, is the
+ * cognition spend per day: `npm run platform` prints it, and it lines up with
+ * this window. Point at both rather than claiming either.
+ */
+console.log(`  ${pad("host now")}${loadConfig().host}   (per-day spend: npm run platform)`);
 console.log(`  ${pad("characters")}${repo.getCharacters().length}`);
 console.log(`  ${pad("visitors")}${visitors.length}${visitors.length ? "  (" + visitors.join(", ") + ")" : ""}`);
 console.log(`  ${pad("backups")}${backups}`);

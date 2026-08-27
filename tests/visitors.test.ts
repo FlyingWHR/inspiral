@@ -186,6 +186,9 @@ describe("nobody waits on a model", () => {
       await new Promise((r) => setTimeout(r, this.delayMs));
       return this.inner.ask(req);
     }
+    async budgetRemaining(): Promise<number | undefined> {
+      return this.inner.budgetRemaining();
+    }
     async close(): Promise<void> {
       await this.inner.close();
     }

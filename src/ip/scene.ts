@@ -19,6 +19,7 @@
  */
 
 import { z } from "zod";
+import { prose } from "../types/canon.js";
 import { ARCHETYPE_IDS, ARCHETYPES, DEFAULT_ARCHETYPE } from "../../web-voxel/scene/archetypes.js";
 
 import type { IPBible } from "./bible.js";
@@ -36,7 +37,7 @@ const LIBRARY = ARCHETYPES as unknown as Record<string, ArchetypeMeta | undefine
 /** Validated like every other thing a host says. */
 export const SceneChoice = z.object({
   archetype: z.enum(ARCHETYPE_IDS as [string, ...string[]]),
-  reason: z.string().max(240).default(""),
+  reason: prose(240),
   /** How the choice was made, for the CLI and the gate. */
   chosen_by: z.enum(["host", "heuristic", "default"]).default("heuristic"),
 });

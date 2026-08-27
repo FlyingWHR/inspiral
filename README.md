@@ -1,17 +1,56 @@
 # Inspiral
 
-**Mints living inhabitants into any 3D world — NPCs with canon, grudges, and
-memory of you.**
+**Worlds that remember the people who visit them — and can prove it.**
 
-Three rival faction leaders live in a small district. Every few hours a world
-tick fires; each acts on current canon — confronts a rival, posts a notice,
-snubs someone. Actions become events, events update canon, canon drives the next
-tick. The district accumulates real history with zero visitors.
+---
 
-The payoff is the return visit. A visitor takes a side on day 2 and leaves. Four
-days of history happen without them. On day 6 they come back and an NPC greets
-them as an ally and complains, accurately, about what a rival did while they were
-gone — citing the event id, which the demo then verifies against the log.
+## The problem, measured in my own product
+
+I build [Trade Clash](https://tradeclash.com): an autonomous-esports arena where
+you build an AI war-agent, it fights a live RTS match, and an audience watches
+and bets. Sixteen satirical bloc leaders. Here is eight days of its own
+first-party analytics:
+
+```
+$ npm run problem
+
+  sessions               1418
+  picked a side          14      0.99%
+  built an agent         13      0.92%
+  seen again             1
+```
+
+Fourteen people out of fourteen hundred cared enough to pick a side, and the
+product had no idea any of them had ever been there. Session ids are minted per
+visit and die with the tab, so the true return rate is not 1-in-1418 — it is
+**unknown**, which is worse. Nothing in that system could tell a returning fan
+from a stranger, so it greeted every one of them like a stranger.
+
+That is not a Trade Clash bug. It is what a creator's world is by default: a
+place with no memory, in a year when content generation costs nothing and the
+only genuinely scarce thing left is a reason to come back to a specific place.
+
+**You cannot generate elapsed history. You can only let it elapse.** That is the
+one asset in the creator economy that appreciates instead of decaying, and it is
+what this builds.
+
+## What it does
+
+Point it at an IP. It compiles a cast, opens a world, and runs that world on a
+clock whether or not anybody is watching. Visitors take sides. The world
+remembers, and when they come back an NPC brings it up — **citing the event id**,
+which the demo then resolves against an append-only log.
+
+The host proposes only the *intent*. Canon supplies the *fact*. A wrong citation
+is a test failure, not a bad vibe. That is the whole invention.
+
+```bash
+npm run problem      # why this exists, from real analytics
+npm run prove        # what a Mind adds to a real brand document: 1 arc -> 6
+npm run scale        # cast x5.3 -> invocations x1.00
+npm run demo         # the whole loop, ~2s, no key, no network
+npm run clock:status # history nobody watched accumulate
+```
 
 ## Build What Creators Need Next
 
@@ -32,8 +71,8 @@ memories.
 model call (`npm run onboard`). The owner keeps an approval gate before any of
 it becomes canon, a daily digest of what their world did (`npm run digest`),
 and clip drafts they can post or bin. Nothing publishes itself. Cost scales
-with narrative decisions, not with cast size -- three characters and thirty
-cost the same.
+with narrative decisions, not with cast size -- measured, not asserted, by
+`npm run scale`.
 
 The rest of this README is how those three are built.
 
@@ -46,7 +85,7 @@ Node 22+ (developed on 24.19.0).
 
 ```bash
 npm install          # once
-npm test             # 305 tests, headless, no engine, no key
+npm test             # 308 tests, headless, no engine, no key
 ```
 
 **The world, three ways.** Same canon, same tick loop, same cast — the surface
@@ -98,18 +137,29 @@ layer.
 
 ## The evidence a judge asks for
 
-Three commands, in the order the questions usually come:
+Six commands, in the order the questions usually come:
 
 ```bash
-npm run prove        # what stops working without a Mind: 0 arcs -> 2, live
-npm run authorship   # what share of the rendered dialogue the model wrote
-npm run platform     # what we actually use of the Minds platform, read live
+npm run problem      # is this a real problem?      1418 sessions, 14 sides, 1 return
+npm run fixture      # is the IP real?              brand doc -> cast, mechanically
+npm run prove        # what needs a Mind?           1 arc -> 6, live
+npm run scale        # what does it cost at size?   cast x5.3 -> calls x1.00
+npm run authorship   # who wrote the dialogue?
+npm run platform     # what of the Minds platform is actually used? read live
 ```
 
-`prove` onboards the same un-hinted source twice, once with the host switched
-off and once against a live Mind, and prints the two bibles side by side. It is
-the only thing here that a Mind is strictly required for, which is why it is the
-headline. `authorship` prints the host-written share of rendered lines.
+`problem` reads eight days of first-party analytics off Trade Clash, a shipping
+product, and reports that almost nobody came back and the system could not have
+known if they had. `fixture` regenerates the cast from that product's own brand
+document so the provenance is a script rather than a promise.
+
+`prove` onboards the same source twice, once with the host switched off and once
+against a live Mind, and prints the two bibles side by side. It is the only
+thing here that a Mind is strictly required for, which is why it is the
+headline — and it now runs on real IP rather than an invented fixture.
+
+`scale` measures the cost curve, **including the part that is not flat**.
+`authorship` prints the host-written share of rendered lines.
 `platform` reads identity, balance, usage by day, spend by tool, equipped apps,
 circle and conversation lanes straight from the Builder API — it runs without a
 key and says so rather than failing.
@@ -291,6 +341,47 @@ scheduler stops calling out and the world runs on its last directives.
 Every line of dialogue in the demo cost zero invocations: the character runtime
 is stateless local code, not an agent.
 
+**Measured, not asserted.** `npm run scale` runs the identical tick loop over
+both worlds and prints what actually moved:
+
+```
+world          cast  edges  ticks  calls  calls/tick   digest
+Tallow Ward       3      6      8      8        1.00     5.1K
+Trade Clash      16    240      8      8        1.00    37.8K
+
+cast x5.3  ->  invocations x1.00     (the bill in calls)
+           ->  prompt bytes x7.38    (the bill in tokens)
+```
+
+The second row is the honest one. Invocation count is flat; **prompt size is
+worse than linear**, because the relationship mesh is O(n²) and the digest ships
+all of it — 3 characters carry 6 edges, 16 carry 240, and at the bible's cap of
+24 that is 552 edges in every prompt. The fix is fewer edges, not more context:
+send only those touching an open arc or a present visitor. That is the next
+thing to build and it is named in the tool's own output rather than buried here.
+
+### Latency: nobody waits on a model
+
+A live Mind answers in **40–166 s, median ~75 s**. That is the number that
+decides whether any of this ships, so it gets its own heading.
+
+It is fine for the tick, and it is fine precisely because **the Mind is not in
+the interaction loop**. It decides what a district does over the next four
+hours; a 75-second decision inside a 4-hour cadence is 0.5% of the window. Every
+line a visitor actually reads is rendered locally, for free, in milliseconds.
+
+The one place that was not true was arrival. `visitorArrive` awaited the host,
+so a first visit — and any return to a ward that had moved — put the entire
+latency budget in front of a human standing in the doorway. It no longer does:
+arrival is served from canon immediately and the host call runs behind it, with
+whatever the Mind decides landing on a later beat. That is also how the fiction
+works, since characters react in world time rather than chat time.
+
+Three tests in `tests/visitors.test.ts` hold the line, and the first one fails
+the moment an `await` on the host creeps back into the arrival path. Against a
+deliberately slowed 500 ms host, arrival returns in **4 ms** with a line already
+on screen, and the invocation is still spent — deferred, not skipped.
+
 ### The sovereignty seam
 
 Everything above `HostRuntime` is ours. Everything below it is a rented opinion.
@@ -374,7 +465,7 @@ web-voxel/       voxel/ (storage, meshing, raycast,
                  physics, pathfind), ward.js, main.js ← no renderer import
 ops/             com.inspiral.clock.plist            ← optional always-on
 tests/           validator.test.ts, tick.test.ts, mint.test.ts,
-                 voxel.test.ts, visitors.test.ts    ← 305 tests
+                 voxel.test.ts, visitors.test.ts    ← 308 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 
@@ -713,7 +804,7 @@ prefers a funded Mind and says so loudly); and the prompt calls visitors
 | ~~`MindsHostRuntime` has never completed a call~~ | **Done.** Verified 20 Aug — see the table above. |
 | The accumulating history is mock-authored | The clock has been running since 19 Aug. Real elapsed time, real event ids, real relationship drift — rule-based prose. Restarting it against a live Mind is one command, but every hour that passes is an hour of the week that stays mock. |
 | ~~Two fans taking opposite sides get identical standing~~ | **Done.** They diverge on the live host. |
-| ~~Onboarding enrichment is discarded~~ | **Done, and it is the headline.** On the un-hinted `creator` fixture the mock produces 0 story arcs, empty goals and a metadata summary; the Mind produces 2 named arcs, real goals, and an authored premise and tone. That is "compiles your IP" becoming "learns your IP". Note the `tradeclash` fixture ships a complete `hints.json`, so enrichment has nothing to add there — it is the wrong fixture to demo this with. |
+| ~~Onboarding enrichment is discarded~~ | **Done, and it is the headline.** Run against `fixtures/tradeclash` — a REAL brand document from a shipping product, sixteen leaders, no goals and no arcs in the source because brand documents do not contain them. The deterministic compiler gets 1 stub arc out of it; the Mind returns **6 named storylines** that cross-reference each other, plus real goals and an authored premise. That is "compiles your IP" becoming "learns your IP", measured on IP nobody invented for the demo. Transcript: [docs/transcripts/prove-tradeclash.txt](docs/transcripts/prove-tradeclash.txt). The earlier `creator` run (0 arcs → 2) is still in the repo and shows the same thing on a thinner source. |
 | ~~`budgetRemaining()` / cognition metering~~ | **Done.** Returns real numbers and now drives Mind selection. |
 | Clock on the live host | **Deliberately not switched.** Cost is fine (~2.6/invocation) but median 75s latency and the rejection-retry tail need a decision — see below. |
 

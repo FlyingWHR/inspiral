@@ -26,7 +26,7 @@ clock's database is the one artefact in this repo that cannot be regenerated.
 ```bash
 cd ~/ProjectW/Inspiral
 npm install                 # once
-npm test                    # 305 passing -- sanity check
+npm test                    # 308 passing -- sanity check
 ```
 
 Two terminals and a browser. Terminal A runs the world, terminal B runs the text

@@ -1,0 +1,94 @@
+
+> inspiral@0.1.0 prove
+> node --env-file-if-exists=.env --import tsx scripts/prove.ts --fixture tradeclash
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+  WHAT A MIND IS FOR   —   source: fixture:tradeclash  (hinted!)
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+WITHOUT A MIND (deterministic compile)               │ WITH A MIND (live)
+───────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+PREMISE
+The first sport where you own the athlete. You build │ Sixteen blocs run autonomous agents through a real
+an autonomous AI war-agent, it clashes live on a     │ RTS trade war: tariffs, energy halts, market floods,
+real RTS battlefield, the world watches and bets on  │ markups, route arbitrage. The world bets on the
+it, and the winners are assets you own. Sixteen      │ outcome. The winner is an asset the owner keeps.
+blocs, one market, no referee.                       │ 
+
+THEMES
+tariffs, blocs, leverage, brinkmanship, autonomous   │ tariff brinkmanship, energy as leverage, market
+esports, own the athlete                             │ flooding, trade arbitrage, boom-bust discipline,
+                                                     │ logistics gravity
+
+TONE
+Satirical and economically literate. Geopolitics     │ Economically literate blood sport. Numbers read
+reported like a blood sport by people who know the   │ aloud. Tariffs named by percent. The viewer came for
+numbers and are enjoying themselves anyway.          │ the betting line and stayed for the policy receipts.
+                                                     │ The chat does the rest.
+
+GOALS
+[]                                                   │ ["Set the agenda before anyone else","Force domestic
+                                                     │ innovation through tariff","Stay above the market he
+                                                     │ disrupts"]
+
+STORYLINES
+• Elon Gates (AmeriCorp): Imposes a 200% unilateral  │ • The 200% Initiative
+tariff on all Industrial Goods                       │ AmeriCorp imposed a 200% unilateral tariff on
+                                                     │ Industrial Goods and branded it the Future-Proof
+                                                     │ America Initiative. The deficit landed on
+                                                     │ AmeriCorp's own chain. HanGroup and MoonFactory are
+                                                     │ the visible targets. NasiHoldings routes the volume
+                                                     │ around it.
+                                                     │ • The Energy Halt
+                                                     │ Following the tariff dispute, PumpFederation halted
+                                                     │ Energy exports to the rival bloc and offered a
+                                                     │ Special Friendship Price to a neutral neighbour.
+                                                     │ IstanBridge arbitraged the gap. The friendship price
+                                                     │ went to the bloc that bid it.
+                                                     │ • The Flood
+                                                     │ MoonFactory maximized Secondary Sector output of
+                                                     │ Consumer Goods and flooded the global market with
+                                                     │ cheap electronics at a negative Trade Balance.
+                                                     │ HanGroup undercut on Semiconductors. JugaadRepublic
+                                                     │ sold the scarce Industrial Good at a 500% markup.
+                                                     │ NasiHoldings routed the volume.
+                                                     │ • The Boom and the Bust
+                                                     │ SambaCycle treated a temporary commodity boom as
+                                                     │ permanent, signed multiple Raw Materials export
+                                                     │ deals at unsustainable rates, and ignored critical
+                                                     │ inventory. The following turn did not recover.
+                                                     │ • Project Sovereignty, Reversed
+                                                     │ ExitLand announced Project Sovereignty with a
+                                                     │ Consumer Goods tariff on the BailoutUnion. National
+                                                     │ Stability plummeted. The next turn reversed into the
+                                                     │ Atlantic Friendship Deal, tariff-free with
+                                                     │ AmeriCorp. BailoutUnion tabled a stability pact in
+                                                     │ the middle.
+                                                     │ • The Long Energy Bet
+                                                     │ OilCoinEmirate offered discounted long-term Energy
+                                                     │ contracts to leaders who would export Semiconductors
+                                                     │ and Electronics. HanGroup and MoonFactory supply the
+                                                     │ volume. VendingIsle has the gamble worth trading
+                                                     │ for. PumpFederation's spot Energy halt sits uneasily
+                                                     │ next to OilCoinEmirate's long ledger.
+                                                     │ • ¡AFUERA!
+                                                     │ MercadoBlox set all import tariffs to 0% and ceased
+                                                     │ all production management. GDP Growth and National
+                                                     │ Stability collapsed. He celebrated the collapse as
+                                                     │ the cleansing of the market. BailoutUnion tabled a
+                                                     │ stability pact against the move.
+                                                     │ • The Secondary Sector Deal
+                                                     │ AfriCoinAlliance offered favorable Raw Materials
+                                                     │ exports in exchange for Industrial Goods to build a
+                                                     │ Secondary Sector. HanGroup undercut the offer. The
+                                                     │ alliance needs another customer.
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ARCS:   1  without a Mind      →       8  with one
+  Arcs are what the tick loop escalates. Zero arcs is a cast that exists
+  and a world that does not run. The compiler can read hashtags; it cannot
+  decide what a body of work is about.
+───────────────────────────────────────────────────────────────────────────────────────────────────────────
+  host: minds   invocations: 1   elapsed: 170.8s
+

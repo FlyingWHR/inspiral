@@ -10,6 +10,30 @@ import { z } from "zod";
  * and a different host is swapped in behind `HostRuntime`.
  */
 
+/**
+ * FREE TEXT FROM A MODEL IS TRIMMED, NEVER REFUSED.
+ *
+ * This has now cost us an entire authored world twice. First a Mind returned a
+ * `max_words` below the floor and the whole enrichment went in the bin with it.
+ * Then a Mind wrote a 27,322-character bible containing a real cast, real
+ * relationships and real arcs -- and every byte of it was discarded because its
+ * one-line explanation of which room to open in ran past 240 characters.
+ *
+ * A length limit on prose is a formatting preference. It is never a reason to
+ * reject a body of work, and treating it as one turns a chatty model into a
+ * total outage. Hard constraints -- ids, enums, referential integrity, anything
+ * canon has to be able to trust -- still reject, and should. Prose truncates.
+ *
+ * Use this for anything a model writes for a human to read. Use plain
+ * `z.string().max()` for anything the system has to resolve.
+ */
+export const prose = (max: number, fallback = "") =>
+  z
+    .string()
+    .catch(fallback)
+    .transform((s) => s.slice(0, max))
+    .default(fallback);
+
 /** A character sheet. Stable identity; the parts that do not move. */
 export const CharacterSheet = z.object({
   character_id: z.string().min(1).max(64),
@@ -17,14 +41,14 @@ export const CharacterSheet = z.object({
   faction: z.string().min(1).max(120),
   title: z.string().max(120).default(""),
   /** One paragraph. The spine of who they are. */
-  brief: z.string().max(2000).default(""),
+  brief: prose(2000),
   /** Concrete wants. Drives what the host proposes. */
-  goals: z.array(z.string().max(300)).max(12).default([]),
+  goals: z.array(prose(300)).max(12).default([]),
   /** Hard "this character would never" lines. Enforced at render time. */
-  taboos: z.array(z.string().max(300)).max(12).default([]),
+  taboos: z.array(prose(300)).max(12).default([]),
   /** Diction, rhythm, verbal tics. Consumed by the character runtime. */
   voice: z.object({
-    register: z.string().max(120).default("plain"),
+    register: prose(120, "plain"),
     tics: z.array(z.string().max(80)).max(8).default([]),
     /** Rough words-per-line ceiling for rendered dialogue. */
     /**
@@ -42,7 +66,7 @@ export const CharacterSheet = z.object({
       .default(28),
   }),
   /** Volatile. Updated by directives, unlike the rest of the sheet. */
-  mood: z.string().max(60).default("even"),
+  mood: prose(60, "even"),
   /** Where they hold court. Engine-agnostic string; no coordinates here. */
   home_location: z.string().max(120).default("district"),
 });
@@ -62,7 +86,7 @@ export const Relationship = z.object({
   /** 0 calm .. 100 about to break. Drives escalation. */
   tension: z.number().min(0).max(100).default(0),
   /** Why it currently stands where it stands. One line, host-authored. */
-  note: z.string().max(500).default(""),
+  note: prose(500),
   /** The event that last moved this edge. Enables "because of what you did". */
   last_event_id: z.string().max(64).nullable().default(null),
   updated_ts: z.string().datetime().optional(),
@@ -82,7 +106,7 @@ export const Arc = z.object({
   stage: z.number().int().min(0).max(100).default(0),
   tension: z.number().min(0).max(100).default(10),
   /** Running prose summary. Rewritten by the host as the arc advances. */
-  summary: z.string().max(2000).default(""),
+  summary: prose(2000),
   resolution: z.string().max(1000).nullable().default(null),
   opened_ts: z.string().datetime().optional(),
   updated_ts: z.string().datetime().optional(),
@@ -93,7 +117,7 @@ export type Arc = z.infer<typeof Arc>;
 export const ToneRules = z.object({
   world_id: z.string().default("default"),
   /** e.g. "grimy municipal fantasy, dry, no winking at the camera" */
-  register: z.string().max(500).default(""),
+  register: prose(500),
   /** Phrases that must never appear. Checked at render time. */
   banned_phrases: z.array(z.string().max(80)).max(64).default([]),
   /** Subjects nobody in this world discusses. */

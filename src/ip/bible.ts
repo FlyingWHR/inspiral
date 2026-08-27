@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Arc, CharacterSheet, Relationship, ToneRules } from "../types/canon.js";
+import { Arc, CharacterSheet, Relationship, ToneRules, prose } from "../types/canon.js";
 import type { NewWorldEvent } from "../types/events.js";
 import type { WorldSpec } from "../canon/seed.js";
 import type { RawItem } from "./source.js";
@@ -29,9 +29,9 @@ export type LoreEntry = z.infer<typeof LoreEntry>;
 export const IPBible = z.object({
   world_name: z.string().min(1).max(120),
   ip_handle: z.string().min(1).max(120),
-  summary: z.string().max(2000).default(""),
+  summary: prose(2000),
   themes: z.array(z.string().max(80)).max(12).default([]),
-  audience_tone: z.string().max(500).default(""),
+  audience_tone: prose(500),
   characters: z.array(CharacterSheet).min(1).max(24),
   relationships: z.array(Relationship).default([]),
   arcs: z.array(Arc).default([]),
@@ -44,7 +44,7 @@ export const IPBible = z.object({
   scene: z
     .object({
       archetype: z.string().max(40),
-      reason: z.string().max(240).default(""),
+      reason: prose(240),
       chosen_by: z.enum(["host", "heuristic", "default"]).default("heuristic"),
     })
     .optional(),

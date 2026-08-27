@@ -290,3 +290,59 @@ describe("onboarding, end to end", () => {
     repo.close();
   });
 });
+
+/**
+ * A chatty model must not be able to cause a total outage.
+ *
+ * Twice now a live Mind has returned a complete, usable bible and had every
+ * byte of it discarded over a cosmetic length. The second time it was 27,322
+ * characters containing a real cast, real relationships and real arcs, thrown
+ * away because the one-line explanation of which room to open in ran long.
+ */
+describe("prose from a model is trimmed, never refused", () => {
+  const longScene = "x".repeat(400);
+  const longGoal = "g".repeat(500);
+
+  it("keeps the arcs when the scene reason runs over its limit", () => {
+    const parsed = IPHints.safeParse({
+      world_name: "Trade Clash",
+      scene: { archetype: "council_chamber", reason: longScene, chosen_by: "host" },
+      arcs: [
+        { arc_id: "arc_1", title: "The Semiconductor Tariff", participants: ["americorp"] },
+      ],
+    });
+
+    expect(parsed.success).toBe(true);
+    // The arcs are the whole point -- they are what the tick loop escalates.
+    expect(parsed.success && parsed.data.arcs).toHaveLength(1);
+    expect(parsed.success && parsed.data.scene?.reason.length).toBe(240);
+  });
+
+  it("trims an over-long goal instead of dropping the character", () => {
+    const parsed = IPHints.safeParse({
+      world_name: "Trade Clash",
+      characters: [
+        {
+          character_id: "americorp",
+          name: "Elon Gates",
+          faction: "AmeriCorp",
+          goals: [longGoal],
+          voice: {},
+        },
+      ],
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.characters).toHaveLength(1);
+    expect(parsed.success && parsed.data.characters![0]!.goals[0]!.length).toBe(300);
+  });
+
+  it("still refuses things canon has to be able to resolve", () => {
+    // An id is not prose. A missing one has to fail, and does.
+    const parsed = IPHints.safeParse({
+      world_name: "Trade Clash",
+      arcs: [{ title: "no id here", participants: ["americorp"] }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+});

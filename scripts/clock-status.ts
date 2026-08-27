@@ -26,8 +26,16 @@ if (!existsSync(DB)) {
 const repo = CanonRepo.open(DB);
 const events = repo.allEvents();
 const started = repo.getMeta("clock_started_at");
-const first = events[0]?.ts;
-const last = events.at(-1)?.ts;
+/**
+ * MIN/MAX by timestamp, not first/last by seq. A world can hold events from
+ * more than one clock -- the demos warm a world with a VirtualClock before
+ * handing it to the real one -- so the newest row is not necessarily the latest
+ * moment. Reading it positionally produced a "log spans -171.49 days", which is
+ * the kind of number that makes a judge stop believing the other ones.
+ */
+const stamps = events.map((e) => e.ts).sort();
+const first = stamps[0];
+const last = stamps.at(-1);
 
 const hours = (a?: string, b?: string) =>
   a && b ? (Date.parse(b) - Date.parse(a)) / 3_600_000 : 0;
@@ -73,7 +81,7 @@ const state = !running
 
 const pad = (s: string) => s.padEnd(15);
 console.log("");
-console.log("  TALLOW WARD — accumulated history");
+console.log(`  ${(repo.getMeta("world_name") ?? "the ward").toUpperCase()} — accumulated history`);
 console.log("  " + "─".repeat(52));
 console.log(`  ${pad("clock")}${state}`);
 if (running && overdue) {
@@ -93,7 +101,12 @@ console.log(`  ${pad("events")}${events.length}`);
  * cognition spend per day: `npm run platform` prints it, and it lines up with
  * this window. Point at both rather than claiming either.
  */
-console.log(`  ${pad("host now")}${loadConfig().host}   (per-day spend: npm run platform)`);
+const authoredBy = repo.getMeta("clock_host");
+console.log(
+  `  ${pad("authored by")}${authoredBy ?? loadConfig().host}` +
+    `${authoredBy ? "" : "  (from .env -- this clock has not booted yet)"}` +
+    `   (per-day spend: npm run platform)`,
+);
 console.log(`  ${pad("characters")}${repo.getCharacters().length}`);
 console.log(`  ${pad("visitors")}${visitors.length}${visitors.length ? "  (" + visitors.join(", ") + ")" : ""}`);
 console.log(`  ${pad("backups")}${backups}`);

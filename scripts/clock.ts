@@ -127,6 +127,10 @@ async function main(): Promise<void> {
   repo.setMeta("clock_every_min", String(EVERY_MIN));
 
   const host = await startHostRuntime({ ...loadConfig(), seed: 1 });
+  // Which host is ACTUALLY authoring this history. Reading it back off .env
+  // would lie whenever the clock was started with a shell override, which is
+  // exactly how it is started.
+  repo.setMeta("clock_host", host.name);
   const ctx: TickContext = {
     repo,
     host,
@@ -137,7 +141,10 @@ async function main(): Promise<void> {
 
   const started = repo.getMeta(STARTED_KEY)!;
   console.log("");
-  console.log("  ┌─ TALLOW WARD — THE CLOCK " + "─".repeat(34));
+  // The world's own name, not a hardcoded one: this clock also runs Trade
+  // Clash, and a banner that lies about which world it is ends up on camera.
+  const worldName = (repo.getMeta("world_name") ?? "THE WARD").toUpperCase();
+  console.log(`  ┌─ ${worldName} — THE CLOCK ` + "─".repeat(Math.max(4, 46 - worldName.length)));
   console.log(`  │  db          ${DB}`);
   console.log(`  │  world       ${created ? "created just now" : "already existed"}`);
   console.log(`  │  running for ${elapsed(started)}`);

@@ -69,9 +69,35 @@ export class CanonRepo {
   // EVENT LOG (append-only)
   // -------------------------------------------------------------------------
 
+  /**
+   * An event id is `evt_<ms base36>_<counter>`, and BOTH halves repeat across
+   * runs against a persisted world. The counter is per-process and starts at
+   * zero; under a VirtualClock the timestamps are a pure function of the seed.
+   * So opening the same database twice -- `npm run voxel --db ./data/x.db`, run
+   * it, run it again -- regenerates byte-identical ids and every warm-up tick
+   * died on the UNIQUE constraint. `runTick` absorbed the throw exactly as
+   * designed, so the world simply stopped moving and said nothing about why.
+   *
+   * Resolved here rather than by making ids random, because reproducibility is
+   * a property this project sells: same seed, same run, same ids. A collision
+   * is rare and local, so bump the counter until the id is free and keep the
+   * deterministic id in the overwhelmingly common case.
+   */
+  private freeEventId(ts: string, proposed: string): string {
+    let id = proposed;
+    for (let i = 0; i < 1000 && this.eventExists(id); i++) id = newEventId(new Date(ts));
+    return id;
+  }
+
+  private eventExists(eventId: string): boolean {
+    return (
+      this.db.prepare("SELECT 1 FROM events WHERE event_id = ?").get(eventId) !== undefined
+    );
+  }
+
   appendEvent(e: NewWorldEvent): WorldEvent {
     const ts = e.ts ?? this.now();
-    const event_id = e.event_id ?? newEventId(new Date(ts));
+    const event_id = e.event_id ?? this.freeEventId(ts, newEventId(new Date(ts)));
     const seqRow = this.db.prepare("SELECT COALESCE(MAX(seq), 0) AS m FROM events").get() as {
       m: number;
     };

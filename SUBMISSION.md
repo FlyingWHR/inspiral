@@ -52,7 +52,7 @@ Everything below runs offline with no API key, except `prove`, which is the one
 thing a Mind is strictly required for.
 
 ```bash
-npm install && npm test        # 310 tests, ~2s, no key, no network
+npm install && npm test        # 311 tests, ~2s, no key, no network
 npm run problem                # is this a real problem?    1418 / 14 / 1
 npm run prove                  # what needs a Mind?         1 arc -> 6-8, live
 npm run scale                  # what does it cost at size? cast x5.3 -> calls x1.00
@@ -84,7 +84,7 @@ against you, the rendered line carries the `event_id`, and the citation is
 verified against the log. Plus one Mind for any cast size as an *economic*
 argument, and a clock whose whole job is to be boring for a week.
 
-**Execution.** 310 tests in ~2s, offline. Typecheck clean. Four surfaces on one
+**Execution.** 311 tests in ~2s, offline. Typecheck clean. Four surfaces on one
 seam — terminal, three.js ward, first-person diggable voxel world, chat. Canon
 is append-only, enforced by SQLite triggers rather than by convention. `runTick`
 never throws.

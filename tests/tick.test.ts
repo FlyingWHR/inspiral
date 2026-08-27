@@ -7,6 +7,12 @@ import { HOUR_MS } from "../src/clock.js";
 import type { HostRequest, HostResponse, HostRuntime } from "../src/host/HostRuntime.js";
 import { freshWorld } from "./helpers.js";
 import { compileDigest } from "../src/canon/digest.js";
+import { rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { CanonRepo } from "../src/canon/repo.js";
+import { seedWorld } from "../src/canon/seed.js";
+import { VirtualClock } from "../src/clock.js";
 
 function ctxFor(
   host: HostRuntime,
@@ -340,5 +346,39 @@ describe("the digest carries only the edges in play", () => {
     const d = compileDigest(repo, { tickNo: 1, sinceSeq: 999_999, dailyBudget: 12 });
     expect(d.relationships.length).toBeGreaterThan(0);
     repo.close();
+  });
+});
+
+/**
+ * Opening a persisted world twice used to kill every warm-up tick.
+ *
+ * Event ids are `evt_<ms base36>_<counter>` and both halves repeat: the counter
+ * is per-process and starts at zero, and under a VirtualClock the timestamps
+ * are a pure function of the seed. `runTick` absorbed the UNIQUE violation
+ * exactly as designed, so the world stopped moving and said nothing about why.
+ */
+describe("a persisted world survives being opened twice", () => {
+  it("appends rather than colliding on a regenerated event id", () => {
+    const db = join(tmpdir(), `inspiral-collide-${process.pid}.db`);
+    rmSync(db, { force: true });
+
+    const run = (): number => {
+      const repo = CanonRepo.open(db, new VirtualClock("2026-03-01T09:00:00.000Z"));
+      seedWorld(repo);
+      for (let i = 0; i < 5; i++) {
+        repo.appendEvent({
+          source: "system", actors: ["x"], type: "notice_posted",
+          payload: { summary: `n${i}` }, significance_hint: 0.5,
+        });
+      }
+      const n = repo.allEvents().length;
+      repo.close();
+      return n;
+    };
+
+    const first = run();
+    const second = run(); // same clock, same seed, same ids proposed
+    expect(second).toBe(first + 5);
+    rmSync(db, { force: true });
   });
 });

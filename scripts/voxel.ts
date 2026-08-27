@@ -85,7 +85,7 @@ async function main(): Promise<void> {
 
       if (intent.kind === "arrive") {
         surface.spawn({ id: who.id, name: who.name, kind: "visitor", home: "gate" });
-        const { cached, first } = await visitorArrive(ctx, who);
+        const { cached, first } = await visitorArrive(ctx, who, { immediate: true });
         log.info(
           `${who.name} ${first ? "arrived" : "returned"}` +
             (cached ? " -- unchanged ward, replayed for free" : ""),

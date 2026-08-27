@@ -86,11 +86,24 @@ async function main(): Promise<void> {
   const items = await src.fetch();
   const hints = src.hints ? await src.hints() : null;
 
-  if (hints) {
+  /**
+   * The thing that spoils this comparison is not a hints file, it is a hints
+   * file that already contains the NARRATIVE layer -- arcs, or goals per
+   * character. A fixture may legitimately ship a cast and nothing else, which
+   * is what a real brand document looks like (see fixtures/tradeclash), and
+   * that is the most honest source to run this against: real IP in, and the
+   * gap a Mind closes measured on it.
+   */
+  const h = hints as
+    | { arcs?: unknown[]; characters?: { goals?: unknown[] }[] }
+    | null;
+  const preArced = (h?.arcs?.length ?? 0) > 0;
+  const preGoaled = (h?.characters ?? []).some((c) => (c.goals?.length ?? 0) > 0);
+  if (preArced || preGoaled) {
     console.log(
-      `\n  WARNING: "${FIXTURE}" ships hints.json -- the compiler already gets a full\n` +
-        `  cast from the fixture, so there is nothing left for a Mind to add and this\n` +
-        `  comparison will look like a tie. Use an un-hinted source.\n`,
+      `\n  WARNING: "${FIXTURE}" ships hints.json with ${preArced ? "arcs" : "per-character goals"}\n` +
+        `  already filled in, so there is little left for a Mind to add and this\n` +
+        `  comparison will look like a tie. Use a source whose hints stop at the cast.\n`,
     );
   }
 

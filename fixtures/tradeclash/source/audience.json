@@ -1,0 +1,48 @@
+{
+  "_comment": [
+    "REAL audience telemetry from Trade Clash, aggregated. This is the problem statement,",
+    "measured in the owner's own product rather than asserted.",
+    "",
+    "PROVENANCE. Derived from tradeclash-platform/analytics/events.jsonl, an 8-day export",
+    "of first-party product analytics (25 Jul - 2 Aug 2026). The raw file is NOT",
+    "redistributed here: it contains per-visit session identifiers, and shipping real",
+    "visitor telemetry in a public repo is not something a fixture should do. Only",
+    "counts survive the aggregation below - no session ids, no paths, no user agents.",
+    "Regenerate with: npm run problem -- --raw <path-to-events.jsonl>",
+    "",
+    "THE CAVEAT THAT MATTERS. `sessions_seen_again_after_12h` is 1, but a session id here",
+    "is minted per visit and does not survive a browser restart. So the true return rate",
+    "is UNKNOWN, not 1/1418. That is not a footnote - it is the finding. The product had",
+    "no way to know anyone had ever been there before, which is precisely the gap Inspiral",
+    "exists to close. Do not quote 1/1418 as a return rate."
+  ],
+  "source": "tradeclash-platform/analytics/events.jsonl",
+  "sha256_prefix": "7fd306f74aa833d0",
+  "lines": 1605,
+  "span": ["2026-07-25T02:23:31.753Z", "2026-08-02T08:14:18.506Z"],
+  "span_days": 8.2,
+  "sessions": 1418,
+  "events_total": 1605,
+  "event_types": {
+    "watch_view": 1403,
+    "faction_pick": 81,
+    "view": 76,
+    "door_click": 29,
+    "agent_built": 13,
+    "play_launch": 1,
+    "mint_click": 1,
+    "spar": 1
+  },
+  "sessions_that_picked_a_faction": 14,
+  "sessions_that_built_an_agent": 13,
+  "sessions_seen_again_after_12h": 1,
+  "median_session_seconds": 0.0,
+  "faction_picks": {
+    "AmeriCorp": 21,
+    "NasiHoldings": 16,
+    "BailoutUnion": 13,
+    "PumpFederation": 12,
+    "MoonFactory": 10,
+    "OilCoinEmirate": 9
+  }
+}

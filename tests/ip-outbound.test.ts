@@ -28,9 +28,9 @@ Ferrox announced the grain duty would rise again in spring and read the tonnage 
 async function livedInWorld() {
   const root = fixtureSandbox();
   const w = await tradeClashWorld(root);
-  dropPost(root, "tradeclash", "tc_post_099", POST);
+  dropPost(root, "tradeclash-fiction", "tc_post_099", POST);
   w.repo.setMeta("ingest_cursor", "2026-01-17T00:00:00.000Z");
-  await ingestOnce(w.repo, createSource("fixture:tradeclash", root));
+  await ingestOnce(w.repo, createSource("fixture:tradeclash-fiction", root));
   const host = new MockHostRuntime({ seed: 3 });
   for (let i = 0; i < 3; i++) await runTick({ repo: w.repo, host, dailyBudget: 99 });
   return { ...w, root };

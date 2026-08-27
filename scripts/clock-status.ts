@@ -53,11 +53,32 @@ const backups = existsSync(backupDir)
   ? readdirSync(backupDir).filter((f) => f.endsWith(".db")).length
   : 0;
 
+/**
+ * A held lock proves a process exists. It does not prove the world is moving --
+ * a laptop that slept through the night leaves the pid alive and the log
+ * silent, and this used to report RUNNING right through it. The evidence this
+ * whole project rests on is elapsed history, so a clock that has gone quiet has
+ * to say so loudly enough to notice before filming it.
+ */
+const cadenceMin = Number(repo.getMeta("clock_every_min") ?? 180);
+const silentH = last ? (Date.now() - Date.parse(last)) / 3_600_000 : Infinity;
+const overdue = silentH > (cadenceMin / 60) * 2;
+const state = !running
+  ? "not running"
+  : overdue
+    ? `STALE — process alive, but nothing logged for ${silentH.toFixed(1)} h ` +
+      `(cadence ${cadenceMin} min)`
+    : "RUNNING";
+
 const pad = (s: string) => s.padEnd(15);
 console.log("");
 console.log("  TALLOW WARD — accumulated history");
 console.log("  " + "─".repeat(52));
-console.log(`  ${pad("clock")}${running ? "RUNNING" : "not running"}`);
+console.log(`  ${pad("clock")}${state}`);
+if (running && overdue) {
+  console.log(`  ${pad("")}↳ the pid holds the lock; the machine most likely slept.`);
+  console.log(`  ${pad("")}  Restart it before trusting or filming this world.`);
+}
 console.log(`  ${pad("database")}${DB}  (${(statSync(DB).size / 1024).toFixed(0)} KB)`);
 console.log(`  ${pad("started")}${started ?? "unknown (pre-dates the clock)"}`);
 console.log(`  ${pad("days elapsed")}${(wall / 24).toFixed(2)}   (${wall.toFixed(1)} h of real time)`);

@@ -27,8 +27,8 @@ const POST_TEXT = "Ferrox announced the grain duty would rise again in spring";
 async function worldWithDroppedPost() {
   const root = fixtureSandbox();
   const w = await tradeClashWorld(root);
-  dropPost(root, "tradeclash", "tc_post_099", POST);
-  const source = createSource("fixture:tradeclash", root);
+  dropPost(root, "tradeclash-fiction", "tc_post_099", POST);
+  const source = createSource("fixture:tradeclash-fiction", root);
   w.repo.setMeta("ingest_cursor", "2026-01-17T00:00:00.000Z");
   const r = await ingestOnce(w.repo, source);
   return { ...w, source, root, result: r, eventId: r.ingested[0]!.event_id };
@@ -49,7 +49,7 @@ describe("normalisation onto the frozen event schema", () => {
     const item = normalizeItem(
       { kind: "match", ts: "2026-01-20T00:00:00.000Z", text: "Ironbelt 3, Sunbelt 2", actors: ["ferrox", "cindra"] },
       "m1",
-      "tradeclash",
+      "tradeclash-fiction",
     );
     const e = itemToEvent(item, CAST)!;
     expect(() => WorldEvent.parse({ ...e, event_id: "evt_x", ts: e.ts })).not.toThrow();
@@ -123,7 +123,7 @@ describe("ingestion", () => {
     const root = fixtureSandbox();
     const w = await tradeClashWorld(root);
     w.repo.setMeta("ingest_cursor", "2026-01-16T18:00:00.000Z"); // newest fixture item
-    const r = await ingestOnce(w.repo, createSource("fixture:tradeclash", root));
+    const r = await ingestOnce(w.repo, createSource("fixture:tradeclash-fiction", root));
     expect(r.ingested).toHaveLength(0);
     w.repo.close();
     rmSync(root, { recursive: true, force: true });

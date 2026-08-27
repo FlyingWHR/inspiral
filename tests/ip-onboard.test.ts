@@ -24,7 +24,7 @@ const world = () => CanonRepo.open(":memory:", new VirtualClock("2026-01-19T09:0
 
 describe("IPSource", () => {
   it("reads a fixture directory, oldest first", async () => {
-    const items = await new FixtureSource("tradeclash").fetch();
+    const items = await new FixtureSource("tradeclash-fiction").fetch();
     expect(items.length).toBeGreaterThan(4);
     expect(items[0]!.kind).toBe("profile");
     const ts = items.map((i) => Date.parse(i.ts));
@@ -32,7 +32,7 @@ describe("IPSource", () => {
   });
 
   it("honours `since`, which is how the poll loop avoids re-reading history", async () => {
-    const src = new FixtureSource("tradeclash");
+    const src = new FixtureSource("tradeclash-fiction");
     const all = await src.fetch();
     const cut = all[2]!.ts;
     const after = await src.fetch({ since: cut });
@@ -43,10 +43,10 @@ describe("IPSource", () => {
   it("reads a dropped markdown file with a key:value header", async () => {
     const root = fixtureSandbox();
     writeFileSync(
-      join(root, "tradeclash", "drop.md"),
+      join(root, "tradeclash-fiction", "drop.md"),
       "item_id: tc_drop\nts: 2026-01-18T09:00:00.000Z\nactors: ferrox, cindra\n\nThe duty rises again in spring.\n",
     );
-    const items = await new FixtureSource("tradeclash", root).fetch();
+    const items = await new FixtureSource("tradeclash-fiction", root).fetch();
     const dropped = items.find((i) => i.item_id === "tc_drop");
     expect(dropped).toBeDefined();
     expect(dropped!.actors).toEqual(["ferrox", "cindra"]);
@@ -105,15 +105,15 @@ describe("IPSource", () => {
   });
 
   it("a bare name is a fixture, because the fixture is the default", () => {
-    expect(createSource("tradeclash").name).toBe("fixture:tradeclash");
+    expect(createSource("tradeclash-fiction").name).toBe("fixture:tradeclash-fiction");
     expect(createSource("fixture:creator").name).toBe("fixture:creator");
   });
 });
 
 describe("bible compiler", () => {
   it("uses hints when a fixture ships them", async () => {
-    const src = new FixtureSource("tradeclash");
-    const bible = compileBible("tradeclash", await src.fetch(), IPHints.parse(await src.hints!()));
+    const src = new FixtureSource("tradeclash-fiction");
+    const bible = compileBible("tradeclash-fiction", await src.fetch(), IPHints.parse(await src.hints!()));
     expect(bible.characters.map((c) => c.character_id).sort()).toEqual(["cindra", "ferrox", "okuma"]);
     expect(bible.arcs.map((a) => a.arc_id).sort()).toEqual(["arc_strait_toll", "arc_tariff_spiral"]);
     // Directed and asymmetric: that asymmetry is the engine.
@@ -138,8 +138,8 @@ describe("bible compiler", () => {
   });
 
   it("turns lore into real, citable day-zero events", async () => {
-    const src = new FixtureSource("tradeclash");
-    const bible = compileBible("tradeclash", await src.fetch(), IPHints.parse(await src.hints!()));
+    const src = new FixtureSource("tradeclash-fiction");
+    const bible = compileBible("tradeclash-fiction", await src.fetch(), IPHints.parse(await src.hints!()));
     const spec = bibleToWorldSpec(bible);
     expect(spec.history[0]!.type).toBe("world_created");
     const lore = spec.history.slice(1);
@@ -199,7 +199,7 @@ describe("onboarding, end to end", () => {
   // directory and must not be able to change what these tests see.
   const root = fixtureSandbox();
   const opts = (repo: CanonRepo, approval: MemoryApprovalChannel) => ({
-    source: createSource("fixture:tradeclash", root),
+    source: createSource("fixture:tradeclash-fiction", root),
     repo,
     approval,
     host: new MockHostRuntime({ seed: 1 }),
@@ -218,7 +218,7 @@ describe("onboarding, end to end", () => {
     expect(repo.getRelationships()).toHaveLength(6);
     expect(repo.getTone().banned_phrases).toContain("as you know");
     expect(repo.getMeta("world_name")).toBe("Trade Clash");
-    expect(loadBible(repo)?.ip_handle).toBe("tradeclash");
+    expect(loadBible(repo)?.ip_handle).toBe("tradeclash-fiction");
     // The back catalogue is day-zero canon, so ingestion must not replay it.
     expect(repo.getMeta("ingest_cursor")).toBe("2026-01-16T18:00:00.000Z");
     repo.close();

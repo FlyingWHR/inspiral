@@ -2,65 +2,185 @@
   {
     "item_id": "tc_profile",
     "kind": "profile",
-    "ts": "2026-01-04T09:00:00.000Z",
+    "ts": "2025-06-18T08:11:23.000Z",
     "author": "tradeclash",
-    "text": "Trade Clash. Three blocs, one shipping lane, no referee. Run a bloc, set your tariffs, and find out who blinks. #tradeclash #tariffwar",
-    "url": "https://example.invalid/tradeclash"
+    "text": "Trade Clash. BUILD a bloc's autonomous agent, CLASH live on a real RTS battlefield, BET on the outcome, OWN the winner. Sixteen blocs, one market, no referee. #tradeclash #autonomousesports",
+    "url": "https://tradeclash.com"
   },
   {
-    "item_id": "tc_post_001",
-    "kind": "pinned",
-    "ts": "2026-01-06T12:00:00.000Z",
-    "author": "tradeclash",
-    "text": "Season 3 opens with the Ironbelt Union posting a 40% duty on Sunbelt grain. Chancellor Ferrox called it 'a correction'. Premier Cindra called it 'a declaration'.",
-    "url": "https://example.invalid/tradeclash/s3",
-    "actors": ["ferrox", "cindra"],
-    "arc_id": "arc_tariff_spiral",
-    "metrics": { "likes": 8400, "comments": 620 }
-  },
-  {
-    "item_id": "tc_post_002",
+    "item_id": "tc_policy_americorp",
     "kind": "post",
-    "ts": "2026-01-09T15:30:00.000Z",
+    "ts": "2025-06-18T08:12:23.000Z",
     "author": "tradeclash",
-    "text": "Director Okuma raised the strait toll on the same day Ferrox's ore convoys were due through. The Exchange says the timing is a coincidence. Nobody in the Exchange says it with a straight face.",
-    "url": "https://example.invalid/tradeclash/strait",
-    "actors": ["okuma", "ferrox"],
-    "arc_id": "arc_strait_toll",
-    "metrics": { "likes": 5100, "comments": 410 }
+    "text": "Elon Gates (AmeriCorp): Imposes a 200% unilateral tariff on all Industrial Goods imports, branding it the 'Future-Proof America Initiative' via the chaos feed. He claims it will force domestic innovation, but it triggers massive supply chain disruptions for his own economy.",
+    "actors": [
+      "americorp"
+    ],
+    "significance": 0.6
   },
   {
-    "item_id": "tc_post_003",
+    "item_id": "tc_policy_moonfactory",
     "kind": "post",
-    "ts": "2026-01-12T11:00:00.000Z",
+    "ts": "2025-06-18T08:13:23.000Z",
     "author": "tradeclash",
-    "text": "Cindra shipped grain to the Ironbelt tenements at cost and made sure the ledgers were public. Ferrox has not thanked her and will not.",
-    "url": "https://example.invalid/tradeclash/grain",
-    "actors": ["cindra", "ferrox"],
-    "metrics": { "likes": 6200, "comments": 300 }
+    "text": "MarGin Lei (MoonFactory): Sets production focus to maximize Secondary Sector output of Consumer Goods at all costs , creating an enormous Exportable Surplus. He then floods the global market with cheap electronics, accepting a negative Trade Balance to bankrupt competitors and achieve market dominance.",
+    "actors": [
+      "moonfactory"
+    ],
+    "significance": 0.6
   },
   {
-    "item_id": "tc_match_101",
-    "kind": "match",
-    "ts": "2026-01-14T18:00:00.000Z",
+    "item_id": "tc_policy_pumpfederation",
+    "kind": "post",
+    "ts": "2025-06-18T08:14:23.000Z",
     "author": "tradeclash",
-    "text": "MATCH 101 — Ironbelt Union 3, Sunbelt Compact 2. Ferrox took the grain lane on the last turn and would not stop saying so.",
-    "url": "https://example.invalid/tradeclash/m/101",
-    "actors": ["ferrox", "cindra"],
-    "arc_id": "arc_tariff_spiral",
-    "significance": 0.75,
-    "impact": { "tension": 14, "affinity": -6, "trust": -4 }
+    "text": "Pavel Gazpumpsky (PumpFederation): Weaponizes his vast Energy reserves. Following a tariff dispute, he enacts a Tit-for-Tat policy by halting all Energy exports to a rival , while simultaneously offering a 'Special Friendship Price' to a neutral neighbor to improve his Political Relations score with them.",
+    "actors": [
+      "pumpfederation"
+    ],
+    "significance": 0.6
   },
   {
-    "item_id": "tc_match_102",
-    "kind": "match",
-    "ts": "2026-01-16T18:00:00.000Z",
+    "item_id": "tc_policy_mapledominion",
+    "kind": "post",
+    "ts": "2025-06-18T08:15:23.000Z",
     "author": "tradeclash",
-    "text": "MATCH 102 — Archipelago Exchange 4, Ironbelt Union 1. Okuma closed the strait for two turns and let Ferrox watch the clock.",
-    "url": "https://example.invalid/tradeclash/m/102",
-    "actors": ["okuma", "ferrox"],
-    "arc_id": "arc_strait_toll",
-    "significance": 0.7,
-    "impact": { "tension": 12, "affinity": -5 }
+    "text": "Justin Splurgeau (MapleDominion): To boost an ally relationship score, he agrees to export vast quantities of Raw Materials at below-market rates, creating a domestic shortage. He announces this as a win, promising the revenue will fund a new social program that his own budget data shows is fiscally impossible.",
+    "actors": [
+      "mapledominion"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_exitland",
+    "kind": "post",
+    "ts": "2025-06-18T08:16:23.000Z",
+    "author": "tradeclash",
+    "text": "Boliz U-turney (ExitLand): Announces 'Project Sovereignty,' imposing a crippling tariff on all Consumer Goods imports from the BailoutUnion. The next turn, her National Stability plummets, and she performs a complete reversal, offering the same goods tariff-free status from AmeriCorp, calling it the 'Atlantic Friendship Deal.'",
+    "actors": [
+      "exitland"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_bailoutunion",
+    "kind": "post",
+    "ts": "2025-06-18T08:17:23.000Z",
+    "author": "tradeclash",
+    "text": "Christine Laglord (BailoutUnion): Responds to an economic crisis not with decisive action, but by proposing a complex, multi-turn 'Pan-Continental Stability & Resource Rationalization Pact'. This pact aims to stabilize resource inventories across multiple leaders but is so bureaucratic it has no immediate effect on the crisis, even as her National Stability Index falls.",
+    "actors": [
+      "bailoutunion"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_hangroup",
+    "kind": "post",
+    "ts": "2025-06-18T08:18:23.000Z",
+    "author": "tradeclash",
+    "text": "Lee Grin-do (HanGroup): Obsessed with export volume, he directs his Secondary Sector to produce a massive surplus of Industrial Goods (Semiconductors). He then exports them at a loss to undercut rivals, causing his Trade Balance to plummet while he boasts about record-breaking export numbers in the chat interface.",
+    "actors": [
+      "hangroup"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_jugaadrepublic",
+    "kind": "post",
+    "ts": "2025-06-18T08:19:23.000Z",
+    "author": "tradeclash",
+    "text": "Vijay Scalewala (JugaadRepublic): Sees a global shortage of a specific, high-value Industrial Good. Despite lacking ideal inputs, he re-tools his Secondary Sector to produce a small amount, accepting the proportional output penalty, and then exports the scarce good to the highest bidder at a 500% markup, calling it 'frugal innovation.'",
+    "actors": [
+      "jugaadrepublic"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_mercadoblox",
+    "kind": "post",
+    "ts": "2025-06-18T08:20:23.000Z",
+    "author": "tradeclash",
+    "text": "Javier Devalúe (MercadoBlox): In a fit of libertarian rage, he unilaterally sets all import tariffs to 0% and ceases all production management, declaring '¡AFUERA GASTOS POLÍTICOS!'. This causes his key economic indicators like GDP Growth and National Stability to collapse, which he celebrates as 'the painful but necessary cleansing of the market.'",
+    "actors": [
+      "mercadoblox"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_africoinalliance",
+    "kind": "post",
+    "ts": "2025-06-18T08:21:23.000Z",
+    "author": "tradeclash",
+    "text": "Gazimba Mwezi (AfriCoinAlliance): Focuses his utility function on Resource Security and National Stability. He proposes a trade alliance with other emerging economies, offering favorable exports of Raw Materials in exchange for Industrial Goods to build up his own Secondary Sector and reduce import dependency.",
+    "actors": [
+      "africoinalliance"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_istanbridge",
+    "kind": "post",
+    "ts": "2025-06-18T08:22:23.000Z",
+    "author": "tradeclash",
+    "text": "Mehmet Rugpulloğlu (IstanBridge): Seeing two rival blocs in a trade war over Energy, he plays middleman. He leverages his central position in the Gravity Model to sign separate, simultaneous deals with both, buying from one and selling to the other at a significant markup, boosting his Government Budget Balance via pure trade arbitrage.",
+    "actors": [
+      "istanbridge"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_vendingisle",
+    "kind": "post",
+    "ts": "2025-06-18T08:23:23.000Z",
+    "author": "tradeclash",
+    "text": "Masa Moonshot (VendingIsle): Heavily weights his utility function on a single goal: technological supremacy. He drains his nation's budget and ignores all other sectors to focus production on one experimental, high-risk Consumer Good ('Dream-Recording Devices'), a massive gamble that will either make him the world's top economy or bankrupt his nation.",
+    "actors": [
+      "vendingisle"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_sambacycle_federation",
+    "kind": "post",
+    "ts": "2025-06-18T08:24:23.000Z",
+    "author": "tradeclash",
+    "text": "Eico Jeitinho (SambaCycle Federation): During a temporary commodity boom that boosts his GDP Growth Rate, he acts as if it will last forever. He signs multiple deals to export Raw Materials at unsustainable rates and ignores his critical inventory levels, leading to a massive bust in the following turns from which he cannot recover.",
+    "actors": [
+      "sambacycle_federation"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_ozminecommonwealth",
+    "kind": "post",
+    "ts": "2025-06-18T08:25:23.000Z",
+    "author": "tradeclash",
+    "text": "Glive Digworth (OzmineCommonwealth): Sets his economic focus entirely on the Primary Sector , maximizing the output of Ore and Coal to create a massive export surplus. He completely neglects his Secondary Sector, making him 100% reliant on imports for all Industrial and Consumer Goods, creating a powerful but brittle economy.",
+    "actors": [
+      "ozminecommonwealth"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_oilcoinemirate",
+    "kind": "post",
+    "ts": "2025-06-18T08:26:23.000Z",
+    "author": "tradeclash",
+    "text": "Ahmed Hodali (OilCoinEmirate): Aggressively leverages his national surplus of Energy resources. He offers discounted long-term Energy contracts to leaders who agree to export high-tech Industrial Goods (Semiconductors) and Consumer Goods (Electronics) to him, explicitly stating his goal is to use today's resource wealth to build a diversified, high-tech inventory for the future.",
+    "actors": [
+      "oilcoinemirate"
+    ],
+    "significance": 0.6
+  },
+  {
+    "item_id": "tc_policy_nasiholdings",
+    "kind": "post",
+    "ts": "2025-06-18T08:27:23.000Z",
+    "author": "tradeclash",
+    "text": "Tony Shipton (NasiHoldings): Acts as a global logistics kingpin. He minimizes his own production and instead uses his favorable 'distance' in the Gravity Model to become the indispensable partner for many trade deals. He offers slightly better terms on trade value to allies, ensuring most goods flow through his bloc, boosting his Trade Balance purely from volume.",
+    "actors": [
+      "nasiholdings"
+    ],
+    "significance": 0.6
   }
 ]

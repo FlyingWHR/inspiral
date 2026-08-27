@@ -46,7 +46,7 @@ Node 22+ (developed on 24.19.0).
 
 ```bash
 npm install          # once
-npm test             # 258 tests, headless, no engine, no key
+npm test             # 305 tests, headless, no engine, no key
 ```
 
 **The world, three ways.** Same canon, same tick loop, same cast — the surface
@@ -374,7 +374,7 @@ web-voxel/       voxel/ (storage, meshing, raycast,
                  physics, pathfind), ward.js, main.js ← no renderer import
 ops/             com.inspiral.clock.plist            ← optional always-on
 tests/           validator.test.ts, tick.test.ts, mint.test.ts,
-                 voxel.test.ts, visitors.test.ts    ← 258 tests
+                 voxel.test.ts, visitors.test.ts    ← 305 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 

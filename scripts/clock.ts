@@ -122,6 +122,9 @@ async function main(): Promise<void> {
   const repo = CanonRepo.open(DB, systemClock);
   const created = seedWorld(repo);
   if (!repo.getMeta(STARTED_KEY)) repo.setMeta(STARTED_KEY, new Date().toISOString());
+  // Recorded so `clock:status` can tell a quiet world from a stopped one. A
+  // held lock only proves a process exists; it does not prove it is ticking.
+  repo.setMeta("clock_every_min", String(EVERY_MIN));
 
   const host = await startHostRuntime({ ...loadConfig(), seed: 1 });
   const ctx: TickContext = {

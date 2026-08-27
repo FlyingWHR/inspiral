@@ -40,7 +40,7 @@ async function filmedTake() {
 
   // 1. handles in, living cast out
   const onboarded = await onboardIP({
-    source: createSource("fixture:tradeclash", root),
+    source: createSource("fixture:tradeclash-fiction", root),
     repo,
     approval: new MemoryApprovalChannel([{ verdict: "approve" }]),
     host,
@@ -48,13 +48,13 @@ async function filmedTake() {
 
   // 2. post something real
   writeFixtureItem(
-    "tradeclash",
+    "tradeclash-fiction",
     { text: POST, actors: ["okuma", "ferrox"], arc_id: "arc_strait_toll", significance: 0.9, ts: "2026-01-18T09:00:00.000Z" },
     root,
   );
 
   // 3. it becomes news
-  const ingested = await ingestOnce(repo, createSource("fixture:tradeclash", root));
+  const ingested = await ingestOnce(repo, createSource("fixture:tradeclash-fiction", root));
 
   // 4. one tick
   const surface = new MemorySurface();

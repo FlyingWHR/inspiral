@@ -161,3 +161,84 @@ describe("coming back is cheap when nothing has happened", () => {
     ctx.close();
   });
 });
+
+/**
+ * THE LATENCY CONTRACT.
+ *
+ * A live Mind answers in 40-166 s, median ~75 s. The product claim is that no
+ * human ever waits on that, because the host decides beats while the character
+ * runtime renders them locally. These tests are what stops that claim quietly
+ * becoming false again: the first one fails the moment an `await` on the host
+ * creeps back into the arrival path.
+ */
+describe("nobody waits on a model", () => {
+  /** Stands in for a Mind having a slow day. */
+  class SlowHost implements HostRuntime {
+    readonly name = "slow";
+    calls = 0;
+    private readonly inner = new MockHostRuntime({ seed: 1 });
+    constructor(private readonly delayMs: number) {}
+    async init(): Promise<void> {
+      await this.inner.init();
+    }
+    async ask(req: HostRequest): Promise<HostResponse> {
+      this.calls++;
+      await new Promise((r) => setTimeout(r, this.delayMs));
+      return this.inner.ask(req);
+    }
+    async close(): Promise<void> {
+      await this.inner.close();
+    }
+  }
+
+  const slowCtx = (delayMs: number) => {
+    const { repo, clock } = freshWorld();
+    const host = new SlowHost(delayMs);
+    return {
+      ctx: {
+        repo, host, clock,
+        surface: new MemorySurface(),
+        dailyBudget: 500,
+        advanceMs: 4 * HOUR_MS,
+      } as TickContext & { surface: MemorySurface; host: SlowHost },
+      close: () => repo.close(),
+    };
+  };
+
+  /** Let the un-awaited background call finish before tearing the db down. */
+  const settle = async (host: { calls: number }) => {
+    for (let i = 0; i < 100 && host.calls === 0; i++) await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 800));
+  };
+
+  it("greets a first-time visitor without waiting for the host", async () => {
+    const { ctx, close } = slowCtx(500);
+    const t0 = Date.now();
+    const res = await visitorArrive(ctx, WREN, { immediate: true });
+    const elapsed = Date.now() - t0;
+
+    expect(elapsed).toBeLessThan(250); // host takes 500ms; we must not have waited
+    expect(ctx.surface.presented.length).toBeGreaterThan(0); // and they were still greeted
+    expect(res.first).toBe(true);
+    expect(ctx.repo.visitorExists("wren")).toBe(true);
+
+    await settle(ctx.host);
+    close();
+  });
+
+  it("still spends the invocation -- the call is deferred, not skipped", async () => {
+    const { ctx, close } = slowCtx(200);
+    await visitorArrive(ctx, WREN, { immediate: true });
+    await settle(ctx.host);
+    expect(ctx.host.calls).toBeGreaterThan(0);
+    close();
+  });
+
+  it("blocks when not asked to be immediate, so the tick loop stays deterministic", async () => {
+    const { ctx, close } = slowCtx(300);
+    const t0 = Date.now();
+    await visitorArrive(ctx, WREN);
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(250);
+    close();
+  });
+});

@@ -13,7 +13,7 @@
 
 import type { TickContext, TickOutcome } from "./runTick.js";
 import { onboardVisitor, visitorAction } from "./runTick.js";
-import type { RenderedBehavior } from "../runtime/character.js";
+import { performDirective, type RenderedBehavior } from "../runtime/character.js";
 import type { SurfaceAdapter } from "../runtime/surface.js";
 import { log } from "../log.js";
 
@@ -109,16 +109,104 @@ function recording(ctx: TickContext): { ctx: TickContext; seen: RenderedBehavior
 }
 
 /**
+ * NOBODY WAITS ON A MODEL.
+ *
+ * The measured latency of a live Mind is 40-166 s, median ~75 s. That is fine
+ * for deciding what a district does over the next four hours and unusable for
+ * somebody standing in the doorway. The architecture already separates the two
+ * -- the host decides beats, the character runtime renders them locally and for
+ * free -- but `visitorArrive` used to await the host anyway, which put the
+ * whole latency budget in front of a human on their first visit and on any
+ * return to a ward that had moved.
+ *
+ * With `immediate`, arrival is served from canon in single-digit milliseconds
+ * and the host call runs behind it. Whatever the Mind decides lands on a later
+ * beat, which is also how the fiction works: people react in world time, not
+ * in chat time.
+ *
+ * The greeter is whoever is most disposed towards this visitor, and the line
+ * they say is the same locally-rendered fallback the runtime already uses when
+ * the host returns nothing usable. No new authoring, no new prose path.
+ */
+function greetNow(ctx: TickContext, who: VisitorIdentity): RenderedBehavior | undefined {
+  const { repo } = ctx;
+  const cast = repo.getCharacters();
+  if (!cast.length) return undefined;
+
+  const stance = repo.getStance(who.id);
+  const greeter =
+    cast
+      .filter((c) => (stance[c.character_id] ?? 0) > 0)
+      .sort((a, b) => (stance[b.character_id] ?? 0) - (stance[a.character_id] ?? 0))[0] ?? cast[0]!;
+
+  return performDirective(repo, {
+    actor: greeter.character_id,
+    action: "greet_visitor",
+    target: `fan:${who.id}`,
+    // No `speech`: that is the host's job, and its absence is exactly what
+    // makes the runtime fall back to a canon-grounded opener. `npm run
+    // authorship` counts these honestly rather than crediting them to a Mind.
+    dialogue_intent: "notices them come in and marks it",
+    canon_deltas: [],
+    arc_id: null,
+    significance_hint: 0.2,
+  });
+}
+
+/**
  * Somebody walks in. First visit onboards; a return is only worth an
  * invocation if the ward has moved since they left.
+ *
+ * `immediate` is opt-in rather than the default because the tick loop, the
+ * patrol and the tests all want the host's answer before they continue -- they
+ * are measuring it. Only a live human needs the door opened before the model
+ * has finished thinking, so only the live surfaces ask for it.
  */
 export async function visitorArrive(
   ctx: TickContext,
   who: VisitorIdentity,
+  opts: { immediate?: boolean } = {},
 ): Promise<ArriveResult> {
   const { repo } = ctx;
   const first = !repo.visitorExists(who.id);
   repo.setPresence(who.id, true);
+
+  const stale = !first && recall(ctx, who.id)?.fp !== fingerprint(ctx, who.id);
+
+  if (opts.immediate && (first || stale)) {
+    /**
+     * Start the host call but do NOT await it. Both entry points run
+     * synchronously up to their own first `await` -- registering the visitor
+     * and appending the arrival event -- so by the time this expression
+     * returns a promise, canon already has the arrival on the record. That is
+     * load-bearing, not incidental: the session row below depends on it.
+     */
+    const rec = recording(ctx);
+    const pending = first
+      ? onboardVisitor(rec.ctx, who.id, who.name)
+      : visitorAction(rec.ctx, who.id, "returned to the ward after days away");
+    pending
+      // Cache what the host eventually said, not what we said while waiting for
+      // it. Otherwise the next unchanged return replays the thin local opener
+      // instead of the beat the Mind actually wrote.
+      .then(() => remember(ctx, who.id, rec.seen))
+      .catch((e) => log.warn(`background greeting for ${who.name} failed: ${(e as Error).message}`));
+
+    const arrival = repo
+      .recentEvents(8)
+      .filter((e) => e.type === "visitor_arrived" && e.actors.includes(`fan:${who.id}`))
+      .at(-1);
+    repo.openSession(who.id, arrival?.event_id ?? "", false);
+
+    const now = greetNow(ctx, who);
+    if (now) await ctx.surface?.present(now);
+
+    return {
+      outcome: { status: "applied", applied: [], repaired: false, hostLatencyMs: 0 },
+      cached: false,
+      first,
+    };
+  }
 
   if (first) {
     const rec = recording(ctx);

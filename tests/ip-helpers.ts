@@ -40,12 +40,12 @@ export async function tradeClashWorld(
 ): Promise<{ repo: CanonRepo; clock: VirtualClock; source: IPSource; items: RawItem[] }> {
   const clock = new VirtualClock(opts.start ?? "2026-01-19T09:00:00.000Z");
   const repo = CanonRepo.open(":memory:", clock);
-  const source = createSource("fixture:tradeclash", root);
+  const source = createSource("fixture:tradeclash-fiction", root);
   const all = await source.fetch();
   const exclude = new Set(opts.exclude ?? []);
   const items = all.filter((i) => !exclude.has(i.item_id));
   const hints = IPHints.parse(await source.hints!());
-  seedFrom(repo, bibleToWorldSpec(compileBible("tradeclash", items, hints)));
+  seedFrom(repo, bibleToWorldSpec(compileBible("tradeclash-fiction", items, hints)));
   markIngested(repo, items);
   repo.setMeta("world_start", repo.now());
   return { repo, clock, source, items };

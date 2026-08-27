@@ -673,8 +673,35 @@ async function stageBeat(b) {
 // --- socket -----------------------------------------------------------------
 
 let sock;
+/**
+ * WHO THIS BROWSER IS, across restarts.
+ *
+ * The world used to hand out whichever name nobody was holding at that instant,
+ * so closing the tab put your relationships back in the pool for the next
+ * stranger. The id lives here now and is sent on connect. Asserted, not
+ * authenticated: clearing storage makes you a stranger, and that is the honest
+ * limit of what a client-side id can mean.
+ */
+function fanId() {
+  const KEY = "inspiral_fan";
+  let id = null;
+  try {
+    id = localStorage.getItem(KEY);
+    if (!id) {
+      id = "guest_" + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem(KEY, id);
+    }
+  } catch {
+    // Private mode or storage disabled. One session, no memory, say so rather
+    // than silently borrowing somebody else's name.
+    id = null;
+  }
+  return id;
+}
+
 function connect() {
-  sock = new WebSocket(`ws://${location.host}`);
+  const _fan = fanId();
+  sock = new WebSocket(`ws://${location.host}/${_fan ? `?fan=${encodeURIComponent(_fan)}` : ""}`);
   sock.onopen = () => { statusEl.textContent = "live"; statusEl.className = "live"; };
   sock.onclose = () => {
     statusEl.textContent = "reconnecting"; statusEl.className = "dead";

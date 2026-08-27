@@ -74,6 +74,14 @@ export interface WebSurfaceOptions {
    * canon itself; the caller hands it a lookup.
    */
   resolveCite?: (eventId: string) => { ts: string; summary: string } | undefined;
+  /**
+   * Every fan id this world has EVER known, not just the ones connected now.
+   *
+   * Required to stop the surface handing a returning name to a stranger. Same
+   * discipline as `resolveCite`: the surface does not read canon, the caller
+   * hands it the lookup.
+   */
+  knownVisitors?: () => string[];
 }
 
 type Beat =
@@ -144,6 +152,7 @@ export class WebSurface implements SurfaceAdapter {
   private readonly clients = new Set<WebSocket>();
   /** Which fan each open socket is. Freed when they disconnect. */
   private readonly identities = new Map<WebSocket, { id: string; name: string }>();
+  private readonly knownVisitors: (() => string[]) | undefined;
   private readonly pool: { id: string; name: string }[];
 
   /** Enough state that a browser opened on day 4 sees a populated ward. */
@@ -168,6 +177,7 @@ export class WebSurface implements SurfaceAdapter {
       { id: "pell", name: "Pell" },
     ];
     this.resolveCite = opts.resolveCite;
+    this.knownVisitors = opts.knownVisitors;
   }
 
   get url(): string {
@@ -245,9 +255,11 @@ export class WebSurface implements SurfaceAdapter {
     this.http = createServer((req, res) => this.serve(req.url ?? "/", res));
     this.wss = new WSS({ server: this.http });
 
-    this.wss.on("connection", (sock: WebSocket) => {
+    this.wss.on("connection", (sock: WebSocket, req?: { url?: string }) => {
       this.clients.add(sock);
-      const me = this.claimIdentity();
+      // `?fan=<id>` is the browser telling us who it is, from localStorage.
+      const asked = new URL(req?.url ?? "/", "http://x").searchParams.get("fan");
+      const me = this.claimIdentity(asked ?? undefined);
       this.identities.set(sock, me);
       sock.send(
         JSON.stringify({
@@ -290,13 +302,62 @@ export class WebSurface implements SurfaceAdapter {
     return false;
   }
 
-  /** First unused identity in the pool, or a numbered guest if it is full. */
-  private claimIdentity(): { id: string; name: string } {
-    const taken = new Set([...this.identities.values()].map((v) => v.id));
-    const free = this.pool.find((p) => !taken.has(p.id));
+  /**
+   * WHO IS THIS, AND HAVE WE MET.
+   *
+   * This used to hand out the first identity nobody was holding *right now*.
+   * That is not a small bug. Wren takes a side and closes the tab; the slot
+   * frees; a stranger opens the URL tomorrow, becomes Wren, and is greeted as
+   * an ally who "took my side in public when it cost you something" -- with a
+   * real event_id attached to something they never did. The whole product
+   * promise is that a world remembers a PERSON, and it was remembering a SEAT
+   * and handing the seat on with the previous occupant's history still in it.
+   *
+   * Two rules now:
+   *
+   * 1. The client says who it is. `?fan=<id>`, persisted in localStorage, so
+   *    the same browser is the same person across restarts -- which is exactly
+   *    what Trade Clash's per-visit session ids failed to do.
+   * 2. A name the world has EVER known is never handed to anybody else, even
+   *    long after they disconnect. `knownVisitors()` is the memory; the live
+   *    socket map is not.
+   *
+   * STILL NOT AUTHENTICATION, and nothing here should imply it is. A fan id is
+   * a claim by a client: clear the storage and you are a stranger, copy someone
+   * else's id and you are them. Durable and unique is a real improvement over
+   * recycled, and it is not identity. A host product with real sign-in should
+   * pass its own verified id straight through -- Trade Clash already signs a
+   * wallet message, and that is the id this should be carrying.
+   */
+  private claimIdentity(requested?: string): { id: string; name: string } {
+    const clean = (requested ?? "").trim().toLowerCase();
+    if (/^[a-z0-9_]{3,64}$/.test(clean)) {
+      return { id: clean, name: this.displayName(clean) };
+    }
+
+    // Nobody claimed an id, so mint one. Skip every name this world has met.
+    const ever = new Set([
+      ...(this.knownVisitors?.() ?? []),
+      ...[...this.identities.values()].map((v) => v.id),
+    ]);
+    const free = this.pool.find((p) => !ever.has(p.id));
     if (free) return free;
-    const n = taken.size + 1;
-    return { id: `guest_${n}`, name: `Guest ${n}` };
+
+    // Pool exhausted. A counter would collide with a guest who left, so the id
+    // is random and the world simply has not met it.
+    let id = "";
+    do {
+      id = `guest_${Math.random().toString(36).slice(2, 10)}`;
+    } while (ever.has(id));
+    return { id, name: this.displayName(id) };
+  }
+
+  /** Stable label for an id, so a returning visitor is called the same thing. */
+  private displayName(id: string): string {
+    const known = this.pool.find((p) => p.id === id);
+    if (known) return known.name;
+    if (id.startsWith("guest_")) return `Guest ${id.slice(6, 10)}`;
+    return id.charAt(0).toUpperCase() + id.slice(1);
   }
 
   /** Everyone currently connected, for a HUD that wants to list the room. */

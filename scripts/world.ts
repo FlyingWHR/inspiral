@@ -56,6 +56,9 @@ async function main(): Promise<void> {
     // what the platform says the balance is, not what we think we spent.
     cognition: host.name === "minds" ? await host.budgetRemaining() : undefined,
     // The surface shows citations resolved. Canon stays the only reader.
+    // Every fan this world has ever met, so a name that carries somebody's
+    // relationships is never handed to a stranger who happens to arrive next.
+    knownVisitors: () => repo.listVisitors(),
     resolveCite: (id) => {
       const e = repo.getEvent(id);
       if (!e) return undefined;

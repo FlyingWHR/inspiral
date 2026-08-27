@@ -108,7 +108,12 @@ export function parseSheet(text: string, existingIds: string[] = []): CharacterS
  * event, so from the next tick onward the newcomer is part of the record and
  * can be cited like anyone else.
  */
-export function mintCharacter(repo: CanonRepo, sheet: CharacterSheet): MintResult {
+export function mintCharacter(
+  repo: CanonRepo,
+  sheet: CharacterSheet,
+  opts: { owner?: string } = {},
+): MintResult {
+  const owner = opts.owner;
   repo.upsertCharacter(sheet);
 
   const others = repo.getCharacters().filter((c) => c.character_id !== sheet.character_id);
@@ -133,13 +138,27 @@ export function mintCharacter(repo: CanonRepo, sheet: CharacterSheet): MintResul
     });
   }
 
+  /**
+   * OWNERSHIP IS A FACT IN THE LOG, NOT A COLUMN.
+   *
+   * A minted character used to belong to nobody, which is why the feature read
+   * as a party trick: you pasted a sheet, a body appeared, and you had no more
+   * claim on it than anyone else watching. Nothing to come back for.
+   *
+   * The owner goes in `actors` beside the character, so "what did I make" and
+   * "what has it been doing" are both answered by querying the append-only log
+   * that already exists -- and the answer arrives with an event id and a
+   * permalink, same as every other claim this system makes. No new table, no
+   * migration, and no way for ownership to disagree with history.
+   */
   const evt = repo.appendEvent({
-    source: "system",
-    actors: [sheet.character_id],
+    source: owner ? "visitor" : "system",
+    actors: owner ? [sheet.character_id, `fan:${owner}`] : [sheet.character_id],
     type: "character_minted",
     payload: {
       summary: `${sheet.name}${sheet.title ? `, ${sheet.title}` : ""}, arrived in the ward and did not ask permission.`,
       faction: sheet.faction,
+      ...(owner ? { owner } : {}),
     },
     significance_hint: 0.6,
   });
@@ -148,7 +167,11 @@ export function mintCharacter(repo: CanonRepo, sheet: CharacterSheet): MintResul
 }
 
 /** Convenience: text in, inhabitant out. */
-export function mintFromText(repo: CanonRepo, text: string): MintResult {
+export function mintFromText(
+  repo: CanonRepo,
+  text: string,
+  opts: { owner?: string } = {},
+): MintResult {
   const existing = repo.getCharacters().map((c) => c.character_id);
-  return mintCharacter(repo, parseSheet(text, existing));
+  return mintCharacter(repo, parseSheet(text, existing), opts);
 }

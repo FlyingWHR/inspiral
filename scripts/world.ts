@@ -83,7 +83,7 @@ async function main(): Promise<void> {
         visitorLeaves(ctx, who);
         surface.despawn(who.id);
       } else if (intent.kind === "mint" && intent.text) {
-        const { sheet } = mintFromText(repo, intent.text);
+        const { sheet } = mintFromText(repo, intent.text, { owner: who.id });
         surface.spawn({
           id: sheet.character_id,
           name: sheet.name,

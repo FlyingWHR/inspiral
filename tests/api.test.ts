@@ -124,3 +124,43 @@ describe("the memory layer", () => {
     expect(body).toContain("&lt;img");
   });
 });
+
+/**
+ * OWNERSHIP IS THE RETURN TRIGGER.
+ *
+ * "Does an NPC remember me" is flattery, and you cannot tell in advance whether
+ * it will be any good. "What did the character I made do while I was gone" is
+ * curiosity, and it is the reason someone opens the tab again.
+ */
+describe("characters you made", () => {
+  it("records the owner in the log, not in a column", async () => {
+    const { mintFromText } = await import("../src/canon/mint.js");
+    const r = mintFromText(repo, "Name: Kestrel\nFaction: The Wharf\nBrief: Runs the night market.", {
+      owner: "maker",
+    });
+    const evt = repo.getEvent(r.eventId)!;
+    expect(evt.actors).toContain("fan:maker");
+    expect(evt.actors).toContain(r.sheet.character_id);
+  });
+
+  it("hands back what they have been up to, with receipts", async () => {
+    const b = await body(await get("/v1/mine?fan=maker"));
+    expect(b.characters).toHaveLength(1);
+    expect(b.characters[0].name).toBe("Kestrel");
+    // Their own arrival is not news to the person who caused it.
+    for (const e of b.characters[0].since_you_left) {
+      expect(repo.getEvent(e.event_id)!.type).not.toBe("character_minted");
+    }
+  });
+
+  it("does not hand somebody else's characters to a stranger", async () => {
+    const b = await body(await get("/v1/mine?fan=notme"));
+    expect(b.characters).toHaveLength(0);
+  });
+
+  it("still mints without an owner, for seeded and imported casts", async () => {
+    const { mintFromText } = await import("../src/canon/mint.js");
+    const r = mintFromText(repo, "Name: Nobody's Own\nBrief: Arrived unclaimed.");
+    expect(repo.getEvent(r.eventId)!.actors.some((a) => a.startsWith("fan:"))).toBe(false);
+  });
+});

@@ -16,6 +16,7 @@
  *   POST /v1/matches     something happened          (the webhook)
  *   POST /v1/stakes      somebody took a side        (the retention hook)
  *   GET  /v1/rivalry     what is between these two   (the caster's question)
+ *   GET  /v1/mine        what my characters did      (the return trigger)
  *   GET  /v1/memory      what is remembered about X  (the return visit)
  *   GET  /w/<world>      the log, as a page          (the shareable artifact)
  *
@@ -187,6 +188,10 @@ export class MemoryApi {
     if (method === "GET" && path === "/v1/rivalry") {
       if (deny) return json(res, this.apiKey ? 401 : 503, { error: deny });
       return this.getRivalry(res, url);
+    }
+    if (method === "GET" && path === "/v1/mine") {
+      if (deny) return json(res, this.apiKey ? 401 : 503, { error: deny });
+      return this.getMine(res, url);
     }
     if (method === "GET" && path === "/v1/memory") {
       if (deny) return json(res, this.apiKey ? 401 : 503, { error: deny });
@@ -374,6 +379,54 @@ export class MemoryApi {
         summary: describeEvent(e),
         permalink: this.permalink(e.event_id),
       })),
+    });
+  }
+
+  /**
+   * WHAT DID THE CHARACTER I MADE DO WHILE I WAS GONE.
+   *
+   * This is the return trigger, and it is a better one than "does an NPC
+   * remember me". Being remembered is flattery and you cannot tell in advance
+   * whether it will be any good. A character you authored, out in a world that
+   * kept running without you, is CURIOSITY -- you want to know what it did the
+   * way you want to know how a bet went.
+   *
+   * Ownership is read straight out of the log: the mint event carries
+   * `fan:<owner>` beside the character, so nothing here can disagree with
+   * history, and every line comes back with a permalink.
+   */
+  private getMine(res: ServerResponse, url: URL): void {
+    const fan = str(url.searchParams.get("fan"));
+    if (!fan) return json(res, 400, { error: "fan is required" });
+
+    const mine = this.repo
+      .eventsInvolving(`fan:${fan}`, 200)
+      .filter((e) => e.type === "character_minted")
+      .map((e) => e.actors.find((a) => !a.startsWith("fan:")))
+      .filter((id): id is string => Boolean(id));
+
+    json(res, 200, {
+      fan_id: fan,
+      characters: mine.map((id) => {
+        const sheet = this.repo.getCharacter(id);
+        // Their own mint is not news to the person who did it.
+        const did = this.repo
+          .eventsInvolving(id, 40)
+          .filter((e) => e.type !== "character_minted")
+          .slice(0, 8);
+        return {
+          character_id: id,
+          name: sheet?.name ?? id,
+          faction: sheet?.faction ?? "",
+          mood: sheet?.mood ?? "",
+          since_you_left: did.map((e) => ({
+            event_id: e.event_id,
+            ts: e.ts,
+            summary: describeEvent(e),
+            permalink: this.permalink(e.event_id),
+          })),
+        };
+      }),
     });
   }
 

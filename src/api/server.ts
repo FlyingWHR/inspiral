@@ -67,6 +67,22 @@ const html = (res: ServerResponse, code: number, body: string): void => {
   res.end(body);
 };
 
+/**
+ * A headline, not a paragraph.
+ *
+ * describeEvent() returns the full summary, and a Mind writes summaries that
+ * run to several sentences of stage direction. Straight into an <h1> that is a
+ * wall of text, and into a timeline row it is a paragraph pretending to be a
+ * list item. The full prose still appears; it just stops being the title.
+ */
+const headline = (s: string, max = 96): string => {
+  const flat = s.replace(/\s+/g, " ").trim();
+  if (flat.length <= max) return flat;
+  const cut = flat.slice(0, max);
+  const at = Math.max(cut.lastIndexOf(" "), cut.lastIndexOf(":"));
+  return `${(at > 40 ? cut.slice(0, at) : cut).replace(/[,;:]$/, "")}…`;
+};
+
 /** Escape before anything from canon reaches a page. */
 const esc = (s: string): string =>
   s.replace(/[&<>"']/g, (c) =>
@@ -429,13 +445,16 @@ the append-only log, it did not happen.</p>`),
       );
     }
     const cast = e.actors.map((a) => esc(this.repo.getCharacter(a)?.name ?? a)).join(" &middot; ");
+    const full = describeEvent(e);
+    const short = headline(full);
     html(
       res,
       200,
       this.page(
-        describeEvent(e).slice(0, 70),
-        `<h1>${esc(describeEvent(e))}</h1>
+        short,
+        `<h1>${esc(short)}</h1>
 <p class="sub"><time>${esc(e.ts)}</time>${esc(e.type)} &middot; ${cast}</p>
+${short === full ? "" : `<p>${esc(full)}</p>`}
 <p class="id">${esc(e.event_id)}</p>
 <footer>From the append-only log of <a href="/w/${esc(this.worldSlug())}">${esc(this.world())}</a>.
 This record cannot be edited or deleted — the database refuses both.</footer>`,
@@ -450,7 +469,7 @@ This record cannot be edited or deleted — the database refuses both.</footer>`
       .map(
         (e) =>
           `<li><time>${esc(e.ts)}</time>
-<a href="/w/${esc(this.worldSlug())}/e/${esc(e.event_id)}">${esc(describeEvent(e))}</a></li>`,
+<a href="/w/${esc(this.worldSlug())}/e/${esc(e.event_id)}">${esc(headline(describeEvent(e), 120))}</a></li>`,
       )
       .join("\n");
     html(

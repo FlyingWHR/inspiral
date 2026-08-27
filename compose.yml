@@ -1,0 +1,43 @@
+# Everything at once. `docker compose up --build`
+#
+#   http://localhost:8790/w/tallow-ward   the log, nine days of it, shareable
+#   http://localhost:8887                 the three.js ward
+#   http://localhost:8888                 the voxel ward, first person
+#
+# The host's ./data is mounted READ-ONLY and copied on start. A clock may be
+# ticking those files right now; nothing in here is allowed near them.
+#
+# No API key is set, so the memory layer serves its public pages and refuses
+# every write with 503. Add INSPIRAL_API_KEY to open the webhook.
+
+x-common: &common
+  build: .
+  image: inspiral:local
+  volumes:
+    - ./data:/seed:ro
+  environment:
+    # The container never calls out. Every surface here runs on the
+    # deterministic host, so this works with no key and no network.
+    INSPIRAL_HOST: mock
+
+services:
+  # The layer: the log as browsable, linkable pages.
+  memory:
+    <<: *common
+    command: ["npm", "run", "serve", "--", "--db", "/app/data/canon.db", "--port", "8790"]
+    environment:
+      INSPIRAL_HOST: mock
+      INSPIRAL_PUBLIC_URL: http://localhost:8790
+    ports: ["8790:8790"]
+
+  # The world you look at.
+  ward:
+    <<: *common
+    command: ["npm", "run", "world", "--", "--every", "6", "--warm", "24"]
+    ports: ["8887:8787"]
+
+  # The world you stand in.
+  voxel:
+    <<: *common
+    command: ["npm", "run", "voxel", "--", "--every", "6", "--warm", "16"]
+    ports: ["8888:8788"]

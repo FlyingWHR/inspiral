@@ -1,0 +1,11 @@
+node_modules
+.git
+data
+.env
+.env.*
+!.env.example
+docs/screens
+docs/art
+.playwright-mcp
+dist
+*.log

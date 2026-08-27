@@ -55,6 +55,30 @@ npm run demo         # the whole loop, ~2s, no key, no network
 npm run clock:status # history nobody watched accumulate
 ```
 
+## See all of it at once (`docker compose up`)
+
+```bash
+docker compose up --build
+```
+
+| | |
+|---|---|
+| <http://localhost:8790/w/tallow-ward> | the log — nine days of it, every line linkable |
+| <http://localhost:8887> | the three.js ward |
+| <http://localhost:8888> | the voxel ward, first person |
+
+Node 22 in the image because that is the repo's floor and `better-sqlite3` v13
+ships prebuilds for it, so nothing compiles at build time. `INSPIRAL_HOST=mock`
+and no API key, so the whole thing runs with no network, no credentials and no
+writes accepted.
+
+**The host's `./data` is mounted read-only and copied on start.** A clock may be
+mid-tick against those files, and a second writer on a SQLite world is how you
+lose the one artefact here that cannot be regenerated. The entrypoint copies the
+`-wal` sidecar too: these worlds run in WAL mode, so the newest commits are not
+in the `.db` until a checkpoint, and copying the `.db` alone seeds a world tens
+of events short of the real one — present, plausible, and quietly out of date.
+
 ## The memory layer (`npm run serve`)
 
 The rest of this README describes a world you visit. That shape needs its own

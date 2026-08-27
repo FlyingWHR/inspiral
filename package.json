@@ -22,6 +22,7 @@
     "digest": "node --env-file-if-exists=.env --import tsx scripts/showrunner.ts",
     "clips": "node --env-file-if-exists=.env --import tsx scripts/showrunner.ts --clips",
     "fixture": "node --import tsx scripts/fixture.ts",
+    "serve": "node --env-file-if-exists=.env --import tsx scripts/serve.ts",
     "scale": "node --env-file-if-exists=.env --import tsx scripts/scale.ts",
     "problem": "node --env-file-if-exists=.env --import tsx scripts/problem.ts",
     "prove": "node --env-file-if-exists=.env --import tsx scripts/prove.ts",

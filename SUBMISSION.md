@@ -96,9 +96,14 @@ three tests fail the moment a human is made to wait on it.
 
 ## 5. What is not built, stated plainly
 
-- **Social ingestion adapters throw.** No API access method has been chosen, so
-  there is no auth, no rate-limit policy and no ToS position. A stub returning
-  `[]` would make a broken integration look like a quiet account.
+- **Social ingestion adapters throw**, and the Minds Bazaar was checked before
+  saying so. The only X route on the platform (`Twitter CLI`) works by scraping
+  X's private GraphQL with session cookies, which we will not ship; `Clawk`,
+  despite reading "X/Twitter for AI Agents", is a separate network *for agents*
+  and cannot reach a creator's feed. There is no compliant X path today — the
+  stub is the right answer, not an unfinished one. TikTok's official Open API is
+  on the catalog and is the legitimate next one to take. See
+  [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md).
 - **Telegram approval** is real code tested against a fake transport; the
   network hop is unproven.
 - **The affinity metric reads n=0 real visitors.** It is measurement

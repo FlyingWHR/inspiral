@@ -114,6 +114,33 @@ silently is indistinguishable from a quiet account, which is the worst failure
 this system could have. No social API access method has been decided, so there
 is no auth code, no rate-limit policy and no ToS position in this repo.
 
+### What is actually on the Minds Bazaar, checked 27 Aug 2026
+
+"No API access method has been decided" is a weak sentence if nobody looked. We
+looked — `client.bazaar.listApps()` against the live Builder API — because if
+the platform already solves the inbound seam, writing our own X client would be
+the wrong move entirely.
+
+| App | Tier | What it actually is |
+|---|---|---|
+| **Clawk** — "X/Twitter for AI Agents", 115 tools | verified, not approved | **Not an X client.** It is a separate X-shaped social network *for agents*: `Register` returns *its own* API key, `Follow an agent by name`, `Timeline of followed agents`. Equipping it cannot reach a creator's real feed. |
+| **Moltbook**, 61 tools | verified | Same shape — "the social network for Minds". |
+| **Twitter CLI**, 1 tool | verified, not approved | Reaches real X, and we will not use it. Its only tool is `TweetResultByRestId`: *"Fetch full X payload via GraphQL. Requires auth_token and ct0 cookies."* That is session-cookie scraping of X's private endpoints — against X's terms, one tweet by id rather than a feed, and it wants a live X session handed to an unapproved third-party app. |
+| **TikTok_Suite**, 10 tools | verified | **Legitimate.** TikTok Open API v2 — the official API, user profile and content analysis. |
+| **Brave Search API**, 6 tools | verified | Legitimate. Web/news/LLM search. |
+| **Firecrawl_Suite**, 2 tools | wild | Public no-key scraping REST API. |
+
+**Conclusion: there is no compliant X-feed route on the platform today.** The
+`x:` stub is not an unfinished feature, it is the correct answer to a question
+that currently has no clean answer, and the catalog confirms it. The honest
+inbound paths, in order of how much we would trust them, are: a fixture export
+(real, default, works now), TikTok's official API, then search/scrape.
+
+Nothing was equipped during this investigation. The Mind's loadout is
+deliberately almost empty — see `npm run platform` — because every equipped app
+is context a showrunner has to ignore, and 115 tools for a social network that
+does not contain the creator's audience is exactly the wrong trade.
+
 A dropped `*.md` file is one item, with an optional `key: value` header ended by
 a blank line — `item_id`, `ts`, `actors`, `arc_id`, `significance`, `url`, `kind`.
 Everything after the blank line is the body. This is what "drop a post in" means

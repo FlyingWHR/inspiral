@@ -2,6 +2,9 @@
 
 **Worlds that remember the people who visit them — and can prove it.**
 
+> Judging this? Read **[SUBMISSION.md](SUBMISSION.md)** — one page, five commands.
+> This README is the engineering record behind it.
+
 ---
 
 ## The problem, measured in my own product
@@ -46,7 +49,7 @@ is a test failure, not a bad vibe. That is the whole invention.
 
 ```bash
 npm run problem      # why this exists, from real analytics
-npm run prove        # what a Mind adds to a real brand document: 1 arc -> 6
+npm run prove        # what a Mind adds to a real brand document: 1 arc -> 6-8
 npm run scale        # cast x5.3 -> invocations x1.00
 npm run demo         # the whole loop, ~2s, no key, no network
 npm run clock:status # history nobody watched accumulate
@@ -142,7 +145,7 @@ Six commands, in the order the questions usually come:
 ```bash
 npm run problem      # is this a real problem?      1418 sessions, 14 sides, 1 return
 npm run fixture      # is the IP real?              brand doc -> cast, mechanically
-npm run prove        # what needs a Mind?           1 arc -> 6, live
+npm run prove        # what needs a Mind?           1 arc -> 6-8, live
 npm run scale        # what does it cost at size?   cast x5.3 -> calls x1.00
 npm run authorship   # who wrote the dialogue?
 npm run platform     # what of the Minds platform is actually used? read live
@@ -804,7 +807,7 @@ prefers a funded Mind and says so loudly); and the prompt calls visitors
 | ~~`MindsHostRuntime` has never completed a call~~ | **Done.** Verified 20 Aug — see the table above. |
 | The accumulating history is mock-authored | The clock has been running since 19 Aug. Real elapsed time, real event ids, real relationship drift — rule-based prose. Restarting it against a live Mind is one command, but every hour that passes is an hour of the week that stays mock. |
 | ~~Two fans taking opposite sides get identical standing~~ | **Done.** They diverge on the live host. |
-| ~~Onboarding enrichment is discarded~~ | **Done, and it is the headline.** Run against `fixtures/tradeclash` — a REAL brand document from a shipping product, sixteen leaders, no goals and no arcs in the source because brand documents do not contain them. The deterministic compiler gets 1 stub arc out of it; the Mind returns **6 named storylines** that cross-reference each other, plus real goals and an authored premise. That is "compiles your IP" becoming "learns your IP", measured on IP nobody invented for the demo. Transcript: [docs/transcripts/prove-tradeclash.txt](docs/transcripts/prove-tradeclash.txt). The earlier `creator` run (0 arcs → 2) is still in the repo and shows the same thing on a thinner source. |
+| ~~Onboarding enrichment is discarded~~ | **Done, and it is the headline.** Run against `fixtures/tradeclash` — a REAL brand document from a shipping product, sixteen leaders, no goals and no arcs in the source because brand documents do not contain them. The deterministic compiler gets 1 stub arc out of it; the Mind returns **six to eight named storylines** that cross-reference each other by bloc, plus real goals and an authored premise. The count varies run to run because a live model is not deterministic — two runs an hour apart gave 6 and 8, and the committed transcript is the 8. That is "compiles your IP" becoming "learns your IP", measured on IP nobody invented for the demo. Transcript: [docs/transcripts/prove-tradeclash.txt](docs/transcripts/prove-tradeclash.txt). The earlier `creator` run (0 arcs → 2) is still in the repo and shows the same thing on a thinner source. |
 | ~~`budgetRemaining()` / cognition metering~~ | **Done.** Returns real numbers and now drives Mind selection. |
 | Clock on the live host | **Deliberately not switched.** Cost is fine (~2.6/invocation) but median 75s latency and the rejection-retry tail need a decision — see below. |
 

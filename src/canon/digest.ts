@@ -85,6 +85,50 @@ function toDigestRelationship(r: Relationship): DigestRelationship {
  * Compile the briefing for the next tick.
  * `sinceSeq` is the log position the last tick consumed up to.
  */
+/**
+ * ONLY THE EDGES IN PLAY.
+ *
+ * The relationship mesh is O(n^2): 3 characters carry 6 edges, 16 carry 240,
+ * and at the bible's cap of 24 it is 552. Shipping all of them made prompt size
+ * grow FASTER than the cast -- `npm run scale` measured a 5.3x cast costing
+ * 7.38x the bytes -- which is the one part of the cost story that was not flat
+ * and the real ceiling on how large an IP this can hold.
+ *
+ * A tick does not need the whole mesh. It needs the edges between people who
+ * are actually doing something: participants in an open arc, anyone who turned
+ * up in the recent log, and anyone a present visitor has a stance towards.
+ * Everything else is a number the host reads and cannot act on.
+ *
+ * Two guards, both deliberate. If nothing is in play -- a world seeded seconds
+ * ago with no arcs and no history -- fall back to the whole mesh rather than
+ * hand the host an empty relationship picture, which is worse than a large one.
+ * And cap the result, highest tension first, so a pathological world cannot
+ * blow the context regardless.
+ */
+const MAX_DIGEST_EDGES = 60;
+
+function relationshipsInPlay(
+  repo: CanonRepo,
+  events: WorldEvent[],
+  visitorIds: string[],
+): Relationship[] {
+  const all = repo.getRelationships();
+
+  const inPlay = new Set<string>();
+  for (const a of repo.openArcs()) for (const p of a.participants) inPlay.add(p);
+  for (const e of events) for (const a of e.actors) if (!a.startsWith("fan:")) inPlay.add(a);
+  for (const id of visitorIds) {
+    for (const cid of Object.keys(repo.getVisitor(id)?.stance ?? {})) inPlay.add(cid);
+  }
+
+  const kept = all.filter((r) => inPlay.has(r.from_id) && inPlay.has(r.to_id));
+  const chosen = kept.length > 0 ? kept : all;
+
+  return chosen.length <= MAX_DIGEST_EDGES
+    ? chosen
+    : [...chosen].sort((a, b) => b.tension - a.tension).slice(0, MAX_DIGEST_EDGES);
+}
+
 export function compileDigest(
   repo: CanonRepo,
   opts: { tickNo: number; sinceSeq: number; dailyBudget: number; visitorIds?: string[] },
@@ -128,7 +172,7 @@ export function compileDigest(
     now,
     since_seq: opts.sinceSeq,
     characters: repo.getCharacters().map(toDigestCharacter),
-    relationships: repo.getRelationships().map(toDigestRelationship),
+    relationships: relationshipsInPlay(repo, events, visitorIds).map(toDigestRelationship),
     open_arcs: repo.openArcs(),
     new_events: events.map((e) => ({
       event_id: e.event_id,

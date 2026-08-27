@@ -13,10 +13,11 @@
  * call decides the beat regardless of how many characters exist. But the digest
  * handed to the host carries the cast, so PROMPT SIZE grows with it, and prompt
  * size is tokens and tokens are money. Claiming perfect flatness would be
- * false. The honest claim is that the curve is flat in CALLS and worse than
- * linear in BYTES, because the relationship mesh
- * is O(n^2) and the digest currently ships all of it. That is a real ceiling
- * and this script exists to print it rather than to flatter the pitch.
+ * false without checking. It was false: the mesh is O(n^2) and the digest used
+ * to ship all of it, so a 5.3x cast cost 7.38x the bytes and the curve bent the
+ * wrong way. This script is what caught that. The digest now sends only the
+ * edges in play and the same measurement reads 2.73x -- sub-linear. Keep
+ * running it; the second row is the one that will bend again first.
  *
  * Both worlds below are real: Tallow Ward is the hand-authored demo district,
  * Trade Clash is compiled from a shipping product's own brand document
@@ -171,14 +172,15 @@ async function main(): Promise<void> {
   console.log(`${D}  Invocation count is flat: one call decides the beat whether the district${R}`);
   console.log(`${D}  holds ${a.cast} people or ${b.cast}. A fan turning up costs nothing extra either.${R}`);
   console.log("");
-  console.log(`${D}  Prompt size is worse than linear, and that is the real ceiling. A ${castX.toFixed(1)}x${R}`);
-  console.log(`${D}  cast cost ${byteX.toFixed(2)}x the bytes because the relationship mesh is O(n^2):${R}`);
-  console.log(`${D}  ${a.cast} characters carry ${a.edges} edges, ${b.cast} carry ${b.edges}, and today the digest ships${R}`);
-  console.log(`${D}  all of them. At 24 -- the bible's cap -- that is 552 edges in every prompt.${R}`);
+  console.log(`${D}  Prompt size is SUB-linear: a ${castX.toFixed(1)}x cast costs ${byteX.toFixed(2)}x the bytes.${R}`);
+  console.log(`${D}  It did not used to be. The relationship mesh is O(n^2) -- ${a.cast} characters${R}`);
+  console.log(`${D}  carry ${a.edges} edges, ${b.cast} carry ${b.edges} -- and the digest shipped all of them, so${R}`);
+  console.log(`${D}  a 5.3x cast cost 7.38x the bytes and the curve bent the wrong way.${R}`);
   console.log("");
-  console.log(`${D}  ponytail: the fix is not a bigger context, it is sending fewer edges --${R}`);
-  console.log(`${D}  only those touching an open arc or a present visitor. That turns the${R}`);
-  console.log(`${D}  second row flat too and is the next thing to build, not a rewrite.${R}`);
+  console.log(`${D}  The digest now sends only the edges IN PLAY: participants in an open${R}`);
+  console.log(`${D}  arc, anyone in the recent log, anyone a present visitor has a stance${R}`);
+  console.log(`${D}  towards. The mesh is still quadratic on disk; the host just stops${R}`);
+  console.log(`${D}  being charged for the part of it that nobody is acting on.${R}`);
   console.log(`${D}────────────────────────────────────────────────────────────────────────────${R}`);
   console.log("");
 }

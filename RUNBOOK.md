@@ -26,7 +26,7 @@ clock's database is the one artefact in this repo that cannot be regenerated.
 ```bash
 cd ~/ProjectW/Inspiral
 npm install                 # once
-npm test                    # 308 passing -- sanity check
+npm test                    # 310 passing -- sanity check
 ```
 
 Two terminals and a browser. Terminal A runs the world, terminal B runs the text
@@ -41,32 +41,67 @@ rather than having been decorated once.
 
 | Shot | Surface | Command | Port |
 | ---- | ------- | ------- | ---- |
+| **0 the problem** | terminal | **`npm run problem`** | — |
 | 1 the pitch | terminal | `npm run demo` | — |
 | 2 the ward | three.js | `npm run world` | 8787 |
 | 3 the money shot | three.js | (same window) | 8787 |
+| **3b what a Mind is for** | terminal | **`npm run prove -- --fixture tradeclash`** | — |
 | 4 mint on camera | three.js | (same window) | 8787 |
-| 5 an IP walks in | terminal | `npm run onboard` | — |
-| **5b what a Mind is for** | terminal | **`npm run prove`** | — |
+| 5 an IP walks in | terminal | `npm run onboard -- --fixture tradeclash` | — |
+| **5b what it costs at size** | terminal | **`npm run scale`** | — |
 | 6 post → reaction | terminal | `npm run ingest --post` | — |
 | 7 second surface | terminal | `npm run chat` | attaches to 8787 |
-| **7b one system, eight worlds** | **voxel** | **`npm run shots`** (stills) | — |
-| 8 closing beat | **voxel** | `npm run voxel` | **8788** |
+| 7b one system, eight worlds | voxel | `npm run shots` (stills) | — |
+| 8 closing beat | voxel | `npm run voxel` | **8788** |
 
-**If time runs short, protect these two and cut everything else.**
+## THE RUBRIC CHANGED. CUT AGAINST THE NEW ONE.
 
-1. **5b, `npm run prove`** — the headline. It is the only thing in the film that
-   answers "what stops working without a Mind", live, on camera: the same
-   un-hinted source onboarded twice, 0 arcs against 2. Everything else in the
-   project runs with the host switched off. This does not.
-2. **7b, the tavern/council cut** — the only shot that proves the system
-   generalises rather than having been decorated once. Four seconds, two stills.
+The announcement said *creativity, technical execution, UX, innovative use of
+agentic AI*. The panel's published criteria are **Minds Integration Depth,
+Creator-Economy Problem Fit, Innovation & Creativity, Execution & Completeness,
+Viability & Scalability** — two of those five are new, and **visual quality is
+not on the list at all.**
 
-Shot 3 is the emotional one and shot 8 is the most fun, but neither is load
-bearing for the eligibility argument. Cut 1, 4, 6 and 7 before you cut 5b.
+That reprioritises this shot list. The colour system, the eight look profiles
+and the voxel ward are good work that now buys a slice of one criterion. Film
+them last and cut them first.
 
-All of them can run at once — different ports, different databases, no
-conflict. Shots 5 and 6 use `./data/tradeclash.db`, which is separate from both
-the ward demos and from the clock's `./data/canon.db`.
+**Protect these three. Cut everything else before you cut them.**
+
+1. **Shot 0, `npm run problem`** — *Creator-Economy Problem Fit.* Opening on
+   your own product's analytics, with a bad number, is the single most credible
+   thing in the film. Every other team will open on a demo. You open on
+   evidence that the problem is real, in a product you actually ship.
+2. **Shot 3b, `npm run prove`** — *Minds Integration Depth.* The only thing in
+   the film that answers "what stops working without a Mind", live: the same
+   **real brand document** onboarded twice, 1 arc against 6–8. Everything else
+   here runs with the host switched off. This does not.
+3. **Shot 3, the citation** — *Innovation.* An NPC naming what a rival did while
+   you were away, with the event id resolving against the log.
+
+**Shot 5b (`npm run scale`) is fourth** and is the whole Viability answer in one
+frame — including the row that is *not* flat, which is why it reads as
+measurement rather than salesmanship. Say the second number out loud.
+
+Cut 4, 7, 7b and 8 before any of the above. Shot 8 is the most fun and is not
+load-bearing for a single criterion on the new list.
+
+## The three sentences the film has to land
+
+1. *"This is my game. In eight days, 1,418 people showed up, 14 picked a side,
+   and one came back — because the world had no way to know any of them had ever
+   been there."*
+2. *"Point Inspiral at the brand document and a Mind turns a cast into a season —
+   one stub storyline becomes eight, and they reference each other."*
+3. *"When you come back, it tells you what happened while you were gone, and
+   cites the event id. A wrong citation is a test failure, not a bad vibe."*
+
+**Do not say** that you can prove memory makes people return. n is zero, there
+is no counterfactual arm, and identity is asserted rather than authenticated.
+The defensible version is stronger anyway: *"We can show exactly what the world
+remembered about a specific person and verify it was true. Whether that brings
+them back is an experiment we can now run — and the tool to run it is the thing
+we built."*
 
 Useful controls while filming:
 

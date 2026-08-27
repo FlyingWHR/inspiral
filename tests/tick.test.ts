@@ -6,6 +6,7 @@ import { MemorySurface } from "../src/runtime/surface.js";
 import { HOUR_MS } from "../src/clock.js";
 import type { HostRequest, HostResponse, HostRuntime } from "../src/host/HostRuntime.js";
 import { freshWorld } from "./helpers.js";
+import { compileDigest } from "../src/canon/digest.js";
 
 function ctxFor(
   host: HostRuntime,
@@ -296,5 +297,48 @@ describe("the scheduler", () => {
     expect([a, b].filter((x) => x === null)).toHaveLength(1);
     scheduler.stop();
     ctx.close();
+  });
+});
+
+/**
+ * The digest is what the host is billed for, so what goes in it is a cost
+ * decision as much as a correctness one. Shipping the whole relationship mesh
+ * made prompt size grow faster than the cast (5.3x cast -> 7.38x bytes) and put
+ * a hard ceiling on how large an IP this could hold.
+ */
+describe("the digest carries only the edges in play", () => {
+  it("drops edges between characters nothing is happening to", () => {
+    const { repo } = freshWorld();
+    const cast = repo.getCharacters().map((c) => c.character_id);
+
+    // A fourth character nobody is interacting with, fully connected.
+    repo.upsertCharacter({
+      character_id: "bystander", name: "Bystander", faction: "None", title: "",
+      brief: "", goals: [], taboos: [],
+      voice: { register: "plain", tics: [], max_words: 28 },
+      mood: "even", home_location: "district",
+    });
+    for (const c of cast) {
+      repo.upsertRelationship({ from_id: "bystander", to_id: c, affinity: 0, trust: 50, tension: 0, note: "", last_event_id: null });
+      repo.upsertRelationship({ from_id: c, to_id: "bystander", affinity: 0, trust: 50, tension: 0, note: "", last_event_id: null });
+    }
+
+    const all = repo.getRelationships().length;
+    const d = compileDigest(repo, { tickNo: 1, sinceSeq: 0, dailyBudget: 12 });
+
+    expect(d.relationships.length).toBeLessThan(all);
+    expect(d.relationships.some((r) => r.from === "bystander" || r.to === "bystander")).toBe(false);
+    repo.close();
+  });
+
+  it("falls back to the whole mesh rather than sending the host nothing", () => {
+    const { repo } = freshWorld();
+    // Nothing in play: no open arcs, no log to speak of, no visitors.
+    for (const a of repo.getArcs("open")) repo.upsertArc({ ...a, status: "resolved" });
+    for (const a of repo.getArcs("escalating")) repo.upsertArc({ ...a, status: "resolved" });
+
+    const d = compileDigest(repo, { tickNo: 1, sinceSeq: 999_999, dailyBudget: 12 });
+    expect(d.relationships.length).toBeGreaterThan(0);
+    repo.close();
   });
 });

@@ -52,7 +52,7 @@ Everything below runs offline with no API key, except `prove`, which is the one
 thing a Mind is strictly required for.
 
 ```bash
-npm install && npm test        # 308 tests, ~2s, no key, no network
+npm install && npm test        # 310 tests, ~2s, no key, no network
 npm run problem                # is this a real problem?    1418 / 14 / 1
 npm run prove                  # what needs a Mind?         1 arc -> 6-8, live
 npm run scale                  # what does it cost at size? cast x5.3 -> calls x1.00
@@ -84,7 +84,7 @@ against you, the rendered line carries the `event_id`, and the citation is
 verified against the log. Plus one Mind for any cast size as an *economic*
 argument, and a clock whose whole job is to be boring for a week.
 
-**Execution.** 308 tests in ~2s, offline. Typecheck clean. Four surfaces on one
+**Execution.** 310 tests in ~2s, offline. Typecheck clean. Four surfaces on one
 seam — terminal, three.js ward, first-person diggable voxel world, chat. Canon
 is append-only, enforced by SQLite triggers rather than by convention. `runTick`
 never throws.
@@ -104,8 +104,9 @@ three tests fail the moment a human is made to wait on it.
 - **The affinity metric reads n=0 real visitors.** It is measurement
   infrastructure for a claim, not the claim. Synthetic patrol visitors are
   labelled and excluded from every cohort number.
-- **Prompt size is worse than linear in cast size** — the relationship mesh is
-  O(n²) and the digest ships all of it. `npm run scale` prints this against us.
+- **The relationship mesh is O(n²)** and the bible caps at 24 characters. The
+  digest now ships only the edges in play, which took prompt growth from x7.38
+  to x2.73 for a 5.3x cast, but a genuinely large IP is untested.
 - **No engine integration.** `SurfaceAdapter` is the boundary; four
   implementations exist.
 
@@ -115,7 +116,7 @@ The full list, including everything still owed, is in the README.
 
 | | |
 |---|---|
-| Repo | *(this repository)* |
+| Repo | https://github.com/FlyingWHR/inspiral |
 | Video | *(see submission)* |
 | The contract | [SCHEMA.md](SCHEMA.md) — canon schema + directive spec |
 | Creator pipeline | [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md) |

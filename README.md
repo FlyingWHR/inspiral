@@ -88,7 +88,7 @@ Node 22+ (developed on 24.19.0).
 
 ```bash
 npm install          # once
-npm test             # 308 tests, headless, no engine, no key
+npm test             # 310 tests, headless, no engine, no key
 ```
 
 **The world, three ways.** Same canon, same tick loop, same cast — the surface
@@ -350,18 +350,22 @@ both worlds and prints what actually moved:
 ```
 world          cast  edges  ticks  calls  calls/tick   digest
 Tallow Ward       3      6      8      8        1.00     5.1K
-Trade Clash      16    240      8      8        1.00    37.8K
+Trade Clash      16    240      8      8        1.00    14.0K
 
 cast x5.3  ->  invocations x1.00     (the bill in calls)
-           ->  prompt bytes x7.38    (the bill in tokens)
+           ->  prompt bytes x2.73    (the bill in tokens)
 ```
 
-The second row is the honest one. Invocation count is flat; **prompt size is
-worse than linear**, because the relationship mesh is O(n²) and the digest ships
-all of it — 3 characters carry 6 edges, 16 carry 240, and at the bible's cap of
-24 that is 552 edges in every prompt. The fix is fewer edges, not more context:
-send only those touching an open arc or a present visitor. That is the next
-thing to build and it is named in the tool's own output rather than buried here.
+The second row is the interesting one, and it used to read **x7.38** — worse
+than linear, because the relationship mesh is O(n²) and the digest shipped all
+of it. 3 characters carry 6 edges, 16 carry 240, and at the bible's cap of 24
+that is 552 edges in every prompt. This tool is what caught it.
+
+The digest now sends only the edges **in play**: participants in an open arc,
+anyone in the recent log, anyone a present visitor has a stance towards. The
+mesh is still quadratic on disk; the host simply stops being billed for the part
+of it nobody is acting on. Two tests in `tests/tick.test.ts` pin the filter and
+the fallback — an empty relationship picture would be worse than a large one.
 
 ### Latency: nobody waits on a model
 
@@ -468,7 +472,7 @@ web-voxel/       voxel/ (storage, meshing, raycast,
                  physics, pathfind), ward.js, main.js ← no renderer import
 ops/             com.inspiral.clock.plist            ← optional always-on
 tests/           validator.test.ts, tick.test.ts, mint.test.ts,
-                 voxel.test.ts, visitors.test.ts    ← 308 tests
+                 voxel.test.ts, visitors.test.ts    ← 310 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 

@@ -197,14 +197,26 @@ h1 {
 .count { font-size: 0.8rem; color: var(--dim); font-variant-numeric: tabular-nums; }
 .count.short { color: var(--accent); }
 
+/* THE ONE FILLED BUTTON ON THIS SCREEN, because it is the one that puts work
+   down. It was outlined while a navigation link in the hero carried the fill,
+   which is exactly backwards: the emphasis belongs on the act, not on the
+   door. Disabled goes quiet rather than staying loud and inert. */
 .extend .go {
   text-decoration: none;
-  border: 1px solid var(--accent);
-  border-radius: 4px;
-  padding: 0.45rem 0.95rem;
+  border: 0;
+  background: var(--acid);
+  color: var(--void);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  border-radius: 0;
+  padding: 0.62rem 1.15rem;
   font-size: 0.9rem;
 }
-.extend .go[disabled] { color: var(--dim); border-color: var(--rule); cursor: default; }
+.extend .go:hover:not([disabled]) { background: var(--acid-hot); }
+.extend .go[disabled] {
+  background: transparent; color: var(--ink-ghost);
+  border: 1px solid var(--rule); cursor: default;
+}
 
 .posted {
   border-left: 2px solid var(--accent);

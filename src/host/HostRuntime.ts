@@ -12,7 +12,15 @@
  * the codebase imports a vendor SDK.
  */
 
-export type HostCallKind = "tick" | "onboard" | "fan-event" | "qc" | "repair";
+/**
+ * `narrate` and `route` are their own kinds, not reuses of `tick`, because the
+ * Minds adapter maps a kind onto a CONVERSATION LANE and a lane carries its own
+ * history. A Mind pattern-matches its previous replies in that lane: the
+ * onboard lane once accumulated tick-shaped payloads and started answering
+ * onboarding questions with directive batches. Asking for a one-line sentence
+ * in a lane full of JSON directive objects would fail the same way.
+ */
+export type HostCallKind = "tick" | "onboard" | "fan-event" | "qc" | "repair" | "narrate" | "route";
 
 export interface HostRequest {
   kind: HostCallKind;

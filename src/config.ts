@@ -16,6 +16,8 @@ export interface InspiralConfig {
     onboard: string;
     fanEvents: string;
     qc: string;
+    /** Prose lane. Kept apart from the JSON lanes -- see HostCallKind. */
+    pieces: string;
   };
 }
 
@@ -38,6 +40,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): InspiralConfig
       tick: env.INSPIRAL_ALIAS_TICK || "tick",
       onboard: env.INSPIRAL_ALIAS_ONBOARD || "onboard",
       fanEvents: env.INSPIRAL_ALIAS_FAN_EVENTS || "fan-events",
+      pieces: env.INSPIRAL_ALIAS_PIECES || "pieces",
       qc: env.INSPIRAL_ALIAS_QC || "qc",
     },
   };

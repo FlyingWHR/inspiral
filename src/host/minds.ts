@@ -66,7 +66,7 @@ export interface MindsHostOptions {
   builderApiKey: string;
   mindId?: string | undefined;
   timeoutMs?: number;
-  aliases?: { tick: string; onboard: string; fanEvents: string; qc: string };
+  aliases?: { tick: string; onboard: string; fanEvents: string; qc: string; pieces: string };
 }
 
 export class MindsHostRuntime implements HostRuntime {
@@ -76,7 +76,7 @@ export class MindsHostRuntime implements HostRuntime {
   private mindId: string | undefined;
   private readonly apiKey: string;
   private readonly timeoutMs: number;
-  private readonly aliases: { tick: string; onboard: string; fanEvents: string; qc: string };
+  private readonly aliases: { tick: string; onboard: string; fanEvents: string; qc: string; pieces: string };
   private subscription: { close(): void } | null = null;
   private ready = false;
 
@@ -89,12 +89,19 @@ export class MindsHostRuntime implements HostRuntime {
       onboard: "onboard",
       fanEvents: "fan-events",
       qc: "qc",
+      pieces: "pieces",
     };
   }
 
   /** Which conversation lane a call kind uses. */
   private aliasFor(kind: HostRequest["kind"]): string {
     switch (kind) {
+      // Their own lane. A lane carries its own history and the Mind
+      // pattern-matches it -- one-line prose asked for in a lane full of JSON
+      // directives comes back as JSON.
+      case "narrate":
+      case "route":
+        return this.aliases.pieces;
       case "onboard":
         return this.aliases.onboard;
       case "fan-event":

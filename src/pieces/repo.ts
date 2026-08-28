@@ -31,6 +31,7 @@ function rowToPiece(r: Record<string, unknown>): Piece {
     status: r.status === "closed" ? "closed" : "open",
     generation: Number(r.generation ?? 0),
     contributors: JSON.parse(String(r.contributors ?? "[]")) as string[],
+    location: String(r.location ?? ""),
     created_ts: String(r.created_ts),
     updated_ts: String(r.updated_ts),
   };
@@ -66,7 +67,7 @@ function eventToExtension(e: WorldEvent, repo?: CanonRepo): Extension {
  */
 export function seedPiece(
   repo: CanonRepo,
-  input: { title: string; brief: string; piece_id?: string },
+  input: { title: string; brief: string; piece_id?: string; location?: string },
 ): Piece {
   const id = input.piece_id ?? (slug(input.title) || `piece_${Date.now().toString(36)}`);
   const seed = repo.appendEvent({
@@ -81,15 +82,28 @@ export function seedPiece(
   db(repo)
     .prepare(
       `INSERT INTO pieces (piece_id, title, brief, status, generation, contributors,
-                           seed_event_id, created_ts, updated_ts)
-       VALUES (?, ?, ?, 'open', 0, '[]', ?, ?, ?)`,
+                           seed_event_id, location, created_ts, updated_ts)
+       VALUES (?, ?, ?, 'open', 0, '[]', ?, ?, ?, ?)`,
     )
-    .run(id, input.title, input.brief, seed.event_id, now, now);
+    .run(id, input.title, input.brief, seed.event_id, input.location ?? "", now, now);
 
   return {
     piece_id: id, title: input.title, brief: input.brief, status: "open",
-    generation: 0, contributors: [], created_ts: now, updated_ts: now,
+    generation: 0, contributors: [], location: input.location ?? "",
+    created_ts: now, updated_ts: now,
   };
+}
+
+/**
+ * Put a piece somewhere. Separate from seeding because placement is the
+ * SPACE's decision, not the creator's: a brief is written once and a room can
+ * be rearranged any number of times without touching what the piece is.
+ */
+export function placePiece(repo: CanonRepo, pieceId: string, location: string): boolean {
+  const r = db(repo)
+    .prepare("UPDATE pieces SET location = ?, updated_ts = ? WHERE piece_id = ?")
+    .run(location.slice(0, 64), repo.now(), pieceId) as { changes?: number };
+  return (r.changes ?? 0) > 0;
 }
 
 export function getPiece(repo: CanonRepo, pieceId: string): Piece | undefined {

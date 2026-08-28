@@ -72,6 +72,16 @@ export interface Piece {
   generation: number;
   /** Everyone who has extended it, in order of first appearance. */
   contributors: string[];
+  /**
+   * Where it stands, as an OPAQUE canon location -- "test_kitchen", never a
+   * coordinate. Same discipline as a character's home_location: the surface
+   * turns a name into a spot on a ground plane, and nothing above the seam
+   * learns what a coordinate is. Empty when the space has not placed it.
+   *
+   * This is what lets a frontend put pieces somewhere without the backend
+   * having an opinion about geometry.
+   */
+  location: string;
   created_ts: string;
   updated_ts: string;
 }
@@ -128,6 +138,33 @@ export interface PieceWithLineage {
   piece: Piece;
   seed_event_id: string;
   extensions: Extension[];
+}
+
+/**
+ * WHO IS HERE NOW.
+ *
+ * Deliberately NOT in canon. Presence is transient and the log is permanent:
+ * writing "ada is looking at this" into an append-only history would bloat it
+ * with noise nobody will ever cite, and the whole value of that log is that
+ * every row in it is worth citing. Held in memory by the server, lost on
+ * restart, and that is correct.
+ */
+export interface Presence {
+  piece_id: string;
+  /** Distinct people with the piece open right now. */
+  here: { fan_id: string; display_name: string; since: string }[];
+}
+
+/**
+ * What a frontend needs to draw a space, in one call.
+ *
+ * `generation` is depth and is what a spatial frontend should scale, stack or
+ * weather -- a piece twelve deep should not look like one that is one deep.
+ * It is still never a score and never a ranking.
+ */
+export interface SpaceView {
+  world: string;
+  pieces: (Piece & { here: number })[];
 }
 
 /**

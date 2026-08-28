@@ -44,11 +44,12 @@ import {
   listPieces,
   markSeen,
   parentAuthor,
+  placePiece,
   seedPiece,
   waitingFor,
 } from "./repo.js";
 import type { HostRuntime } from "../host/HostRuntime.js";
-import { narrateChange } from "./host.js";
+import { narrateChange, routeVisitor } from "./host.js";
 
 export interface PiecesApiOptions {
   repo: CanonRepo;
@@ -243,6 +244,68 @@ export class PiecesApi {
       return this.getWaiting(res, url);
     }
 
+    /**
+     * WHERE SHOULD I START. The Mind's judgement, exposed.
+     *
+     * Not a sort: the right piece is rarely the newest or the busiest, it is
+     * one this person can add to and ideally one somebody is waiting on. Falls
+     * back to the thinnest open piece when the host is down, so a frontend
+     * always gets an answer and never has to handle "no suggestion".
+     */
+    if (method === "GET" && path === "/v1/route") {
+      if (deny) return closed();
+      const fan = str(url.searchParams.get("fan")) ?? "";
+      const open = listPieces(this.repo, "open");
+      const history = fan
+        ? this.repo
+            .eventsInvolving(`fan:${fan}`, 50)
+            .filter((e) => e.type === "piece_extended")
+            .slice(0, 8)
+            .map((e) => {
+              const p = e.payload as Record<string, unknown>;
+              return { piece_id: String(p.piece_id ?? ""), body: String(p.body ?? ""), ts: e.ts };
+            })
+        : [];
+      const chosen = await routeVisitor(this.host, {
+        fan_id: fan,
+        history,
+        pieces: open.map((p) => ({
+          piece_id: p.piece_id, title: p.title, brief: p.brief,
+          generation: p.generation, last_ts: p.updated_ts,
+        })),
+      });
+      return json(res, 200, chosen ?? { piece_id: null, because: "Nothing is open yet." });
+    }
+
+    /**
+     * THE WHOLE SPACE IN ONE CALL, so a spatial frontend can draw a room
+     * without N requests. `generation` is depth: a piece twelve deep should not
+     * look like one that is one deep. Still never a ranking.
+     */
+    if (method === "GET" && path === "/v1/space") {
+      if (deny) return closed();
+      return json(res, 200, {
+        world: this.repo.getMeta("world_name") ?? "the world",
+        pieces: listPieces(this.repo, "open").map((p) => ({ ...p, here: 0 })),
+      });
+    }
+
+    /**
+     * Placement is the SPACE's decision, not the creator's -- a brief is
+     * written once, a room is rearranged any number of times.
+     */
+    const place = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})\/place$/.exec(path);
+    if (method === "POST" && place) {
+      if (deny) return closed();
+      const body = (await readJson(req)) as Record<string, unknown>;
+      const loc = str(body.location, 64);
+      if (!loc) return json(res, 400, { error: "location is required" });
+      if (!placePiece(this.repo, place[1]!, loc)) {
+        return json(res, 404, { error: `no piece '${place[1]!}'` });
+      }
+      return json(res, 200, { piece: getPiece(this.repo, place[1]!) });
+    }
+
     if (method === "POST" && path === "/v1/pieces") {
       if (deny) return closed();
       return this.postSeed(res, await readJson(req));
@@ -427,7 +490,7 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);
     if (brief.length < 12) {
       return json(res, 400, { error: "brief must say what a good addition looks like" });
     }
-    const piece = seedPiece(this.repo, { title, brief });
+    const piece = seedPiece(this.repo, { title, brief, location: str(b.location, 64) ?? "" });
     json(res, 201, { piece, page: `${this.publicUrl}/w/${this.worldSlug()}/p/${piece.piece_id}` });
   }
 

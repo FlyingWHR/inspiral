@@ -260,13 +260,18 @@ CREATE TABLE IF NOT EXISTS pieces (
   contributors TEXT NOT NULL DEFAULT '[]',
   -- The event that started it. Every extension chains back to this.
   seed_event_id TEXT NOT NULL,
+  -- Where the piece stands. An OPAQUE canon location, exactly like a
+  -- character's home_location: "test_kitchen", never a coordinate. The surface
+  -- turns it into a spot on a ground plane and nothing above the seam ever
+  -- learns what a coordinate is. Empty means the space has not placed it.
+  location     TEXT NOT NULL DEFAULT '',
   created_ts   TEXT NOT NULL,
   updated_ts   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_pieces_status ON pieces(status, updated_ts);
 `;
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 /**
  * Open (and if needed create) the canon database.
@@ -304,6 +309,14 @@ export function openDb(path: string): DB {
    * idempotent DDL above. The version bump is here so an older binary reading
    * this file knows it is looking at something it does not fully understand.
    */
+  if (row < 4) {
+    // 3 -> 4. `pieces` already exists in any v3 database, so the location
+    // column has to be probed for rather than shipped in the idempotent DDL.
+    const cols = (db.pragma("table_info(pieces)") as { name: string }[]).map((c) => c.name);
+    if (cols.length > 0 && !cols.includes("location")) {
+      db.exec("ALTER TABLE pieces ADD COLUMN location TEXT NOT NULL DEFAULT ''");
+    }
+  }
   if (row < SCHEMA_VERSION) {
     db.pragma(`user_version = ${SCHEMA_VERSION}`);
   }

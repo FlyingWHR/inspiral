@@ -1,162 +1,138 @@
 # Inspiral — Creative Minds Jam #1
 
-**Worlds that remember the people who visit them — and can prove it.**
+**Somebody built on your work. Here is exactly what they changed.**
 
-Read this page. The [README](README.md) is the engineering record behind it.
+A creator opens a space. People make things in it, build on each other's things,
+and come back to find their work taken further by someone else — with their name
+still on it.
+
+```bash
+git clone https://github.com/FlyingWHR/inspiral && cd inspiral && npm install
+npm test                                    # 470 tests, ~3s, no key, no network
+INSPIRAL_API_KEY=dev npm run pieces:serve   # the whole product on one port
+```
 
 ---
 
-## 1. The problem, measured in my own product
+## 1. The one thing this is
 
-I build [Trade Clash](https://tradeclash.com): an autonomous-esports arena where
-you build an AI war-agent, it fights a live RTS match, and an audience watches
-and bets. Sixteen satirical bloc leaders, real players, real traffic.
+Everything here is storage and transport for a single sentence:
 
-Eight days of its own first-party analytics — `npm run problem`:
+> **"Maya kept your fennel and stale bread but changed your hour-long braise
+> into a raw mandoline shave and a butter toast."**
 
-| | |
+Real output from a live Mind, on real prose. It names one thing **kept** and one
+thing **changed**, in the contributors' own words, addressed to the person
+waiting. `npm run pieces` prints it next to the two texts that produced it, so
+you can judge it rather than take our word for it.
+
+**Not "an AI remembers you."** Everybody knows software has a database, and
+being remembered by a machine is not moving. Somebody *using your work* is.
+
+## 2. Why the Mind is not optional
+
+Without it the product still runs — contributions stored, attributed, linked,
+permanent. And the notification says *"Maya changed it"*, which is a database
+row read aloud, and nobody comes back for that.
+
+The Mind does exactly two things, and we say so rather than inflate it:
+
+| Needs judgement | Does not |
 |---|---|
-| sessions | **1,418** |
-| picked a side | **14** (0.99%) |
-| built an agent | 13 (0.92%) |
-| seen again | **1** |
+| **Narrate** — what did this person change about that person's work | "Three people responded" — that is SQL |
+| **Route** — which piece is worth this person's time | Attribution, lineage, storage, delivery |
 
-Fourteen people out of fourteen hundred cared enough to pick a side, and the
-product had no idea any of them had ever been there. Session ids are minted per
-visit and die with the tab, so the true return rate is not 1-in-1418 — it is
-**unknown**, which is worse. Nothing in that system could tell a returning fan
-from a stranger, so it greeted every one of them like a stranger.
+Both degrade to nothing rather than to something invented. A dead host costs a
+sentence, never the work.
 
-That is not a Trade Clash bug. It is the default condition of a creator's world
-in a year when generating content costs nothing. When supply is infinite and
-free, content stops being the scarce good. **The scarce good is a reason to come
-back to one specific place.**
+It runs on its **own conversation lane**, because a lane carries history the Mind
+pattern-matches — asking for one line of prose in a lane full of JSON directives
+comes back as JSON. We learned that the hard way earlier in this repo.
 
-You cannot generate elapsed history. You can only let it elapse. It is the one
-asset in the creator economy that appreciates rather than decays.
+## 3. How we got here, honestly
 
-## 2. What it does
+This repo contains a product that did not work and the evidence that killed it.
+Both are still in the history, because the second product is an argument the
+first one lost.
 
-Point it at an IP. It compiles a cast, opens a world, and runs that world on a
-clock whether or not anyone is watching. Visitors take sides. The world
-remembers — and when they come back, an NPC brings it up, **citing the event
-id**, which then resolves against an append-only log.
+**We built a world.** Autonomous NPCs, arcs, a clock ticking unattended for nine
+days, verifiable citations. `npm run clock:status` still shows it.
 
-**The host proposes only the intent. Canon supplies the fact.** A wrong citation
-is a test failure, not a bad vibe. That is the invention, and it is what
-separates this from a chatbot with a personality prompt.
+**Then we measured it.** Nine days of real Mind-authored history produced **one**
+usable moment. 639 events, 45% of them literally duplicate text. The four most
+dramatic beats across five days were the *same beat four times* — same character,
+same door, same demand, worded differently each time. Tension pinned at 100,
+trust at 0, arcs "escalating" at stage 91 toward nothing. **The world could not
+change**, and good prose disguised it.
 
-## 3. The shape it is becoming
+**Then we measured ourselves.** `npm run problem` reads eight days of
+first-party analytics from Trade Clash, a game one of us actually ships:
+**1,418 sessions. 14 people picked a side. One came back.** Session ids die with
+the tab, so the true return rate is not 1-in-1418 — it is *unknown*, which is
+worse. The product could not tell a returning person from a stranger.
 
-Inspiral started as a world you visit. The data above is the argument against
-that: a destination needs its own audience, and memory is a retention feature
-you cannot apply to people who never arrived.
+So the answer was never a better world. It was: make the thing somebody left
+behind matter, and tell them when it does.
 
-So the same canon is now also served as a **layer** — `npm run serve` — for a
-product that already has traffic and stakes. Customer one is Trade Clash, whose
-contract was already written: `IMatchFeed` yields `MatchId`, `BotIds` and
-`WinnerSide` on the authoritative sim tick, so one finished match is one
-`confrontation` and a season is a rivalry nobody authored.
-
-```
-POST /v1/matches   something happened          (the webhook)
-POST /v1/stakes    somebody took a side        (the retention hook)
-GET  /v1/rivalry   what is between these two   (the caster's question)
-GET  /v1/memory    what is remembered about X  (the return visit)
-GET  /w/<world>    the log, as a page          (public, shareable)
-```
-
-The public permalink is the part that matters most: every citation this project
-produced was previously unshareable, because the page it pointed at did not
-exist. A receipt nobody can open is a claim with a hex string after it.
-
-## 4. Judge it in five commands
-
-Everything below runs offline with no API key, except `prove`, which is the one
-thing a Mind is strictly required for.
+## 4. Judge it in six commands
 
 ```bash
-npm install && npm test        # 326 tests, ~2s, no key, no network
-npm run problem                # is this a real problem?    1418 / 14 / 1
-npm run prove                  # what needs a Mind?         1 arc -> 6-8, live
-npm run scale                  # what does it cost at size? cast x5.3 -> calls x1.00
-npm run clock:status           # history nobody watched accumulate
-npm run demo                   # the whole loop, ~2s, exits 0
+npm test                       # 470 tests, offline, no key
+npm run pieces                 # the sentence, next to the texts that made it
+npm run problem                # why this exists — real analytics, bad number
+npm run pieces:serve           # app + API + live feed, one origin
+npm run clock:status           # nine days of unattended history, still on disk
+npm run platform               # what we use of the Minds platform, read live
 ```
 
 ## 5. Against the criteria
 
-**Minds integration.** One Mind runs the whole district as a showrunner; every
-character is a projection of it. Four conversation lanes, live-verified use of
+**Minds integration.** One Mind, its own lane, two jobs that genuinely need
+judgement and a written account of what does not. Live-verified use of
 `listMinds`, conversations, fingerprint/`waitForReply`, `subscribeEvents`,
-cognition balance and per-tool spend, Circles, and app/skill unequipping —
-`npm run platform` reads all of it live. **231 LLM turns, ~996 cognition
-credits, seven consecutive days.**
+cognition balance and per-tool spend, Circles, app/skill unequipping. **260 LLM
+turns, ~1,277 cognition credits, across nine days.**
 
-`npm run prove` is the honest test of integrality: onboard the same real brand
-document twice, with the host off and against a live Mind. Without one, 1 stub
-arc — a cast that exists and a world that does not run. With one, six to eight
-named storylines that cross-reference each other by bloc.
+**Creator-economy fit.** The problem is measured in our own shipping product,
+not asserted. The creator's digest leads with *contributions nobody has built on
+yet* — an ignored contribution is what loses a person, and the creator is the
+one who can fix it.
 
-**Creator-economy fit.** The IP is my own and the analytics are my own. Source →
-bible → **owner approval gate** → seed → ingest → digest → clip drafts. Nothing
-publishes itself; a rejection puts zero characters, zero arcs and zero events
-into canon, and there is a test asserting it.
+**Innovation.** Everything is an extension of something, so *"somebody built on
+my thing"* is one exact query rather than a heuristic. Attribution is enforced by
+database triggers that refuse `UPDATE` and `DELETE` — a lineage cannot be
+rewritten to take a name off somebody's work.
 
-**Innovation.** Provable memory. Five constraints decide what an NPC may hold
-against you, the rendered line carries the `event_id`, and the citation is
-verified against the log. Plus one Mind for any cast size as an *economic*
-argument, and a clock whose whole job is to be boring for a week.
+**Execution.** 470 tests in ~3s, offline. Typecheck clean. Append-only canon,
+five documented migrations, fail-closed auth, SSRF-guarded webhooks, `VACUUM
+INTO` backups, health checks, additive moderation across all four read paths.
 
-**Execution.** 326 tests in ~2s, offline. Typecheck clean. Four surfaces on one
-seam — terminal, three.js ward, first-person diggable voxel world, chat. Canon
-is append-only, enforced by SQLite triggers rather than by convention. `runTick`
-never throws.
+**Viability.** Invocations scale with narrative decisions, never with traffic —
+`npm run scale` measures it. Latency is answered structurally: the Mind is never
+in the interaction loop, and tests fail if an `await` on it reaches a request
+path.
 
-**Viability.** Invocations scale with narrative decisions — never with cast size,
-never with traffic — and `npm run scale` measures it rather than asserting it.
-Latency is answered structurally: the Mind is not in the interaction loop, and
-three tests fail the moment a human is made to wait on it.
+## 6. What is not built, plainly
 
-## 6. What is not built, stated plainly
-
-- **Social ingestion adapters throw**, and the Minds Bazaar was checked before
-  saying so. The only X route on the platform (`Twitter CLI`) works by scraping
-  X's private GraphQL with session cookies, which we will not ship; `Clawk`,
-  despite reading "X/Twitter for AI Agents", is a separate network *for agents*
-  and cannot reach a creator's feed. There is no compliant X path today — the
-  stub is the right answer, not an unfinished one. TikTok's official Open API is
-  on the catalog and is the legitimate next one to take. See
-  [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md).
-- **Telegram approval** is real code tested against a fake transport; the
-  network hop is unproven.
-- **Identity is asserted, not authenticated.** A durable id in localStorage,
-  never recycled between people — which is a real fix for the bug that made the
-  world greet a stranger with someone else's history — and still a claim, not a
-  login. A host product with real sign-in should pass its verified id through;
-  Trade Clash already signs a wallet message.
-- **The retention thesis is untested.** With durable ids the A/B is now runnable
-  — half of returning visitors get memory, half get a generic greeting — and it
-  has not been run. Nobody knows yet whether being remembered brings anyone
-  back, including us.
-- **The affinity metric reads n=0 real visitors.** It is measurement
-  infrastructure for a claim, not the claim. Synthetic patrol visitors are
-  labelled and excluded from every cohort number.
-- **The relationship mesh is O(n²)** and the bible caps at 24 characters. The
-  digest now ships only the edges in play, which took prompt growth from x7.38
-  to x2.73 for a 5.3x cast, but a genuinely large IP is untested.
-- **No engine integration.** `SurfaceAdapter` is the boundary; four
-  implementations exist.
-
-The full list, including everything still owed, is in the README.
+- **Identity is asserted, not authenticated.** A durable id the client supplies.
+  Clear storage and you are a stranger; copy an id and you are that person. This
+  is the last structural hole and we are not pretending otherwise.
+- **The retention thesis is untested.** Durable ids make the A/B runnable — half
+  of returning people get the sentence, half get a generic line — and it has not
+  been run. Nobody knows whether this works, including us.
+- **The frontend is a reference implementation.** A designer is building the real
+  one against `docs/API.md`.
+- **No 3D yet.** The backend half is done — pieces carry an opaque `location`,
+  `generation` is depth, presence is live — but nothing renders it.
+- **Ceilings**, both marked in code: `lineage()` caps at 500 events per piece;
+  the digest is O(pieces) reads.
 
 ## 7. Links
 
 | | |
 |---|---|
 | Repo | https://github.com/FlyingWHR/inspiral |
-| Video | *(see submission)* |
-| The contract | [SCHEMA.md](SCHEMA.md) — canon schema + directive spec |
-| Creator pipeline | [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md) |
+| API reference | [docs/API.md](docs/API.md) |
+| The contract | [src/pieces/contract.ts](src/pieces/contract.ts) — read this first |
 | Live Mind transcript | [docs/transcripts/prove-tradeclash.txt](docs/transcripts/prove-tradeclash.txt) |
-| Run it | [SETUP.md](SETUP.md) |
+| The world that did not work | [README.md](README.md) |

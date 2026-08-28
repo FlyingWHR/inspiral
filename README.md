@@ -2,8 +2,19 @@
 
 **Worlds that remember the people who visit them — and can prove it.**
 
-> Judging this? Read **[SUBMISSION.md](SUBMISSION.md)** — one page, five commands.
-> This README is the engineering record behind it.
+> ## ⚠️ This README describes the FIRST product, which did not work.
+>
+> The submission is **[SUBMISSION.md](SUBMISSION.md)** — a different thing built
+> on the same canon, and the reason is in section 3 of that page.
+>
+> Kept, not deleted, because the second product is an argument this one lost:
+> nine days of unattended history produced exactly one usable moment, 45% of the
+> log was duplicate text, and the same dramatic beat repeated four times across
+> five days in different words. Everything below is true and the measurements
+> that killed it are still runnable. See `npm run clock:status`.
+>
+> The parts that survived — append-only canon, the host seam, the validator, the
+> approval gate, identity, receipts — are what the new product is built on.
 
 ---
 

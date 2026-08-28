@@ -1,5 +1,41 @@
 # Setup
 
+## The short version
+
+```bash
+git clone https://github.com/FlyingWHR/inspiral && cd inspiral
+npm install
+npm test                                    # 470 tests, offline, no key
+INSPIRAL_API_KEY=dev npm run pieces:serve   # http://localhost:8795
+```
+
+That is the whole product: app, API, live feed and public pages on one port.
+Everything works without an API key except the one sentence that is the point
+of it -- see below.
+
+## Seeing the thing it is actually for
+
+The Mind writes one line saying what somebody changed about your work, and that
+line is the product. Without a key you get the degraded path: contributions are
+stored and attributed, and the notification says "Maya changed it", which is a
+database row read aloud.
+
+```bash
+cp .env.example .env          # then put a Builder API key in it
+INSPIRAL_HOST=minds npm run pieces      # the sentence, next to the two texts
+```
+
+`.env.example` documents every variable the code reads, including the
+notification channels and the SSRF guard on webhooks.
+
+---
+
+## The older world
+
+Everything below sets up the FIRST product -- the autonomous world that did not
+work. It is kept because the measurements that killed it are still runnable
+(`npm run clock:status`, `npm run problem`). See SUBMISSION.md section 3.
+
 Paste the block below into a terminal. It is safe to run more than once and it
 does not delete anything you have.
 

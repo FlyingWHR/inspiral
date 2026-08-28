@@ -5,16 +5,13 @@
 > ## ⚠️ This README describes the FIRST product, which did not work.
 >
 > The submission is **[SUBMISSION.md](SUBMISSION.md)** — a different thing built
-> on the same canon, and the reason is in section 3 of that page.
+> on the same canon. Section 3 of that page has the measurements that killed
+> this one; they are still runnable (`npm run clock:status`).
 >
-> Kept, not deleted, because the second product is an argument this one lost:
-> nine days of unattended history produced exactly one usable moment, 45% of the
-> log was duplicate text, and the same dramatic beat repeated four times across
-> five days in different words. Everything below is true and the measurements
-> that killed it are still runnable. See `npm run clock:status`.
->
-> The parts that survived — append-only canon, the host seam, the validator, the
-> approval gate, identity, receipts — are what the new product is built on.
+> Kept, not deleted, because the second product is an argument this one lost.
+> Everything below is true. The parts that survived — append-only canon, the
+> host seam, the validator, the approval gate, identity, receipts — are what the
+> new product is built on.
 
 ---
 
@@ -34,11 +31,11 @@ $ npm run problem
   seen again             1
 ```
 
-Fourteen people out of fourteen hundred cared enough to pick a side, and the
-product had no idea any of them had ever been there. Session ids are minted per
-visit and die with the tab, so the true return rate is not 1-in-1418 — it is
-**unknown**, which is worse. Nothing in that system could tell a returning fan
-from a stranger, so it greeted every one of them like a stranger.
+Median session length is **0.0 seconds**. Fourteen people out of fourteen
+hundred cared enough to pick a side, and the product had no idea any of them had
+ever been there. Session ids are minted per visit and die with the tab, so
+nothing in that system could tell a returning fan from a stranger, and it
+greeted every one of them like a stranger.
 
 That is not a Trade Clash bug. It is what a creator's world is by default: a
 place with no memory, in a year when content generation costs nothing and the
@@ -56,15 +53,7 @@ remembers, and when they come back an NPC brings it up — **citing the event id
 which the demo then resolves against an append-only log.
 
 The host proposes only the *intent*. Canon supplies the *fact*. A wrong citation
-is a test failure, not a bad vibe. That is the whole invention.
-
-```bash
-npm run problem      # why this exists, from real analytics
-npm run prove        # what a Mind adds to a real brand document: 1 arc -> 6-8
-npm run scale        # cast x5.3 -> invocations x1.00
-npm run demo         # the whole loop, ~2s, no key, no network
-npm run clock:status # history nobody watched accumulate
-```
+is a test failure, not a bad vibe.
 
 ## See all of it at once (`docker compose up`)
 
@@ -80,27 +69,21 @@ docker compose up --build
 
 Node 22 in the image because that is the repo's floor and `better-sqlite3` v13
 ships prebuilds for it, so nothing compiles at build time. `INSPIRAL_HOST=mock`
-and no API key, so the whole thing runs with no network, no credentials and no
-writes accepted.
+and no API key: no network, no credentials, no writes accepted.
 
 **The host's `./data` is mounted read-only and copied on start.** A clock may be
 mid-tick against those files, and a second writer on a SQLite world is how you
 lose the one artefact here that cannot be regenerated. The entrypoint copies the
-`-wal` sidecar too: these worlds run in WAL mode, so the newest commits are not
-in the `.db` until a checkpoint, and copying the `.db` alone seeds a world tens
-of events short of the real one — present, plausible, and quietly out of date.
+`-wal` sidecar too: these worlds run in WAL mode, so copying the `.db` alone
+seeds a world tens of events short of the real one — present, plausible, and
+quietly out of date.
 
 ## The memory layer (`npm run serve`)
 
-The rest of this README describes a world you visit. That shape needs its own
-audience, and an audience is the one thing there is no evidence of anybody
-wanting. `npm run problem` is the argument against it in the owner's own
-numbers: 1,418 sessions, median length **0.0 seconds**, 14 people who cared
-enough to pick a side. Memory is a retention feature, and you cannot retain
-people you never acquired.
-
-So the same canon is also served as a **layer** — for a product that already has
-traffic, stakes and recurring outcomes.
+A world you visit needs its own audience, and the numbers above are the argument
+against it: memory is a retention feature, and you cannot retain people you
+never acquired. So the same canon is also served as a **layer**, for a product
+that already has traffic, stakes and recurring outcomes.
 
 ```bash
 INSPIRAL_API_KEY=... npm run serve -- --db ./data/tradeclash.db
@@ -131,27 +114,18 @@ match that moved the rivalry twice would silently inflate a grudge.
 
 ## Build What Creators Need Next
 
-The jam's brief, answered in its own terms.
+The jam's brief, in its own terms.
 
-**Discoverability.** A world is a reason to be found. Every beat the cast plays
-is a clip draft with a permalink and a citation attached (`npm run clips`) --
-not "post more", but *the property generating its own posts, sourced*. An IP
-owner's back catalogue becomes a place people can walk into and talk about.
+**Discoverability** — every beat the cast plays is a clip draft with a permalink
+and a citation attached (`npm run clips`): the property generating its own
+posts, sourced.
 
-**Engagement.** The unit is not a session, it is a grudge. A visitor takes a
-side and the world remembers it while they are gone; when they come back an NPC
-brings it up and cites the event id. That is a reason to return that does not
-depend on a notification, and it works for two fans at once with separate
-memories.
+**Engagement** — the unit is not a session, it is a grudge, and it works for two
+fans at once with separate memories.
 
-**Workflow efficiency.** Handles in, living cast out, in about a minute and one
-model call (`npm run onboard`). The owner keeps an approval gate before any of
-it becomes canon, a daily digest of what their world did (`npm run digest`),
-and clip drafts they can post or bin. Nothing publishes itself. Cost scales
-with narrative decisions, not with cast size -- measured, not asserted, by
-`npm run scale`.
-
-The rest of this README is how those three are built.
+**Workflow efficiency** — handles in, living cast out, in about a minute and one
+model call (`npm run onboard`), behind an approval gate. Nothing publishes
+itself.
 
 ---
 
@@ -162,7 +136,7 @@ Node 22+ (developed on 24.19.0).
 
 ```bash
 npm install          # once
-npm test             # 326 tests, headless, no engine, no key
+npm test             # 481 tests, headless, no engine, no key
 ```
 
 **The world, three ways.** Same canon, same tick loop, same cast — the surface
@@ -187,18 +161,6 @@ npm run digest  -- --fixture tradeclash              # the showrunner's note
 npm run clips   -- --fixture tradeclash --write      # drafts, never posted
 ```
 
-**The one thing that needs a Mind.** Everything else in this repo runs with the
-host switched off; this does not.
-
-```bash
-INSPIRAL_HOST=minds npm run prove   # 0 arcs without a Mind -> 2 with one
-```
-
-Onboards the same un-hinted source twice, with and without a Mind, and prints
-both bibles side by side. The compiler reads hashtags; it cannot decide what a
-body of work is *about*. Arcs are what the tick loop escalates, so zero arcs is
-a cast that exists and a world that does not run.
-
 **The one that never stops.** Real elapsed history, on disk.
 
 ```bash
@@ -206,13 +168,7 @@ npm run clock         # tick the real ward, forever
 npm run clock:status  # how much history has actually accumulated
 ```
 
-See [SETUP.md](SETUP.md) to run it, [RUNBOOK.md](RUNBOOK.md) for the demo shot
-list, and [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md) for the inbound/outbound
-layer.
-
----
-
-## The evidence a judge asks for
+### The evidence a judge asks for
 
 Six commands, in the order the questions usually come:
 
@@ -221,25 +177,29 @@ npm run problem      # is this a real problem?      1418 sessions, 14 sides, 1 r
 npm run fixture      # is the IP real?              brand doc -> cast, mechanically
 npm run prove        # what needs a Mind?           1 arc -> 6-8, live
 npm run scale        # what does it cost at size?   cast x5.3 -> calls x1.00
-npm run authorship   # who wrote the dialogue?
-npm run platform     # what of the Minds platform is actually used? read live
+npm run authorship   # who wrote the dialogue?      host-written share of rendered lines
+npm run platform     # what of the Minds platform is used? read live, no key needed
 ```
 
-`problem` reads eight days of first-party analytics off Trade Clash, a shipping
-product, and reports that almost nobody came back and the system could not have
-known if they had. `fixture` regenerates the cast from that product's own brand
-document so the provenance is a script rather than a promise.
+`fixture` regenerates the cast from Trade Clash's own brand document, so the
+provenance is a script rather than a promise.
 
-`prove` onboards the same source twice, once with the host switched off and once
-against a live Mind, and prints the two bibles side by side. It is the only
-thing here that a Mind is strictly required for, which is why it is the
-headline — and it now runs on real IP rather than an invented fixture.
+`prove` is **the only thing here that a Mind is strictly required for**, which is
+why it is the headline. It onboards the same un-hinted source twice, host off
+and host live, and prints the two bibles side by side.
 
-`scale` measures the cost curve, **including the part that is not flat**.
-`authorship` prints the host-written share of rendered lines.
-`platform` reads identity, balance, usage by day, spend by tool, equipped apps,
-circle and conversation lanes straight from the Builder API — it runs without a
-key and says so rather than failing.
+```bash
+INSPIRAL_HOST=minds npm run prove   # 0 arcs without a Mind -> 2 with one
+```
+
+The compiler reads hashtags; it cannot decide what a body of work is *about*.
+Arcs are what the tick loop escalates, so zero arcs is a cast that exists and a
+world that does not run.
+
+See [SETUP.md](SETUP.md) to run it, [RUNBOOK.md](RUNBOOK.md) for the demo shot
+list, and [docs/IP-PIPELINE.md](docs/IP-PIPELINE.md) for the inbound/outbound
+layer — source adapters, the IP bible, the approval gate, ingestion, the daily
+digest and clip drafts, including which parts are fixture and which are real.
 
 ## Looking at it, and measuring it
 
@@ -248,18 +208,16 @@ A world that scores 3/10 on UX does not need opinions, it needs numbers.
 ```
 npm run shots        # render all eight scene archetypes to docs/screens/looks
 npm run pixelstats -- docs/screens    # read the histograms back
-npm run platform     # what we actually use of the Minds platform, live
 ```
 
 `pixelstats` and `contactsheet` are vendored from
 [thrixel/build-world](https://github.com/thrixel/build-world) under Apache-2.0
-(see `tools/visual/`). We evaluated the rest of that project — Thrixel's
-text-to-3D asset generation — and did not adopt it: it needs an account and,
-by the vendor's own README, a paid plan for a real build, and the licence
-position on shipping generated assets in a jam submission could not be
-established. The measurement half was free, and it paid for itself in one run
-by proving that a "visual improvement" we had already shipped was blowing 20.6%
-of its pixels to white.
+(see `tools/visual/`). We rejected the rest of that project — Thrixel's
+text-to-3D asset generation — because it needs an account and, by the vendor's
+own README, a paid plan for a real build, and the licence position on shipping
+generated assets in a jam submission could not be established. The measurement
+half was free and paid for itself in one run, by proving that a "visual
+improvement" we had already shipped was blowing 20.6% of its pixels to white.
 
 **Two colour-space notes, both of which cost real time to find.**
 
@@ -268,22 +226,22 @@ in the linear working space, and calling `.convertSRGBToLinear()` on top makes
 everything muddy. We do not do that anywhere, and the one `colorSpace`
 assignment in the codebase is on a CanvasTexture, where it is required.
 
-The mirror-image mistake is the one that actually bit us. The voxel mesher was
-writing sRGB bytes **straight into three's vertex-colour attribute**, which is
-read as linear — converting zero times where the documented trap is converting
-twice. `0x77` entered as linear 0.467 and left the display transform near sRGB
-0.71: every block lighter than authored and about half as saturated. It hid an
-entire colour system, and it means any visual judgement made before the fix was
+The mirror-image mistake is the one that bit us. The voxel mesher was writing
+sRGB bytes **straight into three's vertex-colour attribute**, which is read as
+linear — converting zero times where the documented trap is converting twice.
+`0x77` entered as linear 0.467 and left the display transform near sRGB 0.71:
+every block lighter than authored and about half as saturated. It hid an entire
+colour system, and it means any visual judgement made before the fix was
 measured through the wrong transform. One `srgbToLinear` in `mesher.js` moved
 chroma P99.5 from 0.100 to 0.130 and arc95 from 53 to 296 degrees.
 
 **The value ladder is absolute.** Block colours are not tinted, blended or
 derived from anything that came before — each block is assigned a SLOT and takes
 that slot's OKLab lightness (VOID 0.19 / DARK 0.32 / MID 0.48 / LIGHT 0.64 /
-HIGH 0.80). BACKDROP is the sky and is the one value the ladder deliberately
-leaves free. The ladder only reaches the *frame* if the darkest and lightest
-tiers actually appear, so the face-shading ramp bottoms out at 0.30 to put VOID
-under every overhang, and the interiors carry a lit cornice so HIGH is in shot.
+HIGH 0.80). BACKDROP is the sky and is the one value the ladder leaves free. The
+ladder only reaches the *frame* if the darkest and lightest tiers actually
+appear, so the face-shading ramp bottoms out at 0.30 to put VOID under every
+overhang, and the interiors carry a lit cornice so HIGH is in shot.
 
 **One visual family, both surfaces.** The voxel worlds take the colour system by
 assigning block slots. The ward could not — it is built from Kenney kit GLBs and
@@ -300,38 +258,34 @@ re-skinned to whichever world they are standing in.
 
 **Per-archetype visual identity.** Eight look profiles in
 `web-voxel/scene/looks.js`, one per scene archetype, each with its own exposure,
-sky, sun, hemisphere, ambient, fog, practicals and colour grade. Both the ward
-and the voxel world read the same profiles. A tavern is warm, dim and firelit;
-a council chamber is cold, hard and lit from a window you cannot reach; a studio
+sky, sun, hemisphere, ambient, fog, practicals and colour grade; the ward and
+the voxel world read the same profiles. A tavern is warm, dim and firelit; a
+council chamber is cold, hard and lit from a window you cannot reach; a studio
 is flat, bright and artificial. Same code, same generator — the difference is
 data, which is the "it learns your IP" claim made visible in one frame.
 
-Two shaders do the work, both small and both commented with why they exist: a
-gradient sky dome (`skydome.js`) that replaced three's physical `Sky`, because a
-physical sky is genuinely brighter than anything under it and cannot be
-art-directed, only surrendered to; and a lift/gamma/gain/saturation/vignette
-grade (`grade.js`) that runs after tone mapping, which is where `gain` under 1.0
-stops the brightest thing in frame reaching 255.
+Two shaders do the work: a gradient sky dome (`skydome.js`) that replaced
+three's physical `Sky`, because a physical sky is genuinely brighter than
+anything under it and cannot be art-directed, only surrendered to; and a
+lift/gamma/gain/saturation/vignette grade (`grade.js`) that runs after tone
+mapping, which is where `gain` under 1.0 stops the brightest thing in frame
+reaching 255.
 
 **Themed build palettes.** The hotbar is the archetype's, not one global list —
 tavern hands you plank, timber and lantern, a council chamber hands you stone —
 so anything a visitor builds is on-theme by construction. Each archetype also
 carries a one-line brief with no score and no completion state attached. The
-reward is that the cast reacts to what you put down, and that reaction now
-announces itself in the feed instead of vanishing into a socket.
+reward is that the cast reacts to what you put down, in the feed.
 
 ---
 
 ## What this repo is and is not
 
-The 3D engine is still an open question, so **there is no engine code here and
-none should be added until that is decided.** What is worth freezing before
-writing engine code is the canon schema and the directive spec, and that is what
-this delivers.
-
-- **[SCHEMA.md](SCHEMA.md) is the deliverable.** Read and sign off on that first.
-- The rest is a working implementation proving the schema survives contact with
-  a real loop, a failing host, and a returning visitor.
+The shipping 3D engine is still an open question, so nothing above the seam
+knows about one. What was worth freezing first is the canon schema and the
+directive spec: **[SCHEMA.md](SCHEMA.md) is the deliverable** — read and sign
+off on that first. The rest is a working implementation proving the schema
+survives contact with a real loop, a failing host, and a returning visitor.
 
 ---
 
@@ -370,16 +324,13 @@ Inspiral uses **exactly one Mind**. All three faction leaders are server-side
 projections of it.
 
 An earlier draft of this README said the platform forbids mind-to-mind Circles
-and that the design was forced. **That was wrong, and it was worth finding out.**
-The client's README is careful — "not documented for builders today ... if the
-platform later supports Mind platform emails, the client passes them through;
-verify with `result` and `getCircle()`" — so we verified. Adding one Mind's
-platform email (`getMind(id).email`, e.g. `john.carmack@hellominds.ai`) to
-another Mind's circle returns `action: "mind_added"` and the member shows up in
-`getCircle()` with `isSteward: false`. Removal returns `deactivated`. It works
-today, undocumented.
+and that the design was forced. **That was wrong.** Adding one Mind's platform
+email (`getMind(id).email`, e.g. `john.carmack@hellominds.ai`) to another Mind's
+circle returns `action: "mind_added"` and the member shows up in `getCircle()`
+with `isSteward: false`. Removal returns `deactivated`. It works today,
+undocumented.
 
-So one Mind is a **choice**, and here is the actual argument for it.
+So one Mind is a **choice**:
 
 *Cost.* A cast is not a committee. Ask three Minds what they do and you pay three
 invocations for one beat, and the bill scales with cast size — a thirty-character
@@ -393,9 +344,9 @@ plausible half-memories and a continuity bug the audience notices before you do.
 One showrunner holding the whole district is how television does it, and canon
 is the show bible it writes into.
 
-A future version with a real budget could plausibly give a **principal** cast
-member its own Mind and keep the showrunner for everyone else. That is the
-interesting version of the idea. It is not an eight-day change.
+A future version with a real budget could give a **principal** cast member its
+own Mind and keep the showrunner for everyone else. That is the interesting
+version of the idea. It is not an eight-day change.
 
 Four conversation aliases are lanes on that single Mind, not separate agents:
 `tick`, `onboard`, `fan-events`, `qc`.
@@ -444,12 +395,12 @@ the fallback — an empty relationship picture would be worse than a large one.
 ### Latency: nobody waits on a model
 
 A live Mind answers in **40–166 s, median ~75 s**. That is the number that
-decides whether any of this ships, so it gets its own heading.
+decides whether any of this ships.
 
-It is fine for the tick, and it is fine precisely because **the Mind is not in
-the interaction loop**. It decides what a district does over the next four
-hours; a 75-second decision inside a 4-hour cadence is 0.5% of the window. Every
-line a visitor actually reads is rendered locally, for free, in milliseconds.
+It is fine for the tick, and fine precisely because **the Mind is not in the
+interaction loop**. It decides what a district does over the next four hours; a
+75-second decision inside a 4-hour cadence is 0.5% of the window. Every line a
+visitor actually reads is rendered locally, for free, in milliseconds.
 
 The one place that was not true was arrival. `visitorArrive` awaited the host,
 so a first visit — and any return to a ward that had moved — put the entire
@@ -492,9 +443,6 @@ did *this*" and being right. That is not achieved by asking the model nicely.
    - it must fall after the visitor's previous visit
 3. The rendered line carries the `event_id`. The demo then looks every citation
    up in the log and prints the day it happened.
-
-The host supplies the intent. Canon supplies the fact. Nothing is improvised,
-and a wrong citation is a test failure rather than a bad vibe.
 
 Same for memory of the visitor: `notable_moments` carry a `witnesses` list, and
 a character may only recall moments they were present for.
@@ -546,7 +494,7 @@ web-voxel/       voxel/ (storage, meshing, raycast,
                  physics, pathfind), ward.js, main.js ← no renderer import
 ops/             com.inspiral.clock.plist            ← optional always-on
 tests/           validator.test.ts, tick.test.ts, mint.test.ts,
-                 voxel.test.ts, visitors.test.ts    ← 326 tests
+                 voxel.test.ts, visitors.test.ts    ← 481 tests
 docs/research/   voxel engine + high-density framework survey (background reading)
 ```
 
@@ -557,8 +505,7 @@ raise. It is a property of the database, not a convention.
 
 ## Assumptions about the Minds platform
 
-Flagged because I made these calls without being able to ask. Everything in this
-section is still **pending the API key** — see "Placeholder" below.
+Flagged because I made these calls without being able to ask.
 
 **Pinned to `0.1.3` exactly, not `^0.1.3`.** Four versions have ever been
 published, the first on 9 June 2026 and the latest on 21 July 2026, on a platform
@@ -572,10 +519,10 @@ the repo and runs `npm install`, which fetches it from npm under whatever terms
 Animoca grants. Nothing here claims redistribution rights we do not have.
 
 **The library does not read `.env`** — its README is explicit that your app or
-the `minds` CLI handles that. This is not trivia: it is exactly the bug that had
-our clock running mock-authored for a day while we believed it was live. Every
-entry point in this repo therefore starts with
-`node --env-file-if-exists=.env`, and shell variables still win over the file.
+the `minds` CLI handles that. This is exactly the bug that had our clock running
+mock-authored for a day while we believed it was live. Every entry point in this
+repo therefore starts with `node --env-file-if-exists=.env`, and shell variables
+still win over the file.
 
 **The `api.build` host is fixed in the library**; the base URL is not
 configurable. There is no staging endpoint to point at, so any live test is a
@@ -594,8 +541,6 @@ the deterministic stand-in and every test runs offline.
   `X-Api-Key`; the env var the library documents is `MINDS_BUILDER_API_KEY`.
 - The library is ESM-only and requires Node ≥22, which is why this repo is ESM
   and Node 22+.
-- The Circles endpoints take human **emails** — consistent with your finding
-  that there are no mind-to-mind Circles.
 
 **Assumed — please correct:**
 
@@ -614,7 +559,7 @@ the deterministic stand-in and every test runs offline.
 8. **`better-sqlite3` v13** — v11 has no prebuilt binary for current Node 22
    ABIs and falls back to a source build. v13 ships prebuilds.
 
-**Needs confirming before the real Mind is wired in:**
+**Still open:**
 
 - **Does the Mind reliably return bare JSON?** The validator tolerates code
   fences and surrounding prose, and repairs once. If the Mind is chatty by
@@ -635,10 +580,9 @@ the deterministic stand-in and every test runs offline.
 ## The clock
 
 Every other entry point manufactures six world-days in two seconds against an
-in-memory database. That is fine for a demo and worthless as evidence. The
-pitch is that a district accumulates history whether or not anyone is watching,
-and elapsed time is the one thing that cannot be compressed afterwards — so
-there is a process whose whole job is to be boring for a week.
+in-memory database. That is fine for a demo and worthless as evidence: elapsed
+time cannot be compressed afterwards. So there is a process whose whole job is
+to be boring for a week.
 
 `npm run clock` ticks `data/canon.db` on **real wall-clock time**, so events
 carry the actual moment they happened and the log is checkable against a
@@ -654,12 +598,15 @@ calendar rather than a seed.
 
 ```
 $ npm run clock:status
-  clock          RUNNING
-  days elapsed   0.00   (0.0 h of real time)
-  log spans      0.86 days
-  ticks          3
-  events         10
+  clock          not running
+  days elapsed   8.87   (212.9 h of real time)
+  log spans      9.69 days   2026-08-18T14:47:18.388Z .. 2026-08-28T07:22:22.549Z
+  ticks          96
+  events         694
 ```
+
+Stopped now, because it was spending cognition on a world the current product
+does not use. The history stays on disk and `clock:status` still reads it.
 
 To keep it running across logout and reboot, install the LaunchAgent — it is
 written but deliberately **not** installed, because it touches your login
@@ -691,9 +638,9 @@ the compiled bible and the world opens there.
 
 Each is a **data definition** in `web-voxel/scene/archetypes.js` consumed by the
 primitives in `scene/primitives.js` — terrain, enclosure, building, platform,
-tiers, props. Adding a scene is data; there is no new engine code, because the
-ward was already generated from a layout definition and this is that same path
-with eight definitions instead of one.
+tiers, props. Adding a scene is data, not engine code: the ward was already
+generated from a layout definition and this is that same path with eight
+definitions instead of one.
 
 Every archetype declares **named places** (`the_bar`, `the_dais`, `kiln_row`)
 which is what the directive system targets. Canon says the name; the surface
@@ -704,8 +651,7 @@ turns it into coordinates; nothing above the seam learns what a coordinate is.
 The archetype rides along in the **existing** onboarding host call — no extra
 invocation, because the budget is ~12/day and a scene choice is not worth one of
 them. If the host says nothing usable, a keyword score over the bible picks one
-deterministically. It always produces something defensible, which matters more
-than being clever: a wrong-but-reasoned tavern beats a coin-flip ballroom.
+deterministically: a wrong-but-reasoned tavern beats a coin-flip ballroom.
 
 ```
 $ npm run onboard -- --fixture tradeclash --reset
@@ -726,8 +672,8 @@ npm run voxel -- --scene tavern                # or force one
 
 ## Surfaces
 
-The simulation is not the world; the world is a display. Three surfaces
-implement one `SurfaceAdapter` (`src/runtime/surface.ts`):
+The simulation is not the world; the world is a display. Five implementations of
+one `SurfaceAdapter` (`src/runtime/surface.ts`):
 
 | Surface          | File                          | What it is                                        |
 | ---------------- | ----------------------------- | ------------------------------------------------- |
@@ -735,13 +681,13 @@ implement one `SurfaceAdapter` (`src/runtime/surface.ts`):
 | `WebSurface`     | `src/runtime/webSurface.ts`   | three.js in a browser. What `npm run world` uses. |
 | `ChatSurface`    | `src/runtime/chatSurface.ts`  | a terminal. What `npm run chat` uses.             |
 | `VoxelSurface`   | `src/runtime/voxelSurface.ts` | a diggable voxel world in first person. `npm run voxel`. |
+| `MemorySurface`  | `src/runtime/surface.ts`      | collects instead of printing. What the tests use. |
 
 Two browsers on one ward are two different fans. Each connection is handed an
-identity (Wren, Ash, …) with its own standing and its own memory; the HUD tells
-each of them who they are. Coming back is free when the cast has done nothing
-since you left — the greeting is replayed from canon rather than costing an
-invocation to be told the same thing.
-| `MemorySurface`  | `src/runtime/surface.ts`      | collects instead of printing. What the tests use. |
+identity (Wren, Ash, …) with its own standing and its own memory, shown in the
+HUD. Coming back is free when the cast has done nothing since you left — the
+greeting is replayed from canon rather than costing an invocation to be told the
+same thing.
 
 `npm run chat` attaches to the *same running world* as the browser over the same
 socket and replays the *same beats* through the adapter. Two windows, one canon.
@@ -750,18 +696,17 @@ a translation — which is the actual test of whether the seam holds.
 
 ### The voxel ward (`npm run voxel`)
 
-A fourth surface, and the one that answers "can I actually play in it". The
-world is a real chunked voxel grid, not a decorative cube field: 32³ chunks in
-typed arrays, greedy meshing (124k voxels collapse to ~10k triangles), a DDA
-raycast for aiming, and swept AABB collision. First person — WASD, mouse look
-under pointer lock, gravity, jump, sprint, fly. Left click breaks, right click
-places, `1`–`9` pick from a nine-block hotbar, and the affected chunk remeshes
-immediately.
+The surface that answers "can I actually play in it". The world is a real
+chunked voxel grid, not a decorative cube field: 32³ chunks in typed arrays,
+greedy meshing (124k voxels collapse to ~10k triangles), a DDA raycast for
+aiming, and swept AABB collision. First person — WASD, mouse look under pointer
+lock, gravity, jump, sprint, fly. Left click breaks, right click places, `1`–`9`
+pick from a nine-block hotbar, and the affected chunk remeshes immediately.
 
 The ward is *generated into the grid* from a layout definition, so every wall,
 roof and cobble is diggable. The cast walks that terrain with A* over standable
-surface cells, which means they route around a wall you build and give up rather
-than walk through one you have sealed them behind.
+surface cells: they route around a wall you build, and give up rather than walk
+through one you have sealed them behind.
 
 **Digging is narratively load-bearing.** A burst of edits becomes ONE
 `terrain_altered` event in the same append-only log everything else uses, blamed
@@ -782,15 +727,14 @@ worlds fun to poke at. Grid destruction is.
 
 **three.js, not Godot.** Godot's web export needs a 133 MB editor plus 1.2 GB of
 export templates before a triangle renders, ships a ~30 MB wasm payload, and
-needs COOP/COEP headers to serve. More to the point, the scaffolding an engine
-sells you — scene tree, entity system, game state — is the part Inspiral already
-owns in TypeScript. What was actually needed from the engine was glTF loading,
-soft shadows, ambient occlusion, animation blending, screen-space labels and a
-camera, and three.js ships all of it as addons. No renderer code was written:
-`GLTFLoader`, `AnimationMixer`, `PCFSoftShadowMap`, `GTAOPass`, `CSS2DRenderer`
-and `OrbitControls` do the work. three.js is served straight out of
-`node_modules` via an import map, so there is no build step and the judge's URL
-is a plain static page.
+needs COOP/COEP headers to serve. And the scaffolding an engine sells you —
+scene tree, entity system, game state — is the part Inspiral already owns in
+TypeScript. What was needed was glTF loading, soft shadows, ambient occlusion,
+animation blending, screen-space labels and a camera; three.js ships all of it
+as addons. No renderer code was written: `GLTFLoader`, `AnimationMixer`,
+`PCFSoftShadowMap`, `GTAOPass`, `CSS2DRenderer` and `OrbitControls` do the work.
+three.js is served straight out of `node_modules` via an import map, so there is
+no build step and the judge's URL is a plain static page.
 
 Nothing was hand-modelled. Buildings are stacked from Kenney CC0 kit pieces by
 measured bounding box; the cast are rigged CC0 GLBs that ship 32 animation clips
@@ -817,13 +761,10 @@ reverse.
 
 ---
 
-## Placeholder: the Minds host
+## The Minds host
 
-**Exactly one thing in this repo is a placeholder, and it is the only thing that
-needs a key.** Everything else genuinely runs.
-
-`HostRuntime` (`src/host/HostRuntime.ts`) is the seam. There are two
-implementations and one switch:
+`HostRuntime` (`src/host/HostRuntime.ts`) is the seam. Two implementations, one
+switch:
 
 ```ts
 // src/host/index.ts -- THE ENTIRE SWAP COST
@@ -834,15 +775,15 @@ return new MockHostRuntime({ seed: cfg.seed });
 - `MockHostRuntime` — **the default.** Rule-based, deterministic, instant, free,
   offline. Same seed, same history. Every screenshot and every test above ran
   against it.
-- `MindsHostRuntime` — written, typed against the real client library, wired to
-  the same interface, **never exercised**, because there is no key yet.
+- `MindsHostRuntime` — the real Builder API client. Verified live on 20 Aug 2026;
+  see below.
 
 To switch: put `MINDS_BUILDER_API_KEY=...` in `.env`, set `INSPIRAL_HOST=minds`,
-and change nothing else. Every entry point loads `.env` (`--env-file-if-exists`)
-and every one of them goes through `startHostRuntime()`, so `npm run demo`,
-`world`, `voxel`, `chat` and `tick` all pick up the key. **Which runtime is
-actually live is printed in the terminal banner and shown in the browser HUD**,
-so it is provable on camera rather than asserted.
+and change nothing else. All thirteen entry points go through
+`startHostRuntime()` and every one loads `.env` (`--env-file-if-exists`), so
+`npm run demo`, `world`, `voxel`, `chat` and `tick` all pick up the key.
+**Which runtime is live is printed in the terminal banner and shown in the
+browser HUD**, so it is provable on camera rather than asserted.
 
 Degradation is layered, because a half-configured environment must not kill a
 demo: no key at all → mock; `INSPIRAL_HOST=minds` with an empty key → warn, use
@@ -850,18 +791,15 @@ mock; a key that is present but wrong → the adapter is constructed, the real A
 rejects it, and `startHostRuntime` warns and falls back to mock. Only the mock
 failing is treated as a real bug.
 
-Nothing downstream of the seam talks to the host directly -- the validator,
-canon, tick loop, character runtime, the IP pipeline and all four surfaces read
-canon instead. That is what lets one Mind drive a three.js ward, a first-person
-voxel world, a terminal and a headless demo at once, and why the next surface
-in whatever engine needs no changes on the Mind's side. All eleven entry points go through
-`startHostRuntime()`.
+Nothing downstream of the seam talks to the host directly; everything reads
+canon. That is what lets one Mind drive a three.js ward, a first-person voxel
+world, a terminal and a headless demo at once, and why the next surface in
+whatever engine needs no changes on the Mind's side.
 
 ### Verified against the live key (20 Aug 2026)
 
-The key works. Auth, `humanId` (parsed straight from the JWT), Mind selection,
-conversations, send/receive and the validator all work end to end. What that
-run taught us:
+Auth, `humanId` (parsed straight from the JWT), Mind selection, conversations,
+send/receive and the validator all work end to end. What that run taught us:
 
 | | |
 | --- | --- |
@@ -878,35 +816,29 @@ prefers a funded Mind and says so loudly); and the prompt calls visitors
 `fan:<id>` everywhere but required the bare id in `visitor_stance.fan_id`, so
 **every visitor directive was rejected**. Both spellings are accepted now.
 
-### What is waiting on the key
+Onboarding enrichment against `fixtures/tradeclash` is the headline: a REAL
+brand document from a shipping product, sixteen leaders, no goals and no arcs in
+the source because brand documents do not contain them. The deterministic
+compiler gets 1 stub arc out of it; the Mind returns **six to eight named
+storylines** that cross-reference each other by bloc, plus real goals and an
+authored premise. The count varies run to run because a live model is not
+deterministic — two runs an hour apart gave 6 and 8, and the committed
+transcript is the 8:
+[docs/transcripts/prove-tradeclash.txt](docs/transcripts/prove-tradeclash.txt).
+The earlier `creator` run (0 arcs → 2) is still in the repo and shows the same
+thing on a thinner source.
+
+### Still not done
 
 | | |
 | --- | --- |
-| ~~`MindsHostRuntime` has never completed a call~~ | **Done.** Verified 20 Aug — see the table above. |
 | The accumulating history is mock-authored | The clock has been running since 19 Aug. Real elapsed time, real event ids, real relationship drift — rule-based prose. Restarting it against a live Mind is one command, but every hour that passes is an hour of the week that stays mock. |
-| ~~Two fans taking opposite sides get identical standing~~ | **Done.** They diverge on the live host. |
-| ~~Onboarding enrichment is discarded~~ | **Done, and it is the headline.** Run against `fixtures/tradeclash` — a REAL brand document from a shipping product, sixteen leaders, no goals and no arcs in the source because brand documents do not contain them. The deterministic compiler gets 1 stub arc out of it; the Mind returns **six to eight named storylines** that cross-reference each other by bloc, plus real goals and an authored premise. The count varies run to run because a live model is not deterministic — two runs an hour apart gave 6 and 8, and the committed transcript is the 8. That is "compiles your IP" becoming "learns your IP", measured on IP nobody invented for the demo. Transcript: [docs/transcripts/prove-tradeclash.txt](docs/transcripts/prove-tradeclash.txt). The earlier `creator` run (0 arcs → 2) is still in the repo and shows the same thing on a thinner source. |
-| ~~`budgetRemaining()` / cognition metering~~ | **Done.** Returns real numbers and now drives Mind selection. |
-| Clock on the live host | **Deliberately not switched.** Cost is fine (~2.6/invocation) but median 75s latency and the rejection-retry tail need a decision — see below. |
-
-### What is waiting on something other than the key
-
-| | |
-| --- | --- |
+| Clock on the live host | **Deliberately not switched.** Cost is fine (~2.6/invocation) but median 75s latency and the rejection-retry tail need a decision. |
 | Social source adapters (`x:`, `youtube:`, …) | Deliberate stubs that **throw**, because no API access method has been chosen. A stub returning `[]` would let a broken integration look like a quiet one. Fixtures are the real, default path. |
 | `fixtures/tradeclash` | Entirely invented placeholder content. Its README lists the exact fields to replace with the real game's. |
 | Telegram approval | Real code, activates on `TELEGRAM_BOT_TOKEN` alone, tested against a fake transport. Needs a bot token, not a Minds key. |
-
----
-
-## What is deliberately not here
-
-- Any engine integration. `SurfaceAdapter` is the boundary; console and
-  in-memory implementations exist for the demo and tests.
-- Any coordinates, meshes or scene graph. Locations are opaque strings.
-- Networking, auth, persistence beyond SQLite, multi-world support.
-- LLM-generated prose in the mock. The mock is rule-based on purpose: it is
-  deterministic, instant, and free, so the loop can be tested without a host.
+| LLM-generated prose in the mock | Not coming. The mock is rule-based on purpose: deterministic, instant, free, so the loop can be tested without a host. |
+| Networking, auth, persistence beyond SQLite, multi-world | Not built. |
 
 ---
 
@@ -914,16 +846,4 @@ prefers a funded Mind and says so loudly); and the prompt calls visitors
 
 1. Sign off on [SCHEMA.md](SCHEMA.md), or mark it up.
 2. Decide the engine. Then write one `SurfaceAdapter`.
-3. Wire the real Mind and check the four items above.
-
----
-
-## The IP pipeline
-
-Everything above builds a world by hand. The inbound/outbound pipeline builds one
-out of an existing IP and keeps it fed.
-
-The commands are listed above. Source adapters, the IP bible, the creator approval gate, ingestion into the
-existing event schema, the daily digest and the outbound clip drafts are all
-documented in **[docs/IP-PIPELINE.md](docs/IP-PIPELINE.md)**, including which
-parts are fixture and which are real.
+3. Wire the real Mind and check the items above.

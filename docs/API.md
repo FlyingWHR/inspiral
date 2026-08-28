@@ -14,9 +14,6 @@ are stored, `changed` is absent. That is the real degraded path, not a stub.
 
 ## The one thing to design around
 
-The product is a single feeling: **you come back and find the thing you made
-has been changed by somebody else, with your name still on it.**
-
 Everything below is storage and transport for one field: `changed`.
 
 ```
@@ -130,10 +127,9 @@ Anyone unheard-from for 60s is swept, so a closed tab does not haunt a piece.
 | `POST` | `/v1/pieces/:id/hide` | `{event_id, by?}` — the API key **is** creator authority |
 | `GET` | `/v1/pieces/:id/reports` | what has been reported here |
 
-The digest leads with **contributions nobody has built on yet** — an ignored
-contribution is the thing most likely to lose a person, and the creator is the
-one who can fix it. Not window-scoped: something ignored for three days must not
-drop off the list on the day it matters most.
+The digest leads with **contributions nobody has built on yet**. Not
+window-scoped: something ignored for three days must not drop off the list on
+the day it matters most.
 
 **Hiding is additive.** The log refuses `UPDATE` and `DELETE`, so a takedown is
 a new event readers respect — attribution and history stay intact, visibility
@@ -203,9 +199,7 @@ items: [{
 Render in that order: **your thing → their thing → who they are → the
 sentence.** The sentence gets the typographic weight.
 
-**An empty `items` is a real answer.** Say nothing, calmly. Never fabricate a
-count, never nag. A made-up "3 people are talking about you" is exactly what
-makes this category feel cheap.
+**An empty `items` is a real answer.** Render nothing.
 
 ---
 
@@ -227,7 +221,9 @@ Never `500` for a caller mistake.
 - **No leaderboards, badges, streaks, like counts.** `generation` is depth, not
   score. Ranking contribution turns a remix community into a farm.
 - **AI is always visibly AI.** It never poses as a participant.
-- **Never manufacture activity.** Empty states stay empty.
+- **Never manufacture activity.** Empty states stay empty, and never carry a
+  count. A made-up "3 people are talking about you" is what makes this category
+  feel cheap.
 - **Attribution is permanent** — enforced by database triggers that refuse
   `UPDATE` and `DELETE`. It should *feel* permanent.
 - **`display_name` on the public page**, never `fan_id`. A stranger reading the

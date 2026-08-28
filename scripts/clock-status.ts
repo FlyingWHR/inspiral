@@ -8,7 +8,6 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { loadConfig } from "../src/config.js";
 import { CanonRepo } from "../src/canon/repo.js";
 import { setLogLevel } from "../src/log.js";
 
@@ -101,10 +100,18 @@ console.log(`  ${pad("events")}${events.length}`);
  * cognition spend per day: `npm run platform` prints it, and it lines up with
  * this window. Point at both rather than claiming either.
  */
+/**
+ * Say "unknown", not the .env value.
+ *
+ * A world whose clock ran before this meta row existed printed
+ * "authored by mock" -- reporting a CONFIGURATION as if it were a fact about
+ * nine days of history the Mind demonstrably wrote. A wrong answer stated
+ * confidently is worse than no answer, and the per-day cognition spend in
+ * `npm run platform` is the thing that actually settles it.
+ */
 const authoredBy = repo.getMeta("clock_host");
 console.log(
-  `  ${pad("authored by")}${authoredBy ?? loadConfig().host}` +
-    `${authoredBy ? "" : "  (from .env -- this clock has not booted yet)"}` +
+  `  ${pad("authored by")}${authoredBy ?? "unknown (predates this record)"}` +
     `   (per-day spend: npm run platform)`,
 );
 console.log(`  ${pad("characters")}${repo.getCharacters().length}`);

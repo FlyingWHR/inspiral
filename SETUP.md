@@ -1,55 +1,46 @@
 # Setup
 
-## The short version
-
 ```bash
 git clone https://github.com/FlyingWHR/inspiral && cd inspiral
 npm install
-npm test                                    # 470 tests, offline, no key
+npm test                                    # 481 tests, offline, no key
 INSPIRAL_API_KEY=dev npm run pieces:serve   # http://localhost:8795
 ```
 
 That is the whole product: app, API, live feed and public pages on one port.
-Everything works without an API key except the one sentence that is the point
-of it -- see below.
+Node 22 or newer (`node -v`) — the Minds client library requires it. macOS or
+Linux.
 
 ## Seeing the thing it is actually for
 
-The Mind writes one line saying what somebody changed about your work, and that
-line is the product. Without a key you get the degraded path: contributions are
-stored and attributed, and the notification says "Maya changed it", which is a
-database row read aloud.
+Without a key you get the degraded path — stored and attributed, no sentence
+(see [SUBMISSION.md](SUBMISSION.md) section 2). With one:
 
 ```bash
 cp .env.example .env          # then put a Builder API key in it
 INSPIRAL_HOST=minds npm run pieces      # the sentence, next to the two texts
 ```
 
+`.env` is gitignored. Every entry point loads it via
+`node --env-file-if-exists=.env`, and shell variables win over the file.
 `.env.example` documents every variable the code reads, including the
 notification channels and the SSRF guard on webhooks.
+
+If `INSPIRAL_HOST=minds` but no key is present, the process warns and falls back
+to the mock rather than failing.
 
 ---
 
 ## The older world
 
-Everything below sets up the FIRST product -- the autonomous world that did not
+Everything below sets up the FIRST product — the autonomous world that did not
 work. It is kept because the measurements that killed it are still runnable
 (`npm run clock:status`, `npm run problem`). See SUBMISSION.md section 3.
 
-Paste the block below into a terminal. It is safe to run more than once and it
-does not delete anything you have.
+### From a zip instead of a clone
 
-## Requirements
-
-- **Node 22 or newer** (`node -v`). The Minds client library requires it.
-- macOS or Linux. Nothing else.
-
-No API key. No account. No network calls at runtime. The demo runs against a
-deterministic local host.
-
----
-
-## The block
+Safe to run more than once; it will not re-unzip over a folder that already has
+a `package.json`, and it deletes nothing.
 
 ```bash
 mkdir -p ~/ProjectW/Inspiral && cd ~/ProjectW/Inspiral && \
@@ -66,36 +57,24 @@ npm test && \
 npm run demo
 ```
 
-That is: find and unpack the zip, check Node, install, run the tests, run the
-demo. Rerunning it is harmless — it will not re-unzip over a folder that already
-has a `package.json`, and it deletes nothing.
-
-If you already unzipped somewhere else, `cd` into the folder containing
-`package.json` and run:
+Already unzipped somewhere else? `cd` into the folder containing `package.json`:
 
 ```bash
 npm install --no-audit --no-fund && npm test && npm run demo
 ```
 
----
+### What you should see
 
-## What you should see
+Six days of world history scrolling past, then **THE RETURN VISIT** where an NPC
+greets the visitor as an ally and complains about something a rival did while
+they were away — followed by **VERIFICATION**, which looks up every cited event
+id in the append-only log and prints the day it actually happened.
 
-Six days of world history scrolling past, then a section headed
-**THE RETURN VISIT** where an NPC greets the visitor as an ally and complains
-about something a rival did while they were away — followed by
-**VERIFICATION**, which looks up every cited event id in the append-only log and
-prints the day it actually happened.
+`OK` lines mean the whole loop works: canon → digest → host → validation →
+deltas → rendered behaviour → grounded callback. The demo exits non-zero if a
+citation cannot be resolved, so it is usable as a smoke test.
 
-If verification prints `OK` lines, the whole loop works: canon → digest → host →
-validation → deltas → rendered behaviour → grounded callback.
-
-The demo exits non-zero if a citation cannot be resolved, so it is usable as a
-smoke test.
-
----
-
-## Useful commands
+### Useful commands
 
 ```bash
 npm run demo                    # six days, in memory, nothing written to disk
@@ -105,7 +84,6 @@ npm run demo -- --seed 7        # a different history; same seed = same run
 npm run demo -- --persist       # write to ./data/demo.db instead of memory
 npm run demo -- --persist --reset   # ...starting from scratch
 
-npm test                        # 95 tests
 npm run typecheck
 
 npm run tick                    # one tick against the persistent db
@@ -115,37 +93,13 @@ npm run canon -- --digest       # the exact briefing the host would receive
 npm run canon -- --events 40
 ```
 
-`npm run demo` is in-memory by default, so it never leaves a database behind and
-always starts clean.
+`npm run demo` is in-memory by default, so it never leaves a database behind.
+Use `--persist` for a file at `./data/demo.db`.
 
----
-
-## Connecting the real Mind (later, not needed now)
-
-The mock host is the default and nothing about it needs to change for the demo.
-When you want the real thing:
-
-```bash
-cp .env.example .env
-# edit .env:
-#   INSPIRAL_HOST=minds
-#   MINDS_BUILDER_API_KEY=<key from build.hellominds.ai/console>
-#   INSPIRAL_MIND_ID=<optional; otherwise the first Mind on the account>
-
-npm install @animocabrands/minds-client-lib   # already an optional dependency
-npm run tick
-```
-
-The client library is listed as an **optional** dependency, so a failed install
-of it never blocks the demo. `.env` is gitignored and is not read automatically —
-export the variables, or use `node --env-file=.env`:
-
-```bash
-node --env-file=.env node_modules/.bin/tsx scripts/tick.ts
-```
-
-If `INSPIRAL_HOST=minds` but no key is present, the process logs a warning and
-falls back to the mock rather than failing.
+To run the world against a real Mind, set `INSPIRAL_HOST=minds` and
+`MINDS_BUILDER_API_KEY=<key from build.hellominds.ai/console>` in `.env`
+(optionally `INSPIRAL_MIND_ID`; otherwise the first funded Mind on the account),
+then `npm run tick`.
 
 ---
 
@@ -161,11 +115,6 @@ native dependency in the project.
 
 **`npm test` passes but the demo shows no citations** — that is a real failure,
 not a flake. The demo exits non-zero. Send the output.
-
-**Nothing writes to disk** — correct. Use `--persist` if you want a database
-file at `./data/demo.db`.
-
----
 
 ## Where to look first
 

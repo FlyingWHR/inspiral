@@ -4,27 +4,20 @@
  */
 
 :root {
-  --bg: #faf8f4;
-  --panel: #fffdfa;
-  --ink: #17150f;
-  --dim: #6a6355;
-  --rule: #ded8ca;
-  --accent: #8a4213;
-  --theirs: #f2ebde;
-  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-}
+  /* Mapped onto the identity in inspiral.css rather than redefined here, so
+     there is one palette and not two. Components below keep their own names;
+     only what those names POINT AT changed.
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #100f0d;
-    --panel: #171512;
-    --ink: #ece6da;
-    --dim: #9a917f;
-    --rule: #2d2924;
-    --accent: #e5a163;
-    --theirs: #1d1a15;
-  }
+     --accent is --haze, not --acid. Acid is light emitted by a piece: it is
+     never a link, never a border, never a background. The only acid in this
+     file is the focus ring, because a focus ring is not decoration. */
+  --bg: var(--void);
+  --panel: var(--void-lift);
+  --dim: var(--ink-dim);
+  --accent: var(--haze);
+  --theirs: rgba(20, 12, 40, .7);
+  --sans: var(--font-ui);
+  --serif: var(--font-read);
 }
 
 * { box-sizing: border-box; }
@@ -53,7 +46,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
 a:hover { text-decoration-thickness: 2px; }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--acid);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -222,7 +215,10 @@ h1 {
 
 /* --- 2. the return screen ----------------------------------------------- */
 
-.return h1 { margin-bottom: 1.6rem; }
+/* The sentence is the largest type on this screen, so this heading must be
+   smaller than it at EVERY width. .i-host-line floors at 20px on a narrow
+   viewport; a 1.6rem h1 would have beaten it there and taken the eye first. */
+.return h1 { font-size: 1.05rem; font-weight: 400; color: var(--ink-dim); margin-bottom: 1.6rem; }
 
 .item {
   padding: 0 0 2.6rem;
@@ -267,13 +263,9 @@ h1 {
 }
 .who-verb { font-size: 0.85rem; color: var(--dim); margin: 0 0 1rem; }
 
-/* d. the sentence. This is the payload; everything above is storage for it. */
-.changed {
-  font: 1.22rem/1.45 var(--serif);
-  margin: 0 0 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--rule);
-}
+/* d. the sentence is .i-host in inspiral.css now. The rule that used to be
+   here is gone rather than left to rot next to the thing that replaced it. */
+.return .i-host { margin: 0 0 0.9rem; }
 
 .when { font-size: 0.8rem; color: var(--dim); margin: 0; }
 
@@ -296,3 +288,25 @@ h1 {
 .pieces h2 { font: 600 1.15rem/1.3 var(--serif); margin: 0 0 0.3rem; }
 .pieces h2 a { color: var(--ink); text-decoration-color: var(--rule); }
 .pieces p { margin: 0; font: 0.97rem/1.55 var(--serif); color: var(--dim); }
+
+/* THE HERO BREAKS THE COLUMN.
+   main is a 38rem reading measure, which is right for the work and wrong for
+   the artwork: the portal is up to 720px and was being cut off on both sides
+   by the column's overflow. Full-bleed it back out to the viewport, and keep
+   the words on the measure by constraining the inner block instead. */
+.i-hero {
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
+  max-width: 100vw;
+}
+/* 100vw counts the scrollbar, so the full-bleed above overflows by its width
+   and the page scrolls sideways. `clip` rather than `hidden`: hidden creates a
+   scroll container and would break position:sticky anywhere on the page. */
+body { overflow-x: clip; }
+.i-hero-inner { padding-inline: 1.05rem; }
+
+/* A portal in the list is the piece, so the name sits under it and the link
+   carries no underline -- the artwork is the affordance. */
+.pieces .i-piece { text-decoration: none; }
+.pieces .i-piece inspiral-portal { max-width: 190px; }
+.pieces li { list-style: none; }

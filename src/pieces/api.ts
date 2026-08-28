@@ -26,7 +26,10 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import { createReadStream, existsSync, statSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { extname, join, resolve, sep } from "node:path";
+
+const here = (p: string): string => fileURLToPath(new URL(p, import.meta.url));
 import type { CanonRepo } from "../canon/repo.js";
 import { log } from "../log.js";
 import {
@@ -815,9 +818,22 @@ ${typeof p.changed === "string" && p.changed ? `<p class="sub">${esc(p.changed)}
    */
   private serveStatic(path: string, res: ServerResponse): boolean {
     if (!this.webRoot) return false;
-    const rel = path === "/" ? "/index.html" : path;
-    const full = resolve(join(this.webRoot, decodeURIComponent(rel)));
-    const base = resolve(this.webRoot);
+    /**
+     * `/shared/` is web-voxel/scene, the same directory webSurface serves under
+     * the same prefix. The portal bake lives there so the browser hero and the
+     * piece standing in the voxel world are one artwork rather than two copies
+     * that drift -- the precedent set by the look profiles, the sky dome and
+     * the grade shader, which are shared for exactly the same reason.
+     */
+    const shared = path.startsWith("/shared/");
+    const root = shared ? here("../../web-voxel/scene") : this.webRoot;
+    const rel = shared
+      ? path.slice("/shared".length)
+      : path === "/"
+        ? "/index.html"
+        : path;
+    const full = resolve(join(root, decodeURIComponent(rel)));
+    const base = resolve(root);
     if (full !== base && !full.startsWith(base + sep)) return false;
     if (!existsSync(full) || !statSync(full).isFile()) return false;
     const type =

@@ -23,6 +23,7 @@ import { startHostRuntime } from "../src/host/index.js";
 import { loadConfig } from "../src/config.js";
 import { runTick, type TickContext } from "../src/tick/runTick.js";
 import { VoxelSurface } from "../src/runtime/voxelSurface.js";
+import { listPieces } from "../src/pieces/repo.js";
 import { NullSurface } from "../src/runtime/surface.js";
 import { mintFromText } from "../src/canon/mint.js";
 import { visitorArrive, visitorDoes, visitorLeaves } from "../src/tick/visitors.js";
@@ -75,6 +76,9 @@ async function main(): Promise<void> {
     // Every fan this world has ever met, so a name that carries somebody's
     // relationships is never handed to a stranger who happens to arrive next.
     knownVisitors: () => repo.listVisitors(),
+    // The pieces standing in this world. The surface reads no canon of its own,
+    // so the query lives here and it is the same one the web surface runs.
+    pieces: () => listPieces(repo, "open"),
     resolveCite: (id) => {
       const e = repo.getEvent(id);
       if (!e) return undefined;

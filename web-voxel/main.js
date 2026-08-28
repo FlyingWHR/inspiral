@@ -28,6 +28,7 @@ import { GradeShader, applyGrade } from "./scene/grade.js";
 import { getDirection } from "./scene/direction.js";
 import { blockColorsFor, backdropFor, voidFor, slotsFor } from "./scene/palette.js";
 import { voxelMaterial, makeDust, driftDust, makeShaft } from "./scene/stylise.js";
+import { createPiece, seedFor } from "./scene/portal.js";
 import { ChunkMesher } from "./chunkmesh.js";
 import { Player } from "./player.js";
 import { paletteFor } from "./scene/palettes.js";
@@ -378,6 +379,57 @@ function paintBar() {
     el.classList.toggle("on", Number(el.dataset.id) === player.held));
 }
 paintBar();
+
+// --- pieces ------------------------------------------------------------------
+
+/**
+ * The one thing in this world that is not made of blocks.
+ *
+ * A piece stands at its canon `location` -- an opaque string on the far side of
+ * the socket -- and the archetype's own places table turns it into a spot, the
+ * same table the cast is sent to. No coordinates are invented here.
+ *
+ * Everything about how one LOOKS is scene/portal.js: additive, unfogged,
+ * billboarded, four quads and one point light. Its colours are deliberately
+ * outside the block ladder and must never enter it. `generation` sets the
+ * winding and is never written as a number anywhere on this screen.
+ */
+const pieces = [];
+const PIECE_H = 2.8;                    // above a head, below a roofline
+const SETTLING_MS = 6 * 3600e3;         // a new generation reads brighter this long
+const spotsUsed = new Map();
+
+function addPiece(p) {
+  const at = PLACES[p.location] || PLACES.plaza || ARCH.spawn;
+  // Two pieces can honestly name the same place. Ring the later ones instead of
+  // letting them stack into a single brighter blob.
+  const key = `${at.x},${at.z}`;
+  const n = spotsUsed.get(key) ?? 0;
+  spotsUsed.set(key, n + 1);
+  const x = at.x + (n ? Math.cos(n * 2.4) * (1.8 + n * 0.4) : 0);
+  const z = at.z + (n ? Math.sin(n * 2.4) * (1.8 + n * 0.4) : 0);
+
+  const updated = Date.parse(p.updated_ts);
+  const piece = createPiece({
+    depth: p.generation,
+    seed: seedFor(p.piece_id),
+    size: 3.2,
+    settling: Number.isFinite(updated) && Date.now() - updated < SETTLING_MS,
+  });
+  piece.position.set(x, groundY(x, z) + PIECE_H, z);
+  scene.add(piece);
+  pieces.push(piece);
+}
+
+/**
+ * Fetched once, beside the scene, and nothing waits on it: a world with no
+ * pieces is still a world and the ward has to open either way.
+ * ponytail: no live refresh -- a piece gaining a generation rebakes on reload.
+ */
+fetch("/pieces.json")
+  .then((r) => (r.ok ? r.json() : null))
+  .then((d) => { for (const p of d?.pieces ?? []) addPiece(p); })
+  .catch(() => {});
 
 // --- actors ------------------------------------------------------------------
 
@@ -823,6 +875,8 @@ function frame(dt) {
   // material in the scene on the frame it changed.
   flickerT += dt;
   if (dust) driftDust(dust, flickerT);
+  // Pieces turn on their own clock and face whoever is looking at them.
+  for (const p of pieces) p.update(flickerT, camera);
   if (practicals.length && LOOK.practicals?.flicker) {
     for (let i = 0; i < practicals.length; i++) {
       const l = practicals[i];
@@ -835,7 +889,7 @@ function frame(dt) {
 }
 
 globalThis.__ward = {
-  scene, camera, world, actors, player, mesher, THREE, frame,
+  scene, camera, world, actors, pieces, player, mesher, THREE, frame,
   pause: () => { paused = true; },
   resume: () => { paused = false; },
   get paused() { return paused; },

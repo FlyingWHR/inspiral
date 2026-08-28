@@ -24,6 +24,29 @@ const MOCK = qs.has("mock");
  * arbitrary prose from strangers; there is no sanitiser in this file because
  * there is nothing to sanitise.
  */
+/**
+ * Stable seed from a piece id, so a piece is the same object every visit.
+ * Mirrors seedFor() in web-voxel/scene/portal.js -- same id, same artwork,
+ * whether you meet it here or standing in the 3D world.
+ */
+const seedFor = (id) => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return Math.abs(h % 1000) / 100;
+};
+
+/**
+ * A piece, as light. Depth sets how tightly the arms wrap -- one generation is
+ * a lazy turn you can see through, twelve is a dense body legible across a
+ * room. The number itself is never rendered.
+ */
+const portal = (p, extra) =>
+  el("inspiral-portal", {
+    depth: p.generation ?? 1,
+    seed: seedFor(p.piece_id),
+    ...(extra ?? {}),
+  });
+
 function el(tag, props, ...kids) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(props ?? {})) {
@@ -329,8 +352,17 @@ async function returnPage(fanId) {
           el("p", { class: "who-big", text: it.their_display_name || it.their_fan_id }),
           el("p", { class: "who-verb", text: "changed it" }),
 
-          // d. the sentence
-          it.changed && el("p", { class: "changed", text: it.changed }),
+          /**
+           * d. the sentence, and it is the largest type on this screen.
+           * Nothing may compete with it -- if a headline does, the headline is
+           * wrong. The dot before "written by the host" is the only acid the
+           * host is allowed.
+           */
+          it.changed &&
+            el("div", { class: "i-host" },
+              el("span", { class: "i-host-by", text: "Written by the host" }),
+              el("p", { class: "i-host-line", text: it.changed }),
+            ),
 
           el("p", { class: "when" },
             when(it.ts), " · ",
@@ -348,14 +380,32 @@ async function indexPage() {
   const data = await api("/v1/pieces");
   const pieces = Array.isArray(data) ? data : (data.pieces ?? []);
   document.title = "Pieces";
+  /**
+   * The deepest open piece carries the hero. It is the one with the most
+   * hands in it, so it is the one whose artwork says the most about what this
+   * place is -- and it costs nothing, because the bake is cached per depth.
+   */
+  const hero = pieces.reduce((a, b) => ((b.generation ?? 0) > (a?.generation ?? -1) ? b : a), null);
+
   render(
     chrome(me.id && el("a", { href: href({ fan: me.id }), text: "What changed" })),
-    el("h1", { text: "Open pieces" }),
-    el("p", { class: "status", text: "Take what somebody left and change it. Your name stays on what you wrote." }),
+    hero &&
+      el("section", { class: "i-hero" },
+        portal(hero, { speed: "0.6" }),
+        el("div", { class: "i-hero-inner" },
+          el("h1", { class: "i-title i-title-l", text: "Pieces" }),
+          el("p", { class: "i-body",
+            text: "Take what somebody left and change it. Your name stays on what you wrote." }),
+          el("a", { class: "i-btn", href: href({ piece: hero.piece_id }), text: "Step through" }),
+        )),
+    el("h2", { class: "i-title i-title-m", text: "Open" }),
     pieces.length
       ? el("ul", { class: "pieces" }, pieces.map((p) =>
           el("li", {},
-            el("h2", {}, el("a", { href: href({ piece: p.piece_id }), text: p.title })),
+            el("a", { class: "i-piece", href: href({ piece: p.piece_id }) },
+              portal(p),
+              el("span", { class: "i-piece-name", text: p.title }),
+            ),
             el("p", { text: p.brief }),
           )))
       : el("p", { class: "note", text: "No open pieces right now." }),

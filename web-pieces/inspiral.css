@@ -1,0 +1,153 @@
+/* INSPIRAL — web surface tokens and components.
+   Drop in at web-pieces/inspiral.css and load it BEFORE style.css so the
+   existing rules can override anything you have not migrated yet.
+
+   THE ONE RULE THIS FILE ENFORCES: violet and acid are light emitted by a
+   piece. They are never a page background, never a card fill, never a border
+   on something that is not a piece. Everything structural is void, rule, or
+   one of the two greys. If a new component needs a colour, it takes --ink or
+   --ink-dim, not --acid.
+*/
+
+:root {
+  /* Ground */
+  --void: #06040C;          /* the page, and the only true background */
+  --void-lift: #0A0716;     /* raised surface: cards, panels, code */
+  --rule: #1C1633;          /* hairlines, dividers, input borders */
+  --rule-hover: #4A3A72;
+
+  /* Ink */
+  --ink: #EDE9F5;           /* body text, the work itself */
+  --ink-bright: #F6F2FF;    /* headlines and the host sentence */
+  --ink-dim: #B9B0D2;       /* secondary prose */
+  --ink-faint: #8C80B8;     /* captions, labels, attribution */
+  --ink-ghost: #7C6FA8;     /* smallest metadata; do not go dimmer than this */
+
+  /* Piece light — pieces only */
+  --violet: #B14CFF;
+  --acid: #C8FF2E;
+  --acid-hot: #DDFF6B;      /* hover on an acid surface */
+  --haze: #C9A6FF;          /* links and quiet accents */
+
+  /* Type */
+  --font-ui: Chivo, system-ui, -apple-system, sans-serif;
+  --font-read: Newsreader, Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Rhythm */
+  --gap-xs: 8px;  --gap-s: 14px;  --gap-m: 22px;  --gap-l: 36px;  --gap-xl: 64px;
+}
+
+html, body {
+  margin: 0;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-weight: 300;
+}
+* { box-sizing: border-box; }
+::selection { background: var(--acid); color: var(--void); }
+
+a { color: var(--haze); text-decoration: none; }
+a:hover { color: var(--acid); }
+
+/* TYPE ------------------------------------------------------------------
+   Three faces, three jobs, no exceptions. Chivo is the interface and the
+   titles. Newsreader is the work and anything the host says. Mono is the
+   record: ids, permalinks, timestamps, attribution -- it is set in mono
+   because it is evidence, not decoration. */
+
+.i-title    { font-family: var(--font-ui); font-weight: 800; letter-spacing: -.045em; line-height: .92; color: var(--ink-bright); }
+.i-title-l  { font-size: clamp(40px, 7vw, 96px); }
+.i-title-m  { font-size: clamp(28px, 3.6vw, 46px); font-weight: 600; letter-spacing: -.035em; line-height: 1.05; }
+.i-body     { font-family: var(--font-read); font-size: clamp(17px, 1.9vw, 21px); line-height: 1.55; color: var(--ink-dim); text-wrap: pretty; }
+.i-work     { font-family: var(--font-read); font-size: clamp(18px, 2vw, 23px); line-height: 1.5; color: var(--ink); text-wrap: pretty; }
+.i-label    { font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-ghost); }
+.i-record   { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--ink-faint); word-break: break-all; }
+
+/* THE HOST SENTENCE -----------------------------------------------------
+   The largest type on any screen it appears on. Nothing competes with it and
+   nothing sits between it and the piece. The dot is the only place the host
+   is allowed to use acid. */
+
+.i-host { display: grid; gap: var(--gap-s); background: rgba(20,12,40,.7); border: 1px solid #241A42; padding: 22px; }
+.i-host-by { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-ghost); }
+.i-host-by::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--acid); }
+.i-host-line { margin: 0; font-family: var(--font-read); font-size: clamp(20px, 2.6vw, 34px); line-height: 1.26; color: var(--ink-bright); text-wrap: pretty; }
+
+/* SURFACES */
+
+.i-card { display: grid; gap: var(--gap-s); background: rgba(14,9,28,.7); border: 1px solid var(--rule); padding: 18px; }
+.i-card:hover { border-color: var(--rule-hover); }
+.i-panel { background: rgba(8,5,18,.78); border: 1px solid #241A42; padding: 18px; backdrop-filter: blur(10px); }
+.i-divider { height: 1px; background: #16112A; border: 0; margin: 0; }
+
+/* CONTROLS
+   One filled button per screen, and it is always the thing that puts work
+   down. Everything else is outlined. */
+
+.i-btn {
+  border: 0; background: var(--acid); color: var(--void);
+  font-family: var(--font-ui); font-weight: 600; font-size: 14px; letter-spacing: .02em;
+  padding: 13px 24px; cursor: pointer;
+}
+.i-btn:hover { background: var(--acid-hot); }
+.i-btn-quiet {
+  border: 1px solid var(--rule); background: transparent; color: var(--ink-dim);
+  font-family: var(--font-ui); font-size: 14px; padding: 13px 22px; cursor: pointer;
+}
+.i-btn-quiet:hover { border-color: var(--rule-hover); color: var(--ink); }
+.i-chip {
+  border: 1px solid var(--rule); background: transparent; color: var(--ink-ghost);
+  font-family: var(--font-ui); font-size: 13px; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+}
+.i-chip[aria-pressed='true'] { border-color: var(--acid); background: rgba(200,255,46,.12); color: var(--acid); }
+
+.i-field {
+  width: 100%; background: rgba(12,8,24,.8); border: 1px solid #2A2140; color: var(--ink);
+  font-family: var(--font-read); font-size: 19px; line-height: 1.5; padding: 18px; outline: none;
+}
+.i-field:focus { border-color: var(--rule-hover); }
+.i-field::placeholder { color: #6E639A; }
+
+/* PIECES ----------------------------------------------------------------
+   A portal sits on the page as light: no border, no card, no rounded
+   container. The status line under it is the only text allowed to be acid,
+   and only when the work is yours or something moved. */
+
+.i-piece { display: grid; justify-items: center; gap: 10px; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink-faint); }
+.i-piece:hover { color: var(--ink); }
+.i-piece inspiral-portal { width: 100%; aspect-ratio: 1; }
+.i-piece-name { font-family: var(--font-ui); font-size: 13px; letter-spacing: .01em; }
+.i-piece-status { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-ghost); }
+.i-piece-status[data-yours='true'], .i-piece-status[data-moved='true'] { color: var(--acid); }
+
+/* HERO ------------------------------------------------------------------
+   The portal is behind the words, not beside them, and the words carry a
+   violet glow rather than sitting on a violet box. */
+
+.i-hero { position: relative; display: grid; place-items: center; padding: clamp(40px, 8vh, 96px) clamp(20px, 5vw, 80px); text-align: center; overflow: hidden; }
+.i-hero::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(70% 52% at 50% 42%, rgba(177,76,255,.16) 0%, rgba(177,76,255,0) 72%),
+    radial-gradient(52% 40% at 78% 26%, rgba(200,255,46,.07) 0%, rgba(200,255,46,0) 74%);
+}
+.i-hero > inspiral-portal {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(78vw, 720px); height: min(78vw, 720px); pointer-events: none;
+}
+/* A scrim under the words only. The portal stays at full strength; the text
+   gets its contrast from a soft well in the middle rather than from dimming
+   the artwork. */
+.i-hero::after {
+  content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(92vw, 860px); height: min(70vh, 560px); pointer-events: none;
+  background: radial-gradient(closest-side, rgba(6,4,12,.72) 0%, rgba(6,4,12,.5) 52%, rgba(6,4,12,0) 100%);
+}
+.i-hero-inner { position: relative; z-index: 1; display: grid; gap: var(--gap-m); justify-items: center; max-width: 620px; }
+.i-hero .i-title-l { text-shadow: 0 0 90px rgba(177,76,255,.6); }
+
+@media (prefers-reduced-motion: reduce) {
+  .i-hero > inspiral-portal { opacity: .8; }
+}

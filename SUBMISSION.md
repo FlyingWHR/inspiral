@@ -8,7 +8,7 @@ still on it.
 
 ```bash
 git clone https://github.com/FlyingWHR/inspiral && cd inspiral && npm install
-npm test                                    # 470 tests, ~3s, no key, no network
+npm test                                    # 481 tests, ~3s, no key, no network
 INSPIRAL_API_KEY=dev npm run pieces:serve   # the whole product on one port
 ```
 
@@ -21,10 +21,10 @@ Everything here is storage and transport for a single sentence:
 > **"Maya kept your fennel and stale bread but changed your hour-long braise
 > into a raw mandoline shave and a butter toast."**
 
-Real output from a live Mind, on real prose. It names one thing **kept** and one
-thing **changed**, in the contributors' own words, addressed to the person
-waiting. `npm run pieces` prints it next to the two texts that produced it, so
-you can judge it rather than take our word for it.
+Real output from a live Mind, on real prose. It names one thing kept and one
+thing changed, in the contributors' own words. `npm run pieces` prints it next
+to the two texts that produced it, so you can judge it rather than take our word
+for it.
 
 **Not "an AI remembers you."** Everybody knows software has a database, and
 being remembered by a machine is not moving. Somebody *using your work* is.
@@ -35,7 +35,7 @@ Without it the product still runs — contributions stored, attributed, linked,
 permanent. And the notification says *"Maya changed it"*, which is a database
 row read aloud, and nobody comes back for that.
 
-The Mind does exactly two things, and we say so rather than inflate it:
+The Mind does two things:
 
 | Needs judgement | Does not |
 |---|---|
@@ -56,7 +56,8 @@ Both are still in the history, because the second product is an argument the
 first one lost.
 
 **We built a world.** Autonomous NPCs, arcs, a clock ticking unattended for nine
-days, verifiable citations. `npm run clock:status` still shows it.
+days, verifiable citations. `npm run clock:status` still shows it, and
+[README.md](README.md) describes it.
 
 **Then we measured it.** Nine days of real Mind-authored history produced **one**
 usable moment. 639 events, 45% of them literally duplicate text. The four most
@@ -77,7 +78,7 @@ behind matter, and tell them when it does.
 ## 4. Judge it in six commands
 
 ```bash
-npm test                       # 470 tests, offline, no key
+npm test                       # 481 tests, offline, no key
 npm run pieces                 # the sentence, next to the texts that made it
 npm run problem                # why this exists — real analytics, bad number
 npm run pieces:serve           # app + API + live feed, one origin
@@ -87,11 +88,11 @@ npm run platform               # what we use of the Minds platform, read live
 
 ## 5. Against the criteria
 
-**Minds integration.** One Mind, its own lane, two jobs that genuinely need
-judgement and a written account of what does not. Live-verified use of
-`listMinds`, conversations, fingerprint/`waitForReply`, `subscribeEvents`,
-cognition balance and per-tool spend, Circles, app/skill unequipping. **260 LLM
-turns, ~1,277 cognition credits, across nine days.**
+**Minds integration.** One Mind, its own lane, two jobs that need judgement and a
+written account of what does not. Live-verified use of `listMinds`,
+conversations, fingerprint/`waitForReply`, `subscribeEvents`, cognition balance
+and per-tool spend, Circles, app/skill unequipping. **260 LLM turns, ~1,277
+cognition credits, across nine days.**
 
 **Creator-economy fit.** The problem is measured in our own shipping product,
 not asserted. The creator's digest leads with *contributions nobody has built on
@@ -103,7 +104,7 @@ my thing"* is one exact query rather than a heuristic. Attribution is enforced b
 database triggers that refuse `UPDATE` and `DELETE` — a lineage cannot be
 rewritten to take a name off somebody's work.
 
-**Execution.** 470 tests in ~3s, offline. Typecheck clean. Append-only canon,
+**Execution.** 481 tests in ~3s, offline. Typecheck clean. Append-only canon,
 five documented migrations, fail-closed auth, SSRF-guarded webhooks, `VACUUM
 INTO` backups, health checks, additive moderation across all four read paths.
 

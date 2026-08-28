@@ -46,6 +46,21 @@ export interface VoxelEdit {
   block: string;
 }
 
+/**
+ * A piece, as much of one as a renderer is allowed to know.
+ *
+ * `location` stays an opaque canon string on this side of the seam -- the
+ * client turns it into a point with the archetype's own places table, the same
+ * one the cast stands on. `generation` sets how tightly the portal winds and is
+ * never shown as a number.
+ */
+export interface PiecePlacement {
+  piece_id: string;
+  generation: number;
+  location: string;
+  updated_ts: string;
+}
+
 export interface VoxelSurfaceOptions extends WebSurfaceOptions {
   /** Which scene the world opens in. Chosen at onboard time; see src/ip/scene.ts. */
   archetype?: string;
@@ -56,6 +71,12 @@ export interface VoxelSurfaceOptions extends WebSurfaceOptions {
   visitorName?: string;
   /** How long to gather edits before writing one event. */
   editBatchMs?: number;
+  /**
+   * The pieces standing in this world. Same discipline as `resolveCite`: the
+   * surface does not read canon, the caller hands it the lookup -- here
+   * `listPieces(repo, "open")` from src/pieces/repo.ts.
+   */
+  pieces?: () => PiecePlacement[];
 }
 
 /**
@@ -96,6 +117,7 @@ export class VoxelSurface extends WebSurface {
   private pending = new Map<string, { who: { id: string; name: string }; edits: VoxelEdit[] }>();
   private readonly batchMs: number;
   private flushTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly pieces: VoxelSurfaceOptions["pieces"];
 
   readonly archetype: string;
 
@@ -112,6 +134,7 @@ export class VoxelSurface extends WebSurface {
     this.visitorId = opts.visitorId ?? "wren";
     this.visitorName = opts.visitorName ?? "Wren";
     this.batchMs = opts.editBatchMs ?? 2500;
+    this.pieces = opts.pieces;
   }
 
   /**
@@ -119,6 +142,20 @@ export class VoxelSurface extends WebSurface {
    * before it generates anything. One static route, fetched at startup.
    */
   protected override serveExtra(urlPath: string): { body: string; type: string } | null {
+    /**
+     * The pieces, on one static route beside the scene. Only the four fields
+     * a portal is made of -- a title or a brief on this route would be a
+     * second place for the text to drift out of step with the web surface.
+     */
+    if (urlPath === "/pieces.json") {
+      const pieces = (this.pieces?.() ?? []).map((p) => ({
+        piece_id: p.piece_id,
+        generation: p.generation,
+        location: p.location,
+        updated_ts: p.updated_ts,
+      }));
+      return { type: "application/json", body: JSON.stringify({ pieces }) };
+    }
     if (urlPath !== "/scene.json") return null;
     const arch = LIBRARY[this.archetype]!;
     return {

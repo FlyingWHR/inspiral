@@ -5,15 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inspiral — the engine</title>
 <meta name="description" content="An engine for spaces where an audience builds on each other's work, a Mind names what changed, and the log refuses UPDATE and DELETE.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 fill=%27%2306040c%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%279%27 fill=%27none%27 stroke=%27%23c6f24e%27 stroke-width=%272%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%273%27 fill=%27%237c5cff%27/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;600;800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- The identity, unchanged. site.css adds layout and nothing else. -->
-<link rel="stylesheet" href="../web-pieces/inspiral.css">
+<!-- SERVED PATHS, NOT DISK PATHS. This page lives at /site/, and web-pieces is
+     served at / -- so ../web-pieces/inspiral.css resolved to /web-pieces/... and
+     404'd, which shipped the whole demo unstyled and without a hero. It looked
+     fine opened off disk, which is the only way it had been looked at. -->
+<link rel="stylesheet" href="/inspiral.css">
 <link rel="stylesheet" href="./site.css">
-<!-- Relative, not /shared/, so this page also opens straight off disk. Same
-     file the app and the voxel ward load. -->
-<script type="module" src="../web-voxel/scene/inspiral-portal.js"></script>
+<!-- Same bake the app and the voxel ward load. -->
+<script type="module" src="/shared/inspiral-portal.js"></script>
 </head>
 <body>
 
@@ -43,8 +46,8 @@
         can be edited off their own work.
       </p>
       <p class="actions">
-        <a class="i-btn" href="http://localhost:8795/">Open the example world</a>
-        <a class="i-btn-quiet" href="../docs/API.md">Read the API</a>
+        <a class="i-btn" href="/">Open the example world</a>
+        <a class="i-btn-quiet" href="https://github.com/FlyingWHR/inspiral/blob/main/docs/API.md">Read the API</a>
       </p>
       <span class="i-record">npm run kitchen &nbsp;·&nbsp; npm run pieces:serve -- --db ./data/kitchen.db</span>
     </div>
@@ -69,8 +72,8 @@
           <dt class="i-label">Main <span class="req">required</span></dt>
           <dd>
             <span class="i-chip" data-picked>fennel</span>
-            <span class="i-chip">leek</span>
             <span class="i-chip">celeriac</span>
+            <span class="i-chip">chicory</span>
           </dd>
         </div>
         <div>
@@ -82,11 +85,11 @@
           </dd>
         </div>
         <div>
-          <dt class="i-label">Finish</dt>
+          <dt class="i-label">Finish <span class="req">required</span></dt>
           <dd>
-            <span class="i-chip" data-picked>lemon</span>
-            <span class="i-chip">vinegar</span>
-            <span class="i-chip">none</span>
+            <span class="i-chip" data-picked>brown butter</span>
+            <span class="i-chip">anchovy</span>
+            <span class="i-chip">burnt honey</span>
           </dd>
         </div>
       </dl>
@@ -105,7 +108,7 @@
         Maya extends Ada and changes one slot. Because both moves are sets of values, the
         difference is computed, not inferred:
       </p>
-      <pre class="i-panel">KEPT Main: fennel, Finish: lemon
+      <pre class="i-panel">KEPT Main: fennel, Finish: brown butter
 CHANGED Method: braise -&gt; raw</pre>
     </article>
 
@@ -162,27 +165,27 @@ END;</pre>
     <article class="i-card world">
       <inspiral-portal depth="4" seed="3.4"></inspiral-portal>
       <div class="world-body">
-        <h3 class="i-title i-title-s">Five Ingredients</h3>
+        <h3 class="i-title i-title-s">The Standing Dish</h3>
         <span class="i-label">The brief, in the creator's words</span>
         <p class="i-work">
-          Five ordinary things, one dish worth arguing about. Say what you would do and
-          why. Disagreeing with what is already here is the point, not a problem.
+          One vegetable, one method, one finish. Take the plate above you and change
+          exactly one of the three. Say why in a line. Do not add a fourth thing.
         </p>
         <p class="i-body">
           Four takes deep. The last one branches off the first instead of the newest,
           because a lineage is a tree and an argument is allowed to fork.
         </p>
         <p class="actions">
-          <a class="i-btn" href="http://localhost:8795/">Open the kitchen</a>
+          <a class="i-btn" href="/">Open the kitchen</a>
         </p>
-        <span class="i-record">http://localhost:8795/ in dev</span>
+        <span class="i-record">Served at / by the same process as this page</span>
       </div>
     </article>
 
     <p class="i-body">
-      The kitchen's pieces are free text, not slots. Both shapes work and neither replaces
-      the other — a piece with an empty schema takes prose, and the Mind compares the two
-      texts. The palette above is the stronger path and it is not what this world runs on.
+      Every piece in it carries a palette. Free text is still supported and still the
+      fallback — a piece with an empty schema takes prose, and the Mind compares the two
+      texts — but it is the weaker path, so the demo does not run on it.
     </p>
   </section>
 
@@ -233,8 +236,8 @@ END;</pre>
   </p>
   <p class="i-record">
     <a href="https://github.com/FlyingWHR/inspiral">github.com/FlyingWHR/inspiral</a>
-    &nbsp;·&nbsp; <a href="../docs/API.md">docs/API.md</a>
-    &nbsp;·&nbsp; <a href="../src/pieces/contract.ts">src/pieces/contract.ts</a>
+    &nbsp;·&nbsp; <a href="https://github.com/FlyingWHR/inspiral/blob/main/docs/API.md">docs/API.md</a>
+    &nbsp;·&nbsp; <a href="https://github.com/FlyingWHR/inspiral/blob/main/src/pieces/contract.ts">src/pieces/contract.ts</a>
   </p>
 </footer>
 

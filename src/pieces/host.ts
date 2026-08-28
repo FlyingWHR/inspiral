@@ -38,7 +38,16 @@ import { log } from "../log.js";
  * drop first if you do not ask for it explicitly.
  */
 function narratePrompt(r: NarrateRequest): string {
-  return `Two people are building on each other's work in "${r.piece_title}".
+  /**
+   * With a diff the model is not asked to spot the difference -- a
+   * reading-comprehension task it can fail while sounding fluent. It is told
+   * the fact and asked to write it. The two texts still go in, because the
+   * captions say WHY and the diff only says what.
+   */
+  const facts = r.diff
+    ? `\nWHAT ACTUALLY CHANGED (computed, this is the truth):\n${r.diff}\n`
+    : "";
+  return `Two people are building on each other's work in "${r.piece_title}".${facts}
 
 ${r.parent_author} wrote:
 """
@@ -54,7 +63,9 @@ Write ONE sentence, addressed to ${r.parent_author}, saying what ${r.child_autho
 did to their work.
 
 RULES
-- Name one specific thing they KEPT and one specific thing they CHANGED.
+- Name one specific thing they KEPT and one specific thing they CHANGED. If a
+  computed list is given above, use ONLY what is in it -- do not invent a change
+  it does not list, and do not claim they kept something it says they changed.
 - Use the actual nouns from the two texts. No paraphrase into generalities.
 - Second person: "your", not "${r.parent_author}'s".
 - Never praise, never evaluate, never encourage. Report the change.

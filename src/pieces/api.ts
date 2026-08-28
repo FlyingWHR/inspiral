@@ -173,6 +173,8 @@ const STATUS: Record<ExtendError["code"], number> = {
   closed: 409, // the request was fine; the world moved. Retrying elsewhere is the fix
   too_short: 400,
   too_long: 400,
+  // A move missing a required slot is the caller holding a stale schema.
+  bad_move: 400,
 };
 
 export class PiecesApi {
@@ -716,30 +718,37 @@ export class PiecesApi {
   // THE PUBLIC PAGE
   // -------------------------------------------------------------------------
 
+  /**
+   * The shell for every public page.
+   *
+   * It used to carry its own inline palette -- warm browns, a light/dark fork,
+   * a serif stack -- which meant the ONE page people actually share looked
+   * like a different product from the one they were sharing. Now it loads the
+   * same identity as the app and the same portal bake as the voxel world.
+   *
+   * Fonts and stylesheet are linked rather than inlined so a receipt costs one
+   * cached request, not a copy of the design system per page view.
+   */
   private page(title: string, body: string): string {
     return `<!doctype html><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;600;800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/inspiral.css">
+<script type="module" src="/shared/inspiral-portal.js"></script>
 <style>
-:root{color-scheme:light dark;--ink:#16130f;--dim:#6b6257;--line:#e0d9cd;--bg:#faf7f2}
-@media(prefers-color-scheme:dark){:root{--ink:#f2ece1;--dim:#a89f8f;--line:#2c2822;--bg:#131110}}
-*{box-sizing:border-box}
-body{margin:0;padding:2.5rem 1.25rem;background:var(--bg);color:var(--ink);
- font:16px/1.6 ui-serif,Georgia,serif;display:flex;justify-content:center}
-main{width:100%;max-width:38rem}
-h1{font-size:1.5rem;margin:0 0 .25rem;line-height:1.25}
-.sub{color:var(--dim);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0 0 2rem}
-.brief{margin:0 0 2.5rem}
-li{list-style:none;padding:1.1rem 0;border-top:1px solid var(--line)}
-ul{padding:0;margin:0}
-li p{margin:.35rem 0 .5rem;white-space:pre-wrap}
-time{color:var(--dim);font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;display:block}
-a{color:inherit}
-.who{font-weight:600}
-.id{color:var(--dim);font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0}
-.changed{color:var(--dim);font-style:italic}
-footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);
- color:var(--dim);font-size:13px}
+body{padding:clamp(28px,6vh,72px) clamp(18px,5vw,32px);display:flex;justify-content:center}
+main{width:100%;max-width:40rem;display:grid;gap:var(--gap-m)}
+.head{display:grid;gap:var(--gap-s);justify-items:start}
+.head inspiral-portal{width:120px;height:120px}
+ul{padding:0;margin:0;display:grid;gap:var(--gap-m)}
+li{list-style:none;padding-top:var(--gap-m);border-top:1px solid var(--rule)}
+li p{white-space:pre-wrap;margin:.4rem 0 .6rem}
+.who{font-family:var(--font-ui);font-weight:600;font-size:15px;color:var(--ink-bright)}
+.changed{font-family:var(--font-read);color:var(--ink-dim);font-style:italic;margin:.5rem 0 0}
+footer{color:var(--ink-ghost);font-size:13px;padding-top:var(--gap-m);border-top:1px solid var(--rule)}
 </style>
 <main>${body}</main>`;
   }

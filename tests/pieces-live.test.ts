@@ -134,6 +134,7 @@ const piece = (piece_id: string): Piece => ({
   title: piece_id,
   brief: "Make something good.",
   status: "open",
+  schema: [],
   generation: 0,
   contributors: [],
   location: "",

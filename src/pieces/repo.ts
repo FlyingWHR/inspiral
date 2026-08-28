@@ -13,7 +13,15 @@
 
 import type { CanonRepo } from "../canon/repo.js";
 import type { WorldEvent } from "../types/events.js";
-import type { Extension, Piece, PieceWithLineage, WaitingForYou } from "./contract.js";
+import type {
+  Extension,
+  MoveDiff,
+  MoveValues,
+  Piece,
+  PieceWithLineage,
+  Slot,
+  WaitingForYou,
+} from "./contract.js";
 import { isHidden as hidden } from "./moderation.js";
 
 const slug = (s: string): string =>
@@ -29,6 +37,7 @@ function rowToPiece(r: Record<string, unknown>): Piece {
     generation: Number(r.generation ?? 0),
     contributors: JSON.parse(String(r.contributors ?? "[]")) as string[],
     location: String(r.location ?? ""),
+    schema: JSON.parse(String(r.schema_json ?? "[]")) as Slot[],
     created_ts: String(r.created_ts),
     updated_ts: String(r.updated_ts),
   };
@@ -52,6 +61,7 @@ function eventToExtension(e: WorldEvent, repo?: CanonRepo): Extension {
     fan_id: fan,
     display_name: repo?.getVisitor(fan)?.display_name || fan,
     body: String(p.body ?? ""),
+    values: (p.values ?? {}) as MoveValues,
     ...(typeof p.changed === "string" && p.changed ? { changed: p.changed } : {}),
     ts: e.ts,
   };
@@ -64,7 +74,14 @@ function eventToExtension(e: WorldEvent, repo?: CanonRepo): Extension {
  */
 export function seedPiece(
   repo: CanonRepo,
-  input: { title: string; brief: string; piece_id?: string; location?: string },
+  input: {
+    title: string;
+    brief: string;
+    piece_id?: string;
+    location?: string;
+    /** 2-4 slots, or none for a free-text piece. */
+    schema?: Slot[];
+  },
 ): Piece {
   const id = input.piece_id ?? (slug(input.title) || `piece_${Date.now().toString(36)}`);
   const seed = repo.appendEvent({
@@ -79,15 +96,18 @@ export function seedPiece(
   repo.db
     .prepare(
       `INSERT INTO pieces (piece_id, title, brief, status, generation, contributors,
-                           seed_event_id, location, created_ts, updated_ts)
-       VALUES (?, ?, ?, 'open', 0, '[]', ?, ?, ?, ?)`,
+                           seed_event_id, location, schema_json, created_ts, updated_ts)
+       VALUES (?, ?, ?, 'open', 0, '[]', ?, ?, ?, ?, ?)`,
     )
-    .run(id, input.title, input.brief, seed.event_id, input.location ?? "", now, now);
+    .run(
+      id, input.title, input.brief, seed.event_id, input.location ?? "",
+      JSON.stringify(input.schema ?? []), now, now,
+    );
 
   return {
     piece_id: id, title: input.title, brief: input.brief, status: "open",
     generation: 0, contributors: [], location: input.location ?? "",
-    created_ts: now, updated_ts: now,
+    schema: input.schema ?? [], created_ts: now, updated_ts: now,
   };
 }
 
@@ -151,10 +171,46 @@ export function parentAuthor(
   };
 }
 
+/**
+ * What changed between two moves. Computed, never inferred.
+ *
+ * This is the single upgrade that makes the host's sentence trustworthy. It
+ * used to be handed two paragraphs and asked to spot the difference, which is
+ * a reading-comprehension task a model can quietly fail at while sounding
+ * fluent. Now it is told "kept the fennel, changed braise to raw" and asked
+ * only to write it well -- the fact is settled before the model sees it.
+ *
+ * Slots absent from either side are skipped rather than reported as changes:
+ * a schema that gained a slot after somebody moved must not retroactively
+ * accuse them of removing it.
+ */
+export function diffMoves(schema: Slot[], parent: MoveValues, child: MoveValues): MoveDiff {
+  const out: MoveDiff = { kept: [], changed: [] };
+  for (const slot of schema) {
+    const from = parent[slot.key];
+    const to = child[slot.key];
+    if (from === undefined || to === undefined) continue;
+    if (from === to) out.kept.push({ key: slot.key, label: slot.label, value: to });
+    else out.changed.push({ key: slot.key, label: slot.label, from, to });
+  }
+  return out;
+}
+
+/** Human rendering of a diff, for a prompt or a page. */
+export function describeDiff(d: MoveDiff): string {
+  const kept = d.kept.map((k) => `${k.label}: ${k.value}`).join(", ");
+  const changed = d.changed.map((c) => `${c.label}: ${c.from} -> ${c.to}`).join(", ");
+  return [kept && `KEPT ${kept}`, changed && `CHANGED ${changed}`].filter(Boolean).join("\n");
+}
+
 export class ExtendError extends Error {
   constructor(
     message: string,
-    readonly code: "no_piece" | "closed" | "no_parent" | "wrong_piece" | "too_short" | "too_long",
+    readonly code:
+      | "no_piece" | "closed" | "no_parent" | "wrong_piece"
+      | "too_short" | "too_long"
+      /** A move that does not fill the slots the piece declares. */
+      | "bad_move",
   ) {
     super(message);
     this.name = "ExtendError";
@@ -176,6 +232,8 @@ export function extendPiece(
     parent_event_id: string;
     fan_id: string;
     body: string;
+    /** What they picked. Validated against the piece's schema before storing. */
+    values?: MoveValues | undefined;
     changed?: string | undefined;
     display_name?: string | undefined;
   },
@@ -193,6 +251,22 @@ export function extendPiece(
     throw new ExtendError("that parent belongs to a different piece", "wrong_piece");
   }
 
+  /**
+   * Only slots this piece declares, and only options it offers. A value the
+   * schema does not know is dropped rather than stored: the whole point of a
+   * finite palette is that the diff is computable, and one free-text value
+   * smuggled in makes every later diff involving it a guess again.
+   */
+  const values: MoveValues = {};
+  for (const slot of piece.schema) {
+    const v = input.values?.[slot.key];
+    if (typeof v === "string" && slot.options.includes(v)) values[slot.key] = v;
+  }
+  const missing = piece.schema.filter((s) => s.required && !values[s.key]);
+  if (missing.length) {
+    throw new ExtendError(`pick a ${missing.map((m) => m.label.toLowerCase()).join(" and a ")}`, "bad_move");
+  }
+
   repo.ensureVisitor(input.fan_id, input.display_name ?? "");
 
   const event = repo.appendEvent({
@@ -205,6 +279,7 @@ export function extendPiece(
       parent_event_id: input.parent_event_id,
       fan_id: input.fan_id,
       body: input.body,
+      ...(Object.keys(values).length ? { values } : {}),
       ...(input.changed ? { changed: input.changed } : {}),
     },
     significance_hint: 0.7,

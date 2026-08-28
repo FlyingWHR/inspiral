@@ -43,6 +43,53 @@
  */
 
 /**
+ * A MOVE IS CHOICES, NOT AN ESSAY.
+ *
+ * The first version of this took `body: string`, 8 to 1200 characters, and it
+ * was wrong in four ways at once. It was not specific to any IP -- a textarea
+ * is a textarea. The diff between two contributions had to be GUESSED by
+ * reading both. There was nothing structured to draw, so a piece could only
+ * ever be a glowing orb. And a blank page is the single biggest reason the 1%
+ * who create stay 1%.
+ *
+ * A slot fixes all four. The options come from the creator's own material, so
+ * the palette IS the IP. Changing one is a real delta, so the host narrates
+ * from data rather than from inference. A set of values is something a world
+ * can render. And picking is not writing.
+ *
+ * The prose survives as ONE LINE -- the caption, why you did it. That is the
+ * part a person actually wants to say, and it was buried in the essay.
+ */
+export interface Slot {
+  /** Stable key. Appears in every move on this piece. */
+  key: string;
+  /** What to call it on screen. */
+  label: string;
+  /**
+   * What you may pick. Drawn from the IP, and finite on purpose: an open field
+   * is a textarea wearing a hat, and it takes the computable diff with it.
+   */
+  options: string[];
+  /** A move without this is not a move. */
+  required: boolean;
+}
+
+/** What somebody chose. Keys are Slot.key; unknown keys are dropped on write. */
+export type MoveValues = Record<string, string>;
+
+/**
+ * What changed between a parent move and its child.
+ *
+ * Computed, never inferred. This is what makes the host's sentence reliable:
+ * it is told "kept fennel, changed braise to raw" and asked to write it well,
+ * rather than handed two paragraphs and asked to spot the difference.
+ */
+export interface MoveDiff {
+  kept: { key: string; label: string; value: string }[];
+  changed: { key: string; label: string; from: string; to: string }[];
+}
+
+/**
  * The thing people make together.
  *
  * Mapped to its own table rather than reusing `arcs`, despite `arcs` being a
@@ -72,6 +119,13 @@ export interface Piece {
   generation: number;
   /** Everyone who has extended it, in order of first appearance. */
   contributors: string[];
+  /**
+   * The slots a move on this piece is made of. Empty means free-text, which is
+   * what every piece created before schemas existed still is -- the two
+   * coexist rather than one replacing the other, so nothing already written
+   * stops working.
+   */
+  schema: Slot[];
   /**
    * Where it stands, as an OPAQUE canon location -- "test_kitchen", never a
    * coordinate. Same discipline as a character's home_location: the surface
@@ -111,8 +165,14 @@ export interface Extension {
    * key. Falls back to the id when a visitor never gave a name.
    */
   display_name: string;
-  /** What they actually wrote or made. The work itself. */
+  /**
+   * The caption: one line on why. Still called `body` because it is the same
+   * column and every reader of it still works -- on a piece with slots it is a
+   * sentence, on a piece without it is the whole contribution.
+   */
   body: string;
+  /** What they picked. Empty on a free-text piece. */
+  values: MoveValues;
   /**
    * ONE SENTENCE ON WHAT THIS CHANGED, written by the Mind.
    *
@@ -236,6 +296,15 @@ export interface NarrateRequest {
   parent_author: string;
   child_body: string;
   child_author: string;
+  /**
+   * The computed diff, when the piece has slots.
+   *
+   * Present, the host is told what changed and asked only to write it well.
+   * Absent, it is back to comparing two texts -- which still works and is
+   * still the fallback for a free-text piece, but is the weaker of the two
+   * and should not be the default anywhere it can be avoided.
+   */
+  diff?: string;
 }
 
 export interface NarrateResponse {

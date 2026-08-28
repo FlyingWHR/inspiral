@@ -265,6 +265,14 @@ CREATE TABLE IF NOT EXISTS pieces (
   -- turns it into a spot on a ground plane and nothing above the seam ever
   -- learns what a coordinate is. Empty means the space has not placed it.
   location     TEXT NOT NULL DEFAULT '',
+  -- The move schema: 2-4 slots, each with options drawn from the IP. JSON
+  -- rather than tables because it is read whole, written once by the creator,
+  -- and never queried across pieces -- three tables to model a list that is
+  -- always fetched entire would be a join nobody needs.
+  --
+  -- On the PIECE, not the world: a service on Tuesday has different ingredients
+  -- from Monday's, and each is its own piece.
+  schema_json  TEXT NOT NULL DEFAULT '[]',
   created_ts   TEXT NOT NULL,
   updated_ts   TEXT NOT NULL
 );
@@ -343,7 +351,7 @@ CREATE TABLE IF NOT EXISTS notify_prefs (
 );
 `;
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 /**
  * Open (and if needed create) the canon database.
@@ -395,6 +403,13 @@ export function openDb(path: string): DB {
    * tables and arrive with the idempotent DDL. Noted because the three
    * migrations above are documented and a silent step reads like an omission.
    */
+  if (row < 7) {
+    // 6 -> 7. `pieces` predates the move schema, so the column is probed for.
+    const cols = (db.pragma("table_info(pieces)") as { name: string }[]).map((c) => c.name);
+    if (cols.length > 0 && !cols.includes("schema_json")) {
+      db.exec("ALTER TABLE pieces ADD COLUMN schema_json TEXT NOT NULL DEFAULT '[]'");
+    }
+  }
   if (row < SCHEMA_VERSION) {
     db.pragma(`user_version = ${SCHEMA_VERSION}`);
   }

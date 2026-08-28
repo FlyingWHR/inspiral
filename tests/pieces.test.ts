@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 import { CanonRepo } from "../src/canon/repo.js";
 import { VirtualClock } from "../src/clock.js";
 import { setLogLevel } from "../src/log.js";
-import { extendPiece, ExtendError, getPiece, lineage, listPieces, seedPiece, waitingFor } from "../src/pieces/repo.js";
+import {
+  describeDiff,
+  diffMoves,
+  extendPiece,
+  ExtendError,
+  getPiece,
+  lineage,
+  listPieces,
+  seedPiece,
+  waitingFor,
+} from "../src/pieces/repo.js";
 
 setLogLevel("silent");
 
@@ -166,3 +176,100 @@ describe("lineage order", () => {
     repo.close();
   });
 });
+
+/**
+ * A MOVE IS CHOICES. The textarea was wrong four ways: not IP-specific, the
+ * diff had to be guessed, nothing structured to render, and a blank page is
+ * why the 1% who create stay 1%.
+ */
+describe("moves", () => {
+  const SCHEMA = [
+    { key: "main", label: "Main", options: ["fennel", "leek", "celeriac"], required: true },
+    { key: "method", label: "Method", options: ["braise", "raw", "roast"], required: true },
+    { key: "finish", label: "Finish", options: ["lemon", "vinegar", "none"], required: false },
+  ];
+
+  const kitchen = () => {
+    const repo = world();
+    const p = seedPiece(repo, { title: "Service", brief: "one dish", schema: SCHEMA });
+    const seed = lineage(repo, p.piece_id)!.seed_event_id;
+    const first = extendPiece(repo, {
+      piece_id: p.piece_id, parent_event_id: seed, fan_id: "ada", display_name: "Ada",
+      body: "sweet before anything else",
+      values: { main: "fennel", method: "braise", finish: "lemon" },
+    });
+    return { repo, piece: p, mine: first.extension.event_id };
+  };
+
+  it("stores what was picked and hands it back", () => {
+    const { repo, piece, mine } = kitchen();
+    expect(getPiece(repo, piece.piece_id)!.schema).toHaveLength(3);
+    const x = lineage(repo, piece.piece_id)!.extensions.find((e) => e.event_id === mine)!;
+    expect(x.values).toEqual({ main: "fennel", method: "braise", finish: "lemon" });
+    repo.close();
+  });
+
+  it("computes the diff instead of guessing it", () => {
+    const d = diffMoves(SCHEMA,
+      { main: "fennel", method: "braise", finish: "lemon" },
+      { main: "fennel", method: "raw", finish: "vinegar" });
+    expect(d.kept).toEqual([{ key: "main", label: "Main", value: "fennel" }]);
+    expect(d.changed.map((c) => `${c.key}:${c.from}>${c.to}`))
+      .toEqual(["method:braise>raw", "finish:lemon>vinegar"]);
+    expect(describeDiff(d)).toContain("KEPT Main: fennel");
+    repo_noop();
+  });
+
+  it("never stores a value the schema does not offer", () => {
+    const { repo, piece, mine } = kitchen();
+
+    // On an OPTIONAL slot, an unknown value is dropped and the move stands.
+    const ok = extendPiece(repo, {
+      piece_id: piece.piece_id, parent_event_id: mine, fan_id: "maya", body: "smuggled finish",
+      values: { main: "fennel", method: "raw", finish: "a squeeze of yuzu" },
+    });
+    expect(ok.extension.values.finish).toBeUndefined();
+    expect(ok.extension.values.method).toBe("raw");
+
+    // On a REQUIRED one it is a refusal, not a silent drop -- dropping it
+    // would store a half-move and call it complete.
+    expect(() => extendPiece(repo, {
+      piece_id: piece.piece_id, parent_event_id: mine, fan_id: "maya", body: "smuggled method",
+      values: { main: "fennel", method: "sous-vide" },
+    })).toThrow(/pick a method/);
+
+    repo.close();
+  });
+
+  it("refuses a move that leaves a required slot empty", () => {
+    const { repo, piece, mine } = kitchen();
+    expect(() => extendPiece(repo, {
+      piece_id: piece.piece_id, parent_event_id: mine, fan_id: "maya", body: "half a move",
+      values: { main: "leek" },
+    })).toThrow(/pick a method/);
+    repo.close();
+  });
+
+  it("ignores a slot added after somebody moved, rather than accusing them", () => {
+    // A schema that gained a slot must not retroactively report a removal.
+    const d = diffMoves(SCHEMA, { main: "fennel" }, { main: "fennel", method: "raw" });
+    expect(d.changed).toEqual([]);
+    expect(d.kept).toEqual([{ key: "main", label: "Main", value: "fennel" }]);
+    repo_noop();
+  });
+
+  it("still takes a free-text piece, so nothing already written breaks", () => {
+    const repo = world();
+    const p = seedPiece(repo, { title: "Open", brief: "say anything" });
+    expect(p.schema).toEqual([]);
+    const seed = lineage(repo, p.piece_id)!.seed_event_id;
+    const r = extendPiece(repo, {
+      piece_id: p.piece_id, parent_event_id: seed, fan_id: "ada", body: "a whole paragraph",
+    });
+    expect(r.extension.values).toEqual({});
+    repo.close();
+  });
+});
+
+/** diffMoves is pure; these cases need no database. */
+function repo_noop(): void {}

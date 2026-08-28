@@ -52,7 +52,7 @@ import type { HostRuntime } from "../host/HostRuntime.js";
 import { narrateChange, routeVisitor } from "./host.js";
 import { LiveHub } from "./live.js";
 import { creatorDigest, renderDigest } from "./digest.js";
-import { enqueue } from "../notify/dispatch.js";
+import { enqueue, preferencesFor, setPreference, unsubscribe } from "../notify/dispatch.js";
 import {
   ModerationError,
   extendRate,
@@ -324,6 +324,40 @@ export class PiecesApi {
      * WHAT THE CREATOR READS INSTEAD OF EVERYTHING. `?format=text` for the
      * rendered note; JSON otherwise, so a frontend can lay it out itself.
      */
+    /**
+     * WHERE TO REACH ME, AND WHETHER TO. Opting out is one call, and the
+     * dispatcher honours it before it even composes a message.
+     */
+    if (path === "/v1/notify/prefs") {
+      if (deny) return closed();
+      if (method === "GET") {
+        const fan = str(url.searchParams.get("fan"));
+        if (!fan) return json(res, 400, { error: "fan is required" });
+        return json(res, 200, { fan_id: fan, preferences: preferencesFor(this.repo, fan) });
+      }
+      if (method === "POST") {
+        const b = (await readJson(req)) as Record<string, unknown>;
+        const fan = str(b.fan_id);
+        const channel = str(b.channel, 40);
+        const address = str(b.address, 500);
+        if (!fan || !channel || !address) {
+          return json(res, 400, { error: "fan_id, channel and address are required" });
+        }
+        setPreference(this.repo, {
+          fan_id: fan, channel, address,
+          enabled: b.enabled !== false,
+          ...(typeof b.quiet_minutes === "number" ? { quiet_minutes: b.quiet_minutes } : {}),
+        });
+        return json(res, 200, { preferences: preferencesFor(this.repo, fan) });
+      }
+      if (method === "DELETE") {
+        const fan = str(url.searchParams.get("fan"));
+        if (!fan) return json(res, 400, { error: "fan is required" });
+        unsubscribe(this.repo, fan, str(url.searchParams.get("channel"), 40) ?? undefined);
+        return json(res, 200, { fan_id: fan, preferences: preferencesFor(this.repo, fan) });
+      }
+    }
+
     if (method === "GET" && path === "/v1/digest") {
       if (deny) return closed();
       const hours = Number(url.searchParams.get("hours")) || 24;

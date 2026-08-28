@@ -22,6 +22,9 @@ import { listPieces, seedPiece } from "../src/pieces/repo.js";
 import { startHostRuntime } from "../src/host/index.js";
 import { loadConfig } from "../src/config.js";
 import { systemClock } from "../src/clock.js";
+import { createChannels } from "../src/notify/channels.js";
+import { dispatch } from "../src/notify/dispatch.js";
+import { log } from "../src/log.js";
 
 const argv = process.argv.slice(2);
 const str = (n: string, d: string) => {
@@ -105,7 +108,42 @@ async function main(): Promise<void> {
   }
   console.log("");
 
+  /**
+   * THE WORKER. Queued pings only become messages here.
+   *
+   * A loop rather than a send on the request path: nothing slow may sit
+   * between somebody hitting submit and seeing their own work appear. It is
+   * also the only place a quiet window can be observed, because "has enough
+   * time passed" is a question you can only answer later.
+   *
+   * unref()'d so it never holds the process open, and re-entrancy guarded --
+   * a slow round must not overlap the next one and send twice.
+   */
+  const channels = createChannels(process.env);
+  let dispatching = false;
+  const every = num("notify-every", 60) * 1000;
+  const worker = setInterval(() => {
+    if (dispatching) return;
+    dispatching = true;
+    void dispatch(repo, channels, { baseUrl: process.env.INSPIRAL_PUBLIC_URL ?? api.url })
+      .then((r) => {
+        if (r.sent || r.failed) {
+          log.info(`notify: sent ${r.sent}, failed ${r.failed}, held ${r.skipped.quiet}`);
+        }
+      })
+      .catch((e) => log.warn(`notify round failed: ${(e as Error).message}`))
+      .finally(() => {
+        dispatching = false;
+      });
+  }, every);
+  worker.unref();
+
+  console.log(`  ${D}notify: ${channels.map((c) => c.name).join(", ")} every ${every / 1000}s${R}`);
+  console.log("");
+
   const stop = async (): Promise<void> => {
+    clearInterval(worker);
+    for (const c of channels) await c.close?.();
     await api.close();
     await host.close();
     repo.close();

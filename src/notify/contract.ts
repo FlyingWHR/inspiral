@@ -110,6 +110,15 @@ export interface Delivery {
  * one interface, a switch, no vendor SDK above this line.
  */
 export interface NotifyChannel {
+  /**
+   * LOAD-BEARING STRING. It must equal the `channel` on a NotifyPreference:
+   * the dispatcher matches them with `channels.find(c => c.name === pref.channel)`.
+   *
+   * Rename a channel and everybody who chose it silently stops receiving
+   * anything, with no error raised anywhere -- the dispatcher just finds no
+   * match and moves on. Treat these names as a stored value, because they are
+   * one, and migrate the preference rows if one ever has to change.
+   */
   readonly name: string;
   /** Throw to fail the delivery. The dispatcher records it and retries later. */
   send(d: Delivery): Promise<void>;

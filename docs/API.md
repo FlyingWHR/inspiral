@@ -143,6 +143,37 @@ public page, the permalink (404) and the return screen, all four.
 **Rate limit:** 5 extensions per fan per hour → `429` with `retry_after`.
 Checked before the write and before any host call.
 
+### Notifications
+
+| Method | Path | Body / query |
+|---|---|---|
+| `GET` | `/v1/notify/prefs?fan=` | current preferences |
+| `POST` | `/v1/notify/prefs` | `{fan_id, channel, address, enabled?, quiet_minutes?}` |
+| `DELETE` | `/v1/notify/prefs?fan=&channel=` | opt out |
+
+Channels are chosen by env — `console` always, plus `telegram`
+(`TELEGRAM_BOT_TOKEN`), `webhook` (`INSPIRAL_WEBHOOK_URL`), `file`
+(`INSPIRAL_NOTIFY_FILE`). `address` is opaque: a chat id, a URL, an email.
+
+**`channel` is a stored value.** It must match a channel's `name` exactly —
+rename one and everybody who chose it silently stops receiving anything.
+
+Behaviour, all enforced in one place and individually tested:
+
+- fires **only** on a real person building on your real work
+- **batches** — three people in ten minutes is one message
+- quiet window per person; held items are held, never dropped
+- opting out keeps items queued: add an address tomorrow, hear about today
+- a takedown **suppresses** a queued ping before it leaves
+- gives up after 5 attempts
+
+The body carries **the sentence**. "You have 1 update" is a notification about
+nothing, and it is how a product teaches people to ignore it.
+
+Webhook addresses are user-supplied, so they are SSRF-guarded: http(s) only,
+private and link-local ranges refused (`INSPIRAL_WEBHOOK_ALLOW_PRIVATE=1` to
+lift), `redirect: "manual"` so a public URL cannot 302 into a metadata endpoint.
+
 ### The return screen — the most important response
 
 ```ts

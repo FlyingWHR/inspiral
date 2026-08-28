@@ -147,7 +147,22 @@ export function verifyBackup(path: string): VerifyResult {
     db = new Database(path, { readonly: true, fileMustExist: true });
     const check = db.pragma("quick_check", { simple: true }) as string;
     const events = (db.prepare("SELECT COUNT(*) AS c FROM events").get() as { c: number }).c;
-    const pieces = (db.prepare("SELECT COUNT(*) AS c FROM pieces").get() as { c: number }).c;
+    /**
+     * A backup older than schema 3 has no `pieces` table, and that is not a
+     * fault -- it is a good backup of an earlier world. Counting it as an
+     * error reported ok:false for every snapshot taken before the pieces
+     * layer existed, which is worse than having no check at all: a verifier
+     * that cries wolf teaches you to ignore it on the day it is right.
+     *
+     * `quick_check` is the integrity signal. This is a row count.
+     */
+    const hasPieces =
+      db
+        .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'pieces'")
+        .get() !== undefined;
+    const pieces = hasPieces
+      ? (db.prepare("SELECT COUNT(*) AS c FROM pieces").get() as { c: number }).c
+      : 0;
     const schema_version = db.pragma("user_version", { simple: true }) as number;
     return check === "ok"
       ? { ok: true, events, pieces, schema_version }

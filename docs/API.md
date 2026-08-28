@@ -174,6 +174,19 @@ Webhook addresses are user-supplied, so they are SSRF-guarded: http(s) only,
 private and link-local ranges refused (`INSPIRAL_WEBHOOK_ALLOW_PRIVATE=1` to
 lift), `redirect: "manual"` so a public URL cannot 302 into a metadata endpoint.
 
+### Ops
+
+| Method | Path | Auth |
+|---|---|---|
+| `GET` | `/health` | **public** — a health check behind auth is useless to a load balancer |
+| `GET` | `/v1/stats` | key |
+
+`/health` actually checks: one `SELECT 1`, one writability probe. `503` when not
+ok. Cheap enough to poll — no host call, no log scan.
+
+`/v1/stats` returns pieces, extensions, contributors, notification queue depth,
+live subscribers, db size, WAL size and schema version.
+
 ### The return screen — the most important response
 
 ```ts

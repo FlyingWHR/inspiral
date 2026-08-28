@@ -53,6 +53,7 @@ import { narrateChange, routeVisitor } from "./host.js";
 import { LiveHub } from "./live.js";
 import { creatorDigest, renderDigest } from "./digest.js";
 import { enqueue, preferencesFor, setPreference, unsubscribe } from "../notify/dispatch.js";
+import { health, stats } from "../ops/health.js";
 import {
   ModerationError,
   extendRate,
@@ -262,6 +263,16 @@ export class PiecesApi {
     if (method === "GET" && receipt) return this.pageReceipt(res, receipt[1]!);
 
     /**
+     * PUBLIC, and it has to be: a health check behind auth is useless to the
+     * load balancer that is meant to read it. Cheap enough to poll -- one
+     * SELECT 1 and one writability probe, no host call, no log scan.
+     */
+    if (method === "GET" && path === "/health") {
+      const h = health(this.repo);
+      return json(res, h.ok ? 200 : 503, h);
+    }
+
+    /**
      * The live feed is PUBLIC because the piece pages are. A feed that needed a
      * key to watch a page anybody can read would be a lock on the wrong door.
      */
@@ -356,6 +367,11 @@ export class PiecesApi {
         unsubscribe(this.repo, fan, str(url.searchParams.get("channel"), 40) ?? undefined);
         return json(res, 200, { fan_id: fan, preferences: preferencesFor(this.repo, fan) });
       }
+    }
+
+    if (method === "GET" && path === "/v1/stats") {
+      if (deny) return closed();
+      return json(res, 200, stats(this.repo, { subscribers: this.live.subscribers }));
     }
 
     if (method === "GET" && path === "/v1/digest") {

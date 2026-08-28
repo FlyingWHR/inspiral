@@ -356,6 +356,11 @@ export function openDb(path: string): DB {
       db.exec("ALTER TABLE pieces ADD COLUMN location TEXT NOT NULL DEFAULT ''");
     }
   }
+  /**
+   * 4 -> 5 needs no ALTER either: `notifications` and `notify_prefs` are new
+   * tables and arrive with the idempotent DDL. Noted because the three
+   * migrations above are documented and a silent step reads like an omission.
+   */
   if (row < SCHEMA_VERSION) {
     db.pragma(`user_version = ${SCHEMA_VERSION}`);
   }

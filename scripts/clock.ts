@@ -29,7 +29,7 @@
  *   --no-backup     skip the boot backup
  */
 
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { CanonRepo } from "../src/canon/repo.js";
 import { seedWorld } from "../src/canon/seed.js";
@@ -40,6 +40,7 @@ import { startPatrol, DEFAULT_PATROL, predictedCachedRate, PATROL_PROFILES } fro
 import { ConsoleSurface } from "../src/runtime/surface.js";
 import { systemClock } from "../src/clock.js";
 import { log } from "../src/log.js";
+import { backup } from "../src/ops/backup.js";
 
 const argv = process.argv.slice(2);
 const flag = (n: string, d: number) => {
@@ -71,23 +72,30 @@ const LOCK = DB + ".clock.lock";
 const KEEP_BACKUPS = 12;
 
 /**
- * Copy the database aside before touching it. Cheap insurance: this file is
- * the only artefact in the project that cannot be regenerated.
+ * Copy the database aside. Cheap insurance on the only artefact in this
+ * project that cannot be regenerated.
+ *
+ * THIS USED TO BE `copyFileSync` AND THAT WAS WRONG. These worlds run in WAL
+ * mode, so a plain file copy takes `canon.db` and leaves `canon.db-wal` behind
+ * -- every commit since the last checkpoint silently absent from the backup --
+ * and it can capture a torn state mid-transaction. `PRAGMA quick_check` on
+ * those files fails. The same mistake cost sixty events when this world was
+ * copied into a container, and there it was merely visible; here it would have
+ * been a backup that looked fine until the day it was needed.
+ *
+ * `VACUUM INTO` is the right primitive: SQLite takes a consistent snapshot of
+ * the live database, WAL included, while it is being written to.
  */
-function backup(): void {
-  if (NO_BACKUP || !existsSync(DB)) return;
-  const dir = join(dirname(DB), "backups");
-  mkdirSync(dir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const target = join(dir, `canon-${stamp}.db`);
-  copyFileSync(DB, target);
-
-  const old = readdirSync(dir)
-    .filter((f) => f.startsWith("canon-") && f.endsWith(".db"))
-    .sort()
-    .slice(0, -KEEP_BACKUPS);
-  for (const f of old) rmSync(join(dir, f), { force: true });
-  log.info(`backup -> ${target} (${(statSync(target).size / 1024).toFixed(0)} KB)`);
+function backupWorld(repo: CanonRepo): void {
+  if (NO_BACKUP) return;
+  try {
+    const r = backup(repo, { dir: join(dirname(DB), "backups"), keep: KEEP_BACKUPS });
+    if (r) log.info(`backup -> ${r.path} (${(r.bytes / 1024).toFixed(0)} KB)`);
+  } catch (e) {
+    // A failed backup must not stop the clock: losing the gap is worse than
+    // losing one snapshot, and the next boot tries again.
+    log.warn(`backup failed, continuing: ${(e as Error).message}`);
+  }
 }
 
 /** One writer at a time, or the pacing and the budget both become fiction. */
@@ -116,10 +124,12 @@ const releaseLock = () => rmSync(LOCK, { force: true });
 
 async function main(): Promise<void> {
   mkdirSync(dirname(DB), { recursive: true });
-  backup();
   takeLock();
 
+  // After the handle exists: VACUUM INTO needs an open database, and the old
+  // file-copy ran before there was one -- which is part of why it was a copy.
   const repo = CanonRepo.open(DB, systemClock);
+  backupWorld(repo);
   const created = seedWorld(repo);
   if (!repo.getMeta(STARTED_KEY)) repo.setMeta(STARTED_KEY, new Date().toISOString());
   // Recorded so `clock:status` can tell a quiet world from a stopped one. A

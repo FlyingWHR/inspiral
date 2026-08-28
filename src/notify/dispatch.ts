@@ -10,6 +10,10 @@
  * So: `enqueue` records that somebody should be told. `dispatch` decides who is
  * actually told, batches, respects quiet windows and opt-outs, and hands a
  * finished `Delivery` to a channel whose only job is transport.
+ *
+ * Reaches `repo.db` directly. CanonRepo exposes it as a public readonly field,
+ * so the structural cast that used to live here bought nothing and threw away
+ * better-sqlite3's own types on the way past.
  */
 
 import type { CanonRepo } from "../canon/repo.js";
@@ -26,13 +30,6 @@ import {
 } from "./contract.js";
 import { log } from "../log.js";
 
-const db = (repo: CanonRepo): {
-  prepare(sql: string): {
-    get(...a: unknown[]): unknown;
-    all(...a: unknown[]): unknown[];
-    run(...a: unknown[]): { changes?: number };
-  };
-} => (repo as unknown as { db: ReturnType<typeof db> }).db;
 
 /**
  * Somebody should be told. Cheap, synchronous, and safe to call on the request
@@ -46,7 +43,7 @@ export function enqueue(
   repo: CanonRepo,
   n: { fan_id: string; kind: NotifyKind; piece_id: string; event_id: string },
 ): boolean {
-  const r = db(repo)
+  const r = repo.db
     .prepare(
       `INSERT INTO notifications (fan_id, kind, piece_id, event_id, created_ts)
        VALUES (?, ?, ?, ?, ?)
@@ -60,7 +57,7 @@ export function setPreference(
   repo: CanonRepo,
   p: { fan_id: string; channel: string; address: string; enabled?: boolean; quiet_minutes?: number },
 ): void {
-  db(repo)
+  repo.db
     .prepare(
       `INSERT INTO notify_prefs (fan_id, channel, address, enabled, quiet_minutes, updated_ts)
        VALUES (?, ?, ?, ?, ?, ?)
@@ -80,7 +77,7 @@ export function setPreference(
 
 /** Off until they say otherwise. One call, and it is respected everywhere. */
 export function unsubscribe(repo: CanonRepo, fanId: string, channel?: string): void {
-  db(repo)
+  repo.db
     .prepare(
       channel
         ? "UPDATE notify_prefs SET enabled = 0, updated_ts = ? WHERE fan_id = ? AND channel = ?"
@@ -91,7 +88,7 @@ export function unsubscribe(repo: CanonRepo, fanId: string, channel?: string): v
 
 export function preferencesFor(repo: CanonRepo, fanId: string): NotifyPreference[] {
   return (
-    db(repo)
+    repo.db
       .prepare("SELECT * FROM notify_prefs WHERE fan_id = ?")
       .all(fanId) as Record<string, unknown>[]
   ).map((r) => ({
@@ -121,7 +118,7 @@ function rowToNotification(r: Record<string, unknown>): Notification {
 
 export function pending(repo: CanonRepo, limit = 500): Notification[] {
   return (
-    db(repo)
+    repo.db
       .prepare(
         `SELECT * FROM notifications
          WHERE sent_ts IS NULL AND attempts < ?
@@ -133,7 +130,7 @@ export function pending(repo: CanonRepo, limit = 500): Notification[] {
 
 /** When we last got through to this person, on any channel. */
 function lastSentTo(repo: CanonRepo, fanId: string): string | null {
-  const r = db(repo)
+  const r = repo.db
     .prepare("SELECT MAX(sent_ts) AS m FROM notifications WHERE fan_id = ? AND sent_ts IS NOT NULL")
     .get(fanId) as { m: string | null } | undefined;
   return r?.m ?? null;
@@ -273,7 +270,7 @@ function compose(
 }
 
 function markSent(repo: CanonRepo, ids: number[], channel: string): void {
-  const stmt = db(repo).prepare(
+  const stmt = repo.db.prepare(
     "UPDATE notifications SET sent_ts = ?, channel = ?, error = NULL WHERE id = ?",
   );
   const ts = repo.now();
@@ -281,7 +278,7 @@ function markSent(repo: CanonRepo, ids: number[], channel: string): void {
 }
 
 function bumpAttempt(repo: CanonRepo, ids: number[], error: string): void {
-  const stmt = db(repo).prepare(
+  const stmt = repo.db.prepare(
     "UPDATE notifications SET attempts = attempts + 1, error = ? WHERE id = ?",
   );
   for (const id of ids) stmt.run(error.slice(0, 500), id);

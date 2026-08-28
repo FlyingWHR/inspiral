@@ -19,10 +19,6 @@ import { isHidden as hidden } from "./moderation.js";
 const slug = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40);
 
-/** better-sqlite3 handle. CanonRepo owns it; we borrow it for piece tables. */
-const db = (repo: CanonRepo): {
-  prepare(sql: string): { get(...a: unknown[]): unknown; all(...a: unknown[]): unknown[]; run(...a: unknown[]): unknown };
-} => (repo as unknown as { db: ReturnType<typeof db> }).db;
 
 function rowToPiece(r: Record<string, unknown>): Piece {
   return {
@@ -80,7 +76,7 @@ export function seedPiece(
   });
 
   const now = repo.now();
-  db(repo)
+  repo.db
     .prepare(
       `INSERT INTO pieces (piece_id, title, brief, status, generation, contributors,
                            seed_event_id, location, created_ts, updated_ts)
@@ -101,14 +97,14 @@ export function seedPiece(
  * be rearranged any number of times without touching what the piece is.
  */
 export function placePiece(repo: CanonRepo, pieceId: string, location: string): boolean {
-  const r = db(repo)
+  const r = repo.db
     .prepare("UPDATE pieces SET location = ?, updated_ts = ? WHERE piece_id = ?")
     .run(location.slice(0, 64), repo.now(), pieceId) as { changes?: number };
   return (r.changes ?? 0) > 0;
 }
 
 export function getPiece(repo: CanonRepo, pieceId: string): Piece | undefined {
-  const r = db(repo).prepare("SELECT * FROM pieces WHERE piece_id = ?").get(pieceId) as
+  const r = repo.db.prepare("SELECT * FROM pieces WHERE piece_id = ?").get(pieceId) as
     | Record<string, unknown>
     | undefined;
   return r ? rowToPiece(r) : undefined;
@@ -117,13 +113,13 @@ export function getPiece(repo: CanonRepo, pieceId: string): Piece | undefined {
 export function listPieces(repo: CanonRepo, status: "open" | "closed" | "all" = "open"): Piece[] {
   const rows =
     status === "all"
-      ? db(repo).prepare("SELECT * FROM pieces ORDER BY updated_ts DESC").all()
-      : db(repo).prepare("SELECT * FROM pieces WHERE status = ? ORDER BY updated_ts DESC").all(status);
+      ? repo.db.prepare("SELECT * FROM pieces ORDER BY updated_ts DESC").all()
+      : repo.db.prepare("SELECT * FROM pieces WHERE status = ? ORDER BY updated_ts DESC").all(status);
   return (rows as Record<string, unknown>[]).map(rowToPiece);
 }
 
 export function seedEventId(repo: CanonRepo, pieceId: string): string | undefined {
-  const r = db(repo).prepare("SELECT seed_event_id FROM pieces WHERE piece_id = ?").get(pieceId) as
+  const r = repo.db.prepare("SELECT seed_event_id FROM pieces WHERE piece_id = ?").get(pieceId) as
     | { seed_event_id: string }
     | undefined;
   return r?.seed_event_id;
@@ -218,7 +214,7 @@ export function extendPiece(
     ? piece.contributors
     : [...piece.contributors, input.fan_id];
   const now = repo.now();
-  db(repo)
+  repo.db
     .prepare(
       `UPDATE pieces SET generation = generation + 1, contributors = ?, updated_ts = ?
        WHERE piece_id = ?`,

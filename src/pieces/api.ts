@@ -52,6 +52,7 @@ import type { HostRuntime } from "../host/HostRuntime.js";
 import { narrateChange, routeVisitor } from "./host.js";
 import { LiveHub } from "./live.js";
 import { creatorDigest, renderDigest } from "./digest.js";
+import { enqueue } from "../notify/dispatch.js";
 import {
   ModerationError,
   extendRate,
@@ -523,6 +524,24 @@ export class PiecesApi {
         changed,
         display_name: str(b.display_name, 120) ?? undefined,
       });
+      /**
+       * Queue the ping, do not send it. Sending on the request path would put a
+       * mail server between somebody hitting submit and seeing their own work
+       * appear -- and the whole latency argument in this project is that no
+       * human waits on anything slow. One row, no network.
+       *
+       * Only when somebody is actually waiting. `notifies` is null for an
+       * extension of the creator's seed, and there is nobody to tell.
+       */
+      if (r.notifies) {
+        enqueue(this.repo, {
+          fan_id: r.notifies,
+          kind: "extended",
+          piece_id: r.piece.piece_id,
+          event_id: r.extension.event_id,
+        });
+      }
+
       this.live.publish({
         type: "piece_extended",
         piece_id: r.piece.piece_id,

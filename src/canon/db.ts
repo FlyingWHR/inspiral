@@ -269,9 +269,48 @@ CREATE TABLE IF NOT EXISTS pieces (
   updated_ts   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_pieces_status ON pieces(status, updated_ts);
+
+-- ---------------------------------------------------------------------------
+-- NOTIFICATIONS -- who has been told, not what happened.
+--
+-- NOT canon, deliberately. The event is already in the log: permanent,
+-- citable, unfalsifiable. What lives here is delivery state -- pending, sent,
+-- failed, attempted-four-times -- which is operational, mutable, and changes
+-- for reasons that have nothing to do with the world. A retry counter in an
+-- append-only history would append a row every time a mail server hiccuped.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notifications (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  fan_id     TEXT NOT NULL,
+  kind       TEXT NOT NULL,
+  piece_id   TEXT NOT NULL,
+  event_id   TEXT NOT NULL,
+  created_ts TEXT NOT NULL,
+  sent_ts    TEXT,
+  channel    TEXT,
+  error      TEXT,
+  attempts   INTEGER NOT NULL DEFAULT 0,
+  -- One notification per person per event. A dispatcher that retries, or two
+  -- workers racing, must not tell somebody the same thing twice.
+  UNIQUE (fan_id, event_id)
+);
+CREATE INDEX IF NOT EXISTS idx_notif_pending ON notifications(sent_ts, fan_id);
+
+-- Where somebody wants to be reached. The address is opaque to everything but
+-- its own channel -- a chat id, a URL, an email -- and the dispatcher never
+-- parses it.
+CREATE TABLE IF NOT EXISTS notify_prefs (
+  fan_id        TEXT NOT NULL,
+  channel       TEXT NOT NULL,
+  address       TEXT NOT NULL,
+  enabled       INTEGER NOT NULL DEFAULT 1,
+  quiet_minutes INTEGER NOT NULL DEFAULT 30,
+  updated_ts    TEXT NOT NULL,
+  PRIMARY KEY (fan_id, channel)
+);
 `;
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 /**
  * Open (and if needed create) the canon database.

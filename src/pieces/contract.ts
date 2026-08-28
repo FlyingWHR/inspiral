@@ -91,6 +91,16 @@ export interface Extension {
   parent_event_id: string;
   /** Who did it. A durable visitor id -- asserted, not authenticated. */
   fan_id: string;
+  /**
+   * What to call them on screen.
+   *
+   * Added after the UI showed the omission was backwards: the piece page --
+   * the PUBLIC, shareable artefact -- could only print "wren", while the
+   * private return screen got a real name. Attribution is the product, so the
+   * page a stranger sees is the last place to render somebody as a database
+   * key. Falls back to the id when a visitor never gave a name.
+   */
+  display_name: string;
   /** What they actually wrote or made. The work itself. */
   body: string;
   /**

@@ -36,14 +36,23 @@ function rowToPiece(r: Record<string, unknown>): Piece {
   };
 }
 
-/** An extension, read back out of the event that recorded it. */
-function eventToExtension(e: WorldEvent): Extension {
+/**
+ * An extension, read back out of the event that recorded it.
+ *
+ * `repo` is needed only for the display name, which lives on the visitor rather
+ * than in the event: a name is mutable and the log is not, so denormalising it
+ * into the payload would freeze whatever somebody was called the day they
+ * posted.
+ */
+function eventToExtension(e: WorldEvent, repo?: CanonRepo): Extension {
   const p = e.payload as Record<string, unknown>;
+  const fan = String(p.fan_id ?? "");
   return {
     event_id: e.event_id,
     piece_id: String(p.piece_id ?? ""),
     parent_event_id: String(p.parent_event_id ?? ""),
-    fan_id: String(p.fan_id ?? ""),
+    fan_id: fan,
+    display_name: repo?.getVisitor(fan)?.display_name || fan,
     body: String(p.body ?? ""),
     ...(typeof p.changed === "string" && p.changed ? { changed: p.changed } : {}),
     ts: e.ts,
@@ -103,6 +112,32 @@ export function seedEventId(repo: CanonRepo, pieceId: string): string | undefine
     | { seed_event_id: string }
     | undefined;
   return r?.seed_event_id;
+}
+
+/**
+ * Who wrote the thing being built on, if anybody did.
+ *
+ * Needed BEFORE the extension is written, because the sentence has to be
+ * addressed to a person and there is no editing it in afterwards -- the log
+ * refuses UPDATE by design. Returns null for the creator's seed, and that null
+ * is load-bearing: a live run addressed to the seed produced "Ada kept your
+ * five ordinary things", talking to the brief as though the brief were a
+ * person. There is nobody to address, so there is nothing to say.
+ */
+export function parentAuthor(
+  repo: CanonRepo,
+  eventId: string,
+): { fan_id: string; body: string; display_name: string } | null {
+  const parent = repo.getEvent(eventId);
+  if (!parent || parent.type !== "piece_extended") return null;
+  const p = parent.payload as Record<string, unknown>;
+  const fan = String(p.fan_id ?? "");
+  if (!fan) return null;
+  return {
+    fan_id: fan,
+    body: String(p.body ?? ""),
+    display_name: repo.getVisitor(fan)?.display_name || fan,
+  };
 }
 
 export class ExtendError extends Error {
@@ -207,7 +242,7 @@ export function extendPiece(
   });
 
   return {
-    extension: eventToExtension(event),
+    extension: eventToExtension(event, repo),
     piece: { ...piece, generation: piece.generation + 1, contributors, updated_ts: now },
     notifies: notifies && notifies !== input.fan_id ? notifies : null,
   };
@@ -217,11 +252,25 @@ export function extendPiece(
 export function lineage(repo: CanonRepo, pieceId: string): PieceWithLineage | undefined {
   const piece = getPiece(repo, pieceId);
   if (!piece) return undefined;
+  /**
+   * Tie-break on event_id, and it is not cosmetic.
+   *
+   * `eventsInvolving` returns newest-first (ORDER BY seq DESC) and Array.sort
+   * is stable, so sorting on `ts` alone leaves equal timestamps in the order
+   * they arrived -- reversed. Under a VirtualClock every event in a test shares
+   * a timestamp, so the whole lineage came back backwards: the argument read in
+   * reverse, and whoever went second appearing to have gone first. Possible on
+   * a real clock too, at millisecond resolution.
+   *
+   * `event_id` is `evt_<ms base36>_<counter>` and documented as monotonic and
+   * sortable, so it settles ties in insertion order. Found by the HTTP layer's
+   * page test, which is the only place the order was visible.
+   */
   const extensions = repo
     .eventsInvolving(`piece:${pieceId}`, 500)
     .filter((e) => e.type === "piece_extended")
-    .map(eventToExtension)
-    .sort((a, b) => a.ts.localeCompare(b.ts));
+    .map((e) => eventToExtension(e, repo))
+    .sort((a, b) => a.ts.localeCompare(b.ts) || a.event_id.localeCompare(b.event_id));
   return { piece, seed_event_id: seedEventId(repo, pieceId) ?? "", extensions };
 }
 
@@ -253,7 +302,7 @@ export function waitingFor(
   const items: WaitingForYou["items"] = [];
   for (const e of repo.recentEvents(500).slice().reverse()) {
     if (e.type !== "piece_extended") continue;
-    const x = eventToExtension(e);
+    const x = eventToExtension(e, repo);
     if (x.fan_id === fanId) continue; // your own work is not news to you
     if (!mine.has(x.parent_event_id)) continue;
 

@@ -107,6 +107,15 @@ function clean(raw: string): string {
   // Drop a leading "Sure, here's..." style preamble ending in a colon.
   const colon = t.indexOf(":");
   if (colon > 0 && colon < 60 && /^[^.!?]*$/.test(t.slice(0, colon))) t = t.slice(colon + 1).trim();
+  /**
+   * A host answering the wrong question. Any lane can be handed a model that
+   * pattern-matched its history and returned JSON, and a directive batch shown
+   * to a reader as "what somebody changed about your work" is worse than
+   * silence. Refuse anything structural rather than trimming it into a
+   * sentence-shaped fragment.
+   */
+  if (/^[[{]/.test(t) || /"(actor|action|directives|dialogue_intent)"\s*:/.test(t)) return "";
+
   const stop = t.search(/[.!?](\s|$)/);
   if (stop !== -1) t = t.slice(0, stop + 1);
   return t.slice(0, CHANGED_MAX).trim();

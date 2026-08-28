@@ -27,8 +27,24 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import type { CanonRepo } from "../canon/repo.js";
 import { log } from "../log.js";
-import { BODY_MAX, BODY_MIN, type ExtendResponse } from "./contract.js";
-import { ExtendError, extendPiece, lineage, listPieces, waitingFor } from "./repo.js";
+import {
+  BODY_MAX,
+  BODY_MIN,
+  type Extension,
+  type ExtendResponse,
+  type PieceWithLineage,
+} from "./contract.js";
+import {
+  ExtendError,
+  extendPiece,
+  getPiece,
+  lineage,
+  listPieces,
+  parentAuthor,
+  waitingFor,
+} from "./repo.js";
+import type { HostRuntime } from "../host/HostRuntime.js";
+import { narrateChange } from "./host.js";
 
 export interface PiecesApiOptions {
   repo: CanonRepo;
@@ -42,6 +58,12 @@ export interface PiecesApiOptions {
   apiKey?: string | undefined;
   /** Base for permalinks in responses. */
   publicUrl?: string;
+  /**
+   * Optional. Without it every extension lands without its sentence, which is
+   * the whole payload -- the work is stored, and the person waiting is told
+   * only that somebody touched it. Runnable, and not the product.
+   */
+  host?: HostRuntime | undefined;
 }
 
 const json = (res: ServerResponse, code: number, body: unknown): void => {
@@ -91,6 +113,7 @@ const str = (v: unknown, max = 64): string | null => {
   return t.length > 0 && t.length <= max ? t : null;
 };
 
+
 /**
  * How a refusal from the repo becomes a status code.
  *
@@ -112,12 +135,14 @@ export class PiecesApi {
   private readonly repo: CanonRepo;
   private readonly port: number;
   private readonly apiKey: string | undefined;
+  private readonly host: HostRuntime | undefined;
   private readonly publicUrl: string;
 
   constructor(opts: PiecesApiOptions) {
     this.repo = opts.repo;
     this.port = opts.port ?? 8792;
     this.apiKey = opts.apiKey;
+    this.host = opts.host;
     this.publicUrl = (opts.publicUrl ?? `http://localhost:${opts.port ?? 8792}`).replace(/\/+$/, "");
   }
 
@@ -139,6 +164,11 @@ export class PiecesApi {
    */
   private permalink(eventId: string): string {
     return `${this.publicUrl}/w/${this.worldSlug()}/e/${eventId}`;
+  }
+
+  /** Oldest-first ordering is guaranteed by `lineage()` itself now. */
+  private lineage(pieceId: string): PieceWithLineage | undefined {
+    return lineage(this.repo, pieceId);
   }
 
   /** Returns an error string, or null if allowed. */
@@ -191,13 +221,13 @@ export class PiecesApi {
     const extend = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})\/extend$/.exec(path);
     if (method === "POST" && extend) {
       if (deny) return closed();
-      return this.postExtend(res, extend[1]!, await readJson(req));
+      return await this.postExtend(res, extend[1]!, await readJson(req));
     }
 
     const one = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})$/.exec(path);
     if (method === "GET" && one) {
       if (deny) return closed();
-      const full = lineage(this.repo, one[1]!);
+      const full = this.lineage(one[1]!);
       if (!full) return json(res, 404, { error: `no piece '${one[1]!}'` });
       return json(res, 200, full);
     }
@@ -213,7 +243,7 @@ export class PiecesApi {
    * of the only question this product has to get right, free to drift from the
    * first and point the feeling at the wrong person.
    */
-  private postExtend(res: ServerResponse, pieceId: string, raw: unknown): void {
+  private async postExtend(res: ServerResponse, pieceId: string, raw: unknown): Promise<void> {
     const b = raw as Record<string, unknown>;
     const fan = str(b.fan_id);
     const parent = str(b.parent_event_id);
@@ -240,16 +270,33 @@ export class PiecesApi {
 
     try {
       /**
-       * No `changed` sentence. The Mind writes it (see NarrateRequest) and this
-       * server has no host wired to it; the contract says the extension stands
-       * without the narration, so it stands. Losing the sentence must never
-       * lose the work.
+       * THE SENTENCE IS WRITTEN BEFORE THE WRITE, because there is no editing
+       * it in afterwards -- the log refuses UPDATE by design.
+       *
+       * And only when somebody is actually waiting. Extending the creator's
+       * seed has no recipient, and narrating it anyway produced, on a live run,
+       * "Ada kept your five ordinary things" -- addressed to the brief as
+       * though the brief were a person. No recipient, nothing to say.
        */
+      const piece = getPiece(this.repo, pieceId);
+      const addressee = parentAuthor(this.repo, parent);
+      const changed =
+        piece && addressee && addressee.fan_id !== fan
+          ? await narrateChange(this.host, {
+              piece_title: piece.title,
+              parent_body: addressee.body,
+              parent_author: addressee.display_name,
+              child_body: body,
+              child_author: str(b.display_name, 120) ?? fan,
+            })
+          : undefined;
+
       const r = extendPiece(this.repo, {
         piece_id: pieceId,
         parent_event_id: parent,
         fan_id: fan,
         body,
+        changed,
         display_name: str(b.display_name, 120) ?? undefined,
       });
       const out: ExtendResponse = {
@@ -322,7 +369,7 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);
    * somebody made this and being able to check.
    */
   private pagePiece(res: ServerResponse, pieceId: string): void {
-    const full = lineage(this.repo, pieceId);
+    const full = this.lineage(pieceId);
     if (!full) {
       return html(
         res,

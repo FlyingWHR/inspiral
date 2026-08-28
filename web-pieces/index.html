@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Pieces</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!--
+    Three screens, one document:
+      ?piece=<id>  the piece and its lineage
+      ?fan=<id>    what changed while you were gone
+      (neither)    open pieces
+
+    Add ?mock=1 to any of them to run against the fixtures in app.js with no
+    server behind it.
+  -->
+  <main id="app">
+    <p class="note">Loading…</p>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

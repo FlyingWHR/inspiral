@@ -141,3 +141,28 @@ describe("pieces", () => {
     repo.close();
   });
 });
+
+/**
+ * Lineage order was reversed and nothing caught it for a whole layer.
+ *
+ * `eventsInvolving` returns newest-first and Array.sort is stable, so sorting
+ * on `ts` alone left equal timestamps in arrival order -- backwards. Under a
+ * VirtualClock every event shares a timestamp, so this was the normal case in
+ * every test, and it means an argument read in reverse with the second speaker
+ * appearing to have gone first.
+ */
+describe("lineage order", () => {
+  it("is oldest-first even when every timestamp is identical", () => {
+    const repo = world(); // VirtualClock: no time passes between these
+    const p = seedPiece(repo, { title: "Order", brief: "b" });
+    let parent = lineage(repo, p.piece_id)!.seed_event_id;
+    for (const who of ["ada", "maya", "tomas"]) {
+      parent = extendPiece(repo, {
+        piece_id: p.piece_id, parent_event_id: parent, fan_id: who, body: `${who} was here`,
+      }).extension.event_id;
+    }
+    const bodies = lineage(repo, p.piece_id)!.extensions.map((e) => e.body);
+    expect(bodies).toEqual(["ada was here", "maya was here", "tomas was here"]);
+    repo.close();
+  });
+});

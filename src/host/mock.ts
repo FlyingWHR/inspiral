@@ -253,6 +253,24 @@ export class MockHostRuntime implements HostRuntime {
     const started = Date.now();
     if (this.latencyMs > 0) await new Promise((r) => setTimeout(r, this.latencyMs));
 
+    /**
+     * This host is a deterministic rule engine for fictional drama. It has no
+     * opinion about prose, and asked to narrate a change it would happily
+     * return a directive batch -- fluent, well-formed, and completely wrong.
+     *
+     * Saying "unavailable" is the honest answer and the useful one: callers
+     * already degrade to no sentence rather than to an invented one, so the
+     * offline path shows exactly what a reader sees when the Mind is down.
+     */
+    if (req.kind === "narrate" || req.kind === "route") {
+      return {
+        ok: false,
+        reason: "error",
+        message: `the deterministic host cannot ${req.kind}; that needs a Mind`,
+        latencyMs: Date.now() - started,
+      };
+    }
+
     const d = parseDigest(req.prompt);
     const fail = this.failOn[d.tickNo];
 

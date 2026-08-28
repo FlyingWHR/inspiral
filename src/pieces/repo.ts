@@ -371,7 +371,7 @@ export function lineage(repo: CanonRepo, pieceId: string): PieceWithLineage | un
  * invents a reason to come back is the exact thing that makes this category
  * feel cheap.
  */
-export const seenKey = (fanId: string): string => `seen:${fanId}`;
+const seenKey = (fanId: string): string => `seen:${fanId}`;
 
 /**
  * Mark everything up to now as read.

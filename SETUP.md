@@ -3,7 +3,7 @@
 ```bash
 git clone https://github.com/FlyingWHR/inspiral && cd inspiral
 npm install
-npm test                                    # 481 tests, offline, no key
+npm test                                    # the suite, offline, no key
 INSPIRAL_API_KEY=dev npm run pieces:serve   # http://localhost:8795
 ```
 

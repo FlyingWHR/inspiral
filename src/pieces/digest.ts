@@ -277,7 +277,7 @@ export async function creatorDigest(
  */
 function summaryPrompt(d: CreatorDigest): string {
   const movedLines = d.moved.length
-    ? d.moved.map((m) => `- "${m.title}": ${m.extensions} contribution(s) from ${m.contributors.length} person/people`).join("\n")
+    ? d.moved.map((m) => `- "${m.title}": ${m.extensions} move(s) from ${m.contributors.length} person/people`).join("\n")
     : "- (nothing moved)";
   const newLines = d.newcomers.length
     ? d.newcomers.map((n) => `- ${n.display_name}, first ever contribution, on "${n.piece_title}"`).join("\n")
@@ -408,7 +408,7 @@ export function renderDigest(d: CreatorDigest): string {
     if (d.moved.length) {
       L.push("WHAT MOVED");
       for (const m of d.moved) {
-        L.push(`  "${m.title}" — ${m.extensions} contribution(s) from ${m.contributors.join(", ")}`);
+        L.push(`  "${m.title}" — ${m.extensions} move(s) from ${m.contributors.join(", ")}`);
       }
       L.push("");
     }

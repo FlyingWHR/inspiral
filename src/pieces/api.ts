@@ -634,7 +634,7 @@ export class PiecesApi {
     const rate = extendRate(this.repo, fan);
     if (!rate.ok) {
       return json(res, 429, {
-        error: "too many contributions in a short window -- give it a moment",
+        error: "too many moves too quickly -- give it a moment",
         retry_after: rate.retry_after,
       });
     }

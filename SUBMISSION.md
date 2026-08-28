@@ -8,7 +8,7 @@ still on it.
 
 ```bash
 git clone https://github.com/FlyingWHR/inspiral && cd inspiral && npm install
-npm test                                    # 481 tests, ~3s, no key, no network
+npm test                                    # the whole suite, ~3s, no key, no network
 INSPIRAL_API_KEY=dev npm run pieces:serve   # the whole product on one port
 ```
 
@@ -78,7 +78,7 @@ behind matter, and tell them when it does.
 ## 4. Judge it in six commands
 
 ```bash
-npm test                       # 481 tests, offline, no key
+npm test                       # the suite, offline, no key
 npm run pieces                 # the sentence, next to the texts that made it
 npm run problem                # why this exists — real analytics, bad number
 npm run pieces:serve           # app + API + live feed, one origin
@@ -104,7 +104,7 @@ my thing"* is one exact query rather than a heuristic. Attribution is enforced b
 database triggers that refuse `UPDATE` and `DELETE` — a lineage cannot be
 rewritten to take a name off somebody's work.
 
-**Execution.** 481 tests in ~3s, offline. Typecheck clean. Append-only canon,
+**Execution.** 494 tests in ~3s, offline. Typecheck clean. Append-only canon,
 five documented migrations, fail-closed auth, SSRF-guarded webhooks, `VACUUM
 INTO` backups, health checks, additive moderation across all four read paths.
 

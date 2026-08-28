@@ -47,7 +47,7 @@ const HIDDEN: EventType = "piece_hidden";
 const MOD_HINT = 0.05;
 
 /** Reasons are a sentence, not an essay. Capped at a trust boundary. */
-export const REASON_MAX = 280;
+const REASON_MAX = 280;
 
 export class ModerationError extends Error {
   constructor(
@@ -246,7 +246,7 @@ export function reportsOn(repo: CanonRepo, pieceId: string): ModerationReport[] 
  * never meets it, tight enough that one person cannot bury a piece under
  * twenty contributions before anybody else sees it.
  */
-export const EXTEND_CAP = { max: 5, hours: 1 } as const;
+const EXTEND_CAP = { max: 5, hours: 1 } as const;
 
 export interface RateVerdict {
   /** False means the caller should refuse. This module does not refuse for it. */

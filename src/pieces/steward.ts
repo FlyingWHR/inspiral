@@ -44,7 +44,7 @@ export interface Steward {
   role: string;
 }
 
-export const DEFAULT_STEWARD: Steward = { name: "The Host", role: "host" };
+const DEFAULT_STEWARD: Steward = { name: "The Host", role: "host" };
 
 export function stewardOf(repo: CanonRepo): Steward {
   return {

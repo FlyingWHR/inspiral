@@ -219,7 +219,9 @@ h1 {
   line-height: 1.5;
   padding: 0.6rem 0.7rem;
   background: rgba(12, 8, 24, .8);
-  border: 1px solid #2A2140;
+  /* --rule is documented as "hairlines, dividers, input borders". The literal
+     that was here was that colour, written out. */
+  border: 1px solid var(--rule);
   border-radius: 4px;
 }
 

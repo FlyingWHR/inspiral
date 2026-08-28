@@ -96,6 +96,30 @@ than a heuristic.
 | `POST` | `/v1/pieces/:id/extend` | `{fan_id, parent_event_id, body, display_name?}` |
 | `POST` | `/v1/pieces/:id/place` | `{location}` |
 | `POST` | `/v1/seen` | `{fan_id}` — clears the return screen |
+| `POST` | `/v1/pieces/:id/here` | `{fan_id, display_name?}` — presence heartbeat, re-POST every ~20s |
+| `POST` | `/v1/pieces/:id/gone` | `{fan_id}` |
+
+### Live — Server-Sent Events
+
+`GET /v1/live` · `GET /v1/live?piece=<id>` — **public**, no key. The piece pages
+are public, so their feed is too.
+
+```js
+new EventSource("/v1/live").onmessage = (e) => update(JSON.parse(e.data));
+```
+
+Data-only frames, no `event:` name — named events silently bypass `onmessage`.
+Opens with `retry: 3000`, heartbeats every 25s, reconnects on its own.
+
+```ts
+{ type: "piece_seeded",   piece_id, title, ts }
+{ type: "piece_extended", piece_id, event_id, fan_id, display_name,
+                          generation, changed?, ts }
+{ type: "presence",       piece_id, here: [{fan_id, display_name, since}], ts }
+```
+
+Presence fires **only when the room actually changes** — heartbeats are silent.
+Anyone unheard-from for 60s is swept, so a closed tab does not haunt a piece.
 
 ### The return screen — the most important response
 

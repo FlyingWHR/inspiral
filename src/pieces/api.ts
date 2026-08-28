@@ -50,6 +50,7 @@ import {
 } from "./repo.js";
 import type { HostRuntime } from "../host/HostRuntime.js";
 import { narrateChange, routeVisitor } from "./host.js";
+import { LiveHub } from "./live.js";
 
 export interface PiecesApiOptions {
   repo: CanonRepo;
@@ -152,6 +153,12 @@ export class PiecesApi {
   private readonly apiKey: string | undefined;
   private readonly host: HostRuntime | undefined;
   private readonly webRoot: string | undefined;
+  /**
+   * Presence and the live feed. In-memory and lost on restart, deliberately:
+   * presence is transient and canon is permanent, and filling an append-only
+   * log with "ada is looking at this" buries the rows worth citing.
+   */
+  private readonly live = new LiveHub();
   private readonly publicUrl: string;
 
   constructor(opts: PiecesApiOptions) {
@@ -210,6 +217,13 @@ export class PiecesApi {
   }
 
   async close(): Promise<void> {
+    /**
+     * LIVE FIRST, THEN THE SERVER, and the order is not cosmetic. An open SSE
+     * response is an open connection, and `server.close()` waits for every one
+     * of them -- so closing the http server first means its callback never
+     * fires and the process hangs on exit forever.
+     */
+    this.live.close();
     if (this.http) await new Promise<void>((r) => this.http!.close(() => r()));
   }
 
@@ -230,6 +244,14 @@ export class PiecesApi {
      */
     const receipt = /^\/w\/[^/]+\/e\/([A-Za-z0-9_]{1,64})$/.exec(path);
     if (method === "GET" && receipt) return this.pageReceipt(res, receipt[1]!);
+
+    /**
+     * The live feed is PUBLIC because the piece pages are. A feed that needed a
+     * key to watch a page anybody can read would be a lock on the wrong door.
+     */
+    if (method === "GET" && path === "/v1/live") {
+      return this.live.subscribe(res, { piece: url.searchParams.get("piece") });
+    }
 
     // ---- authenticated ------------------------------------------------------
     const deny = this.denied(req);
@@ -284,16 +306,37 @@ export class PiecesApi {
      */
     if (method === "GET" && path === "/v1/space") {
       if (deny) return closed();
-      return json(res, 200, {
-        world: this.repo.getMeta("world_name") ?? "the world",
-        pieces: listPieces(this.repo, "open").map((p) => ({ ...p, here: 0 })),
-      });
+      return json(res, 200, this.live.spaceView(this.world(), listPieces(this.repo, "open")));
     }
 
     /**
      * Placement is the SPACE's decision, not the creator's -- a brief is
      * written once, a room is rearranged any number of times.
      */
+    /**
+     * Presence is a heartbeat, not a session. A browser that closes without
+     * saying goodbye must not haunt a piece forever, so `here` is re-POSTed
+     * every ~20s and anything unheard-from for 60s is swept.
+     */
+    const here = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})\/(here|gone)$/.exec(path);
+    if (method === "POST" && here) {
+      if (deny) return closed();
+      const body = (await readJson(req)) as Record<string, unknown>;
+      const fan = str(body.fan_id);
+      if (!fan) return json(res, 400, { error: "fan_id is required" });
+      /**
+       * No publish here. `join`/`leave` already broadcast, and only when the
+       * room actually CHANGED -- publishing from this handler instead fanned
+       * every 20-second heartbeat out to every subscriber as a fresh presence
+       * event, which is the same room state repeated forever.
+       */
+      const p =
+        here[2] === "here"
+          ? this.live.join(here[1]!, fan, str(body.display_name, 120) ?? undefined)
+          : this.live.leave(here[1]!, fan);
+      return json(res, 200, p);
+    }
+
     const place = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})\/place$/.exec(path);
     if (method === "POST" && place) {
       if (deny) return closed();
@@ -402,6 +445,16 @@ export class PiecesApi {
         changed,
         display_name: str(b.display_name, 120) ?? undefined,
       });
+      this.live.publish({
+        type: "piece_extended",
+        piece_id: r.piece.piece_id,
+        event_id: r.extension.event_id,
+        fan_id: r.extension.fan_id,
+        display_name: r.extension.display_name,
+        generation: r.piece.generation,
+        ...(r.extension.changed ? { changed: r.extension.changed } : {}),
+      });
+
       const out: ExtendResponse = {
         event_id: r.extension.event_id,
         piece_id: r.piece.piece_id,
@@ -491,6 +544,7 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);
       return json(res, 400, { error: "brief must say what a good addition looks like" });
     }
     const piece = seedPiece(this.repo, { title, brief, location: str(b.location, 64) ?? "" });
+    this.live.publish({ type: "piece_seeded", piece_id: piece.piece_id, title: piece.title });
     json(res, 201, { piece, page: `${this.publicUrl}/w/${this.worldSlug()}/p/${piece.piece_id}` });
   }
 

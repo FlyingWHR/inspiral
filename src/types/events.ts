@@ -64,15 +64,37 @@ export const EventType = z.enum([
   // name off somebody's work would be worth nothing.
   "piece_seeded",
   "piece_extended",
+  /**
+   * Moderation is append-only too. Hiding is a NEW event that readers respect,
+   * never a mutation -- the log refuses UPDATE by design, and attribution has
+   * to survive a takedown or it was never permanent in the first place.
+   *
+   * Their own names rather than reusing `notice_posted`, which would drag
+   * reports and takedowns into the clip pipeline as publishable moments.
+   */
+  "piece_reported",
+  "piece_hidden",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
-/** Actor reference: a character id, or a visitor as `fan:<fan_id>`. */
+/**
+ * Actor reference: a character id, or a prefixed reference.
+ *
+ * `piece:` and `event:` were added after the pieces layer had been writing them
+ * for a while and nothing had noticed: appends are not validated, so the
+ * regex never fired -- but `WorldEvent.parse()` on any piece event threw, and
+ * the two ingest tests that round-trip an event through the schema would have
+ * failed the moment somebody wrote one for a piece. A validator that is wrong
+ * about real data and silent about it is worse than no validator.
+ */
 export const ActorRef = z
   .string()
   .min(1)
   .max(64)
-  .regex(/^(fan:)?[a-z0-9_.-]+$/i, "actor must be a character_id or fan:<fan_id>");
+  .regex(
+    /^((fan|piece|event):)?[a-z0-9_.-]+$/i,
+    "actor must be a character_id, or fan:/piece:/event:<id>",
+  );
 
 export const WorldEvent = z.object({
   /** Monotonic, sortable, unique. See `newEventId`. */

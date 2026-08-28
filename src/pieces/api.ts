@@ -51,6 +51,16 @@ import {
 import type { HostRuntime } from "../host/HostRuntime.js";
 import { narrateChange, routeVisitor } from "./host.js";
 import { LiveHub } from "./live.js";
+import { creatorDigest, renderDigest } from "./digest.js";
+import {
+  ModerationError,
+  extendRate,
+  hide,
+  isHidden,
+  report,
+  reportsOn,
+  withoutHidden,
+} from "./moderation.js";
 
 export interface PiecesApiOptions {
   repo: CanonRepo;
@@ -190,9 +200,14 @@ export class PiecesApi {
     return `${this.publicUrl}/w/${this.worldSlug()}/e/${eventId}`;
   }
 
-  /** Oldest-first ordering is guaranteed by `lineage()` itself now. */
+  /**
+   * Oldest-first ordering is guaranteed by `lineage()` itself. Hidden work is
+   * dropped HERE so every reader of a lineage gets the same answer -- a
+   * takedown that only applied to one of three read paths is not a takedown.
+   */
   private lineage(pieceId: string): PieceWithLineage | undefined {
-    return lineage(this.repo, pieceId);
+    const full = lineage(this.repo, pieceId);
+    return full ? withoutHidden(this.repo, full) : undefined;
   }
 
   /** Returns an error string, or null if allowed. */
@@ -304,6 +319,56 @@ export class PiecesApi {
      * without N requests. `generation` is depth: a piece twelve deep should not
      * look like one that is one deep. Still never a ranking.
      */
+    /**
+     * WHAT THE CREATOR READS INSTEAD OF EVERYTHING. `?format=text` for the
+     * rendered note; JSON otherwise, so a frontend can lay it out itself.
+     */
+    if (method === "GET" && path === "/v1/digest") {
+      if (deny) return closed();
+      const hours = Number(url.searchParams.get("hours")) || 24;
+      const d = await creatorDigest(this.repo, this.host, { hours });
+      if (url.searchParams.get("format") === "text") {
+        res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+        return void res.end(renderDigest(d));
+      }
+      return json(res, 200, d);
+    }
+
+    const mod = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})\/(report|hide|reports)$/.exec(path);
+    if (mod) {
+      if (deny) return closed();
+      try {
+        if (method === "GET" && mod[2] === "reports") {
+          return json(res, 200, { reports: reportsOn(this.repo, mod[1]!) });
+        }
+        const body = (await readJson(req)) as Record<string, unknown>;
+        if (method === "POST" && mod[2] === "report") {
+          const fan = str(body.fan_id);
+          const ev = str(body.event_id);
+          if (!fan || !ev) return json(res, 400, { error: "fan_id and event_id are required" });
+          return json(res, 201, report(this.repo, {
+            fan_id: fan, event_id: ev, reason: String(body.reason ?? ""),
+          }));
+        }
+        if (method === "POST" && mod[2] === "hide") {
+          /**
+           * The API key IS creator authority here. There is no second role
+           * system, and inventing one before a real creator has asked for
+           * moderators would be inventing a permission model on spec.
+           */
+          const ev = str(body.event_id);
+          if (!ev) return json(res, 400, { error: "event_id is required" });
+          return json(res, 200, hide(this.repo, ev, str(body.by, 64) ?? "creator"));
+        }
+      } catch (e) {
+        if (e instanceof ModerationError) {
+          const code = e.code === "no_event" ? 404 : 400;
+          return json(res, code, { error: e.message, code: e.code });
+        }
+        throw e;
+      }
+    }
+
     if (method === "GET" && path === "/v1/space") {
       if (deny) return closed();
       return json(res, 200, this.live.spaceView(this.world(), listPieces(this.repo, "open")));
@@ -411,6 +476,19 @@ export class PiecesApi {
     if (body.length > BODY_MAX) {
       return json(res, 400, {
         error: `body must be at most ${BODY_MAX} characters (got ${body.length})`,
+      });
+    }
+
+    /**
+     * Before anything is written or any invocation is spent. One person cannot
+     * flood a piece, and a refusal costs nothing -- checking after the host
+     * call would have paid a Mind to narrate work we were about to reject.
+     */
+    const rate = extendRate(this.repo, fan);
+    if (!rate.ok) {
+      return json(res, 429, {
+        error: "too many contributions in a short window -- give it a moment",
+        retry_after: rate.retry_after,
       });
     }
 
@@ -556,6 +634,16 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);
         `<h1>Not in the log</h1><p class="sub">${esc(eventId)}</p>
 <p>Nothing here is generated on demand. If it is not in the append-only log, it did not happen.</p>`));
     }
+    /**
+     * The one that matters most: this is the link people share. A takedown
+     * that left the permalink serving is not a takedown at all.
+     */
+    if (isHidden(this.repo, eventId)) {
+      return html(res, 404, this.page("Taken down",
+        `<h1>Taken down</h1><p>This contribution was removed by the space's owner.</p>
+<footer>The record of it still exists in the log -- hiding is additive, and nothing is erased.</footer>`));
+    }
+
     const p = e.payload as Record<string, unknown>;
     const pieceId = String(p.piece_id ?? "");
     const piece = getPiece(this.repo, pieceId);

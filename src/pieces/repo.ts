@@ -14,6 +14,7 @@
 import type { CanonRepo } from "../canon/repo.js";
 import type { WorldEvent } from "../types/events.js";
 import type { Extension, Piece, PieceWithLineage, WaitingForYou } from "./contract.js";
+import { isHidden as hidden } from "./moderation.js";
 
 const slug = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40);
@@ -335,6 +336,13 @@ export function waitingFor(
     if (x.fan_id === fanId) continue; // your own work is not news to you
     if (!mine.has(x.parent_event_id)) continue;
     if (seenThrough && x.ts <= seenThrough) continue; // already read
+    /**
+     * A takedown has to reach the return screen too. Without this, work a
+     * creator hid stayed invisible on the public page and kept arriving,
+     * personally, in the notification of the one person guaranteed to read it
+     * -- which is the worst possible place for moderation to leak.
+     */
+    if (hidden(repo, x.event_id)) continue;
 
     const parent = repo.getEvent(x.parent_event_id);
     const piece = getPiece(repo, x.piece_id);

@@ -27,28 +27,14 @@ import type { EventType, WorldEvent } from "../types/events.js";
 import type { PieceWithLineage } from "./contract.js";
 
 /**
- * TWO NAMES THE FROZEN `EventType` ENUM DOES NOT HAVE YET.
+ * Their own event types, added to `EventType` rather than cast in here.
  *
- * The right fix is two lines in `src/types/events.ts`, and that is the fix the
- * pass which mounts these routes should make. It is not made here because that
- * file is the event vocabulary every other module shares, and a moderation
- * module is the last place that should be editing it out from under whoever
- * else is mid-change.
- *
- * REJECTED: reusing `notice_posted` with a `moderation:` discriminator in the
- * payload. It needs no cast, and it is exactly the "a table called `arcs`
- * holding pieces" mistake this codebase already refused once -- a reader at 3am
- * finds a moderation report filed as a notice on the district board. It also
- * drags reports into the clip pipeline, where `roleOf` calls anything with a
- * `fan:` actor "community", and an owner could be handed somebody's abuse
- * report as a postable draft.
- *
- * Safe at runtime: `events.type` is TEXT with no CHECK, `describeEvent` reads
- * `payload.summary`, `rankSignificance` falls back to a default weight for an
- * unknown type, and nothing in the codebase dispatches exhaustively on type.
+ * Not `notice_posted`, which would drag reports and takedowns into the clip
+ * pipeline -- `roleOf` calls anything with a `fan:` actor "community", so an
+ * owner could be handed somebody's abuse report as a postable draft.
  */
-const REPORTED = "piece_reported" as unknown as EventType;
-const HIDDEN = "piece_hidden" as unknown as EventType;
+const REPORTED: EventType = "piece_reported";
+const HIDDEN: EventType = "piece_hidden";
 
 /**
  * Moderation must never become content.

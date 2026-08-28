@@ -121,6 +121,28 @@ Opens with `retry: 3000`, heartbeats every 25s, reconnects on its own.
 Presence fires **only when the room actually changes** — heartbeats are silent.
 Anyone unheard-from for 60s is swept, so a closed tab does not haunt a piece.
 
+### Creator
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/v1/digest?hours=24` | structured digest; `&format=text` for the rendered note |
+| `POST` | `/v1/pieces/:id/report` | `{fan_id, event_id, reason}` |
+| `POST` | `/v1/pieces/:id/hide` | `{event_id, by?}` — the API key **is** creator authority |
+| `GET` | `/v1/pieces/:id/reports` | what has been reported here |
+
+The digest leads with **contributions nobody has built on yet** — an ignored
+contribution is the thing most likely to lose a person, and the creator is the
+one who can fix it. Not window-scoped: something ignored for three days must not
+drop off the list on the day it matters most.
+
+**Hiding is additive.** The log refuses `UPDATE` and `DELETE`, so a takedown is
+a new event readers respect — attribution and history stay intact, visibility
+becomes a read-time decision. Hidden work disappears from the lineage, the
+public page, the permalink (404) and the return screen, all four.
+
+**Rate limit:** 5 extensions per fan per hour → `429` with `retry_after`.
+Checked before the write and before any host call.
+
 ### The return screen — the most important response
 
 ```ts

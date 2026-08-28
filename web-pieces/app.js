@@ -318,9 +318,11 @@ async function returnPage(fanId) {
       chrome(),
       el("section", { class: "return" },
         el("h1", { text: "Nothing has changed." }),
+        // Two lines said this; one says it. The cut line ("There is nothing
+        // else to tell you...") was reassurance about the silence, which is
+        // itself a way of filling it.
         el("div", { class: "empty" },
           el("p", { text: "Nobody has built on your work since you were last here." }),
-          el("p", { text: "There is nothing else to tell you. When somebody does, it will be on this page." }),
         ),
         el("p", { style: "margin-top:2rem" }, el("a", { href: href({}), text: "Find a piece to add to" })),
       ),

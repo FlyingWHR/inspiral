@@ -129,10 +129,8 @@ async function main(): Promise<void> {
     console.log("");
   }
 
-  console.log(`${D}  Read the yellow lines. Do they name a specific thing kept and a${R}`);
-  console.log(`${D}  specific thing changed, in the writers' own nouns? If they say${R}`);
-  console.log(`${D}  "built on your idea" or anything encouraging, the product does not${R}`);
-  console.log(`${D}  work yet and no amount of interface will save it.${R}`);
+  console.log(`${D}  Does each yellow line name one thing KEPT and one thing CHANGED, in${R}`);
+  console.log(`${D}  the writers' own nouns? "Built on your idea" means it does not work.${R}`);
   console.log("");
 
   await host.close();

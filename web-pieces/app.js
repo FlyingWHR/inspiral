@@ -159,7 +159,9 @@ async function piecePage(pieceId) {
     const list = kids.get(parentId);
     if (!list) return null;
     return el("ol", { class: "branch" },
-      list.map((x) => entry(x.event_id, { body: x.body, who: x.fan_id, ts: x.ts })),
+      // display_name, not the id: this page is the public artefact, and a
+      // stranger reading it should see a person rather than a database key.
+      list.map((x) => entry(x.event_id, { body: x.body, who: x.display_name || x.fan_id, ts: x.ts })),
     );
   }
 

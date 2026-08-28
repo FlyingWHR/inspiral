@@ -493,7 +493,16 @@ export class CanonRepo {
       .prepare(
         `INSERT INTO visitors (fan_id, first_seen, last_seen, display_name, present, synthetic, profile)
          VALUES (?, ?, ?, ?, 1, ?, ?)
-         ON CONFLICT(fan_id) DO UPDATE SET last_seen = excluded.last_seen, present = 1`,
+         ON CONFLICT(fan_id) DO UPDATE SET
+           last_seen = excluded.last_seen,
+           present = 1,
+           -- Take a name when one is offered and we do not have one yet.
+           -- Without this a visitor who first appeared anonymously was stuck
+           -- rendering as a raw id forever, however many times they later said
+           -- what to call them -- on the page a stranger reads.
+           display_name = CASE
+             WHEN excluded.display_name <> '' THEN excluded.display_name
+             ELSE visitors.display_name END`,
       )
       .run(fanId, now, now, displayName, synthetic ? 1 : 0, synthetic?.profile ?? null);
   }

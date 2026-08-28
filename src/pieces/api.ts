@@ -25,6 +25,8 @@
  */
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
+import { createReadStream, existsSync, statSync } from "node:fs";
+import { extname, join, resolve, sep } from "node:path";
 import type { CanonRepo } from "../canon/repo.js";
 import { log } from "../log.js";
 import {
@@ -40,7 +42,9 @@ import {
   getPiece,
   lineage,
   listPieces,
+  markSeen,
   parentAuthor,
+  seedPiece,
   waitingFor,
 } from "./repo.js";
 import type { HostRuntime } from "../host/HostRuntime.js";
@@ -58,6 +62,16 @@ export interface PiecesApiOptions {
   apiKey?: string | undefined;
   /** Base for permalinks in responses. */
   publicUrl?: string;
+  /**
+   * Static app root, served at `/`. ONE ORIGIN ON PURPOSE.
+   *
+   * A static page has nowhere to keep an API key, and receipt links pointing at
+   * a second server on a second port 404 for anyone who follows them. Serving
+   * the app and the API from the same place removes both problems at once
+   * instead of inventing a token-passing scheme for a thing that does not need
+   * one yet.
+   */
+  webRoot?: string;
   /**
    * Optional. Without it every extension lands without its sentence, which is
    * the whole payload -- the work is stored, and the person waiting is told
@@ -136,6 +150,7 @@ export class PiecesApi {
   private readonly port: number;
   private readonly apiKey: string | undefined;
   private readonly host: HostRuntime | undefined;
+  private readonly webRoot: string | undefined;
   private readonly publicUrl: string;
 
   constructor(opts: PiecesApiOptions) {
@@ -143,6 +158,7 @@ export class PiecesApi {
     this.port = opts.port ?? 8792;
     this.apiKey = opts.apiKey;
     this.host = opts.host;
+    this.webRoot = opts.webRoot;
     this.publicUrl = (opts.publicUrl ?? `http://localhost:${opts.port ?? 8792}`).replace(/\/+$/, "");
   }
 
@@ -201,9 +217,18 @@ export class PiecesApi {
     const path = url.pathname.replace(/\/+$/, "") || "/";
     const method = req.method ?? "GET";
 
-    // ---- public: the shareable artefact ------------------------------------
+    // ---- public: the shareable artefacts -----------------------------------
     const page = /^\/w\/[^/]+\/p\/([A-Za-z0-9_]{1,64})$/.exec(path);
     if (method === "GET" && page) return this.pagePiece(res, page[1]!);
+
+    /**
+     * The receipt for a single extension. Served HERE and not only by
+     * MemoryApi, because every lineage entry links to one: pointing them at a
+     * different server on a different port meant every link on the shareable
+     * page 404'd for whoever followed it.
+     */
+    const receipt = /^\/w\/[^/]+\/e\/([A-Za-z0-9_]{1,64})$/.exec(path);
+    if (method === "GET" && receipt) return this.pageReceipt(res, receipt[1]!);
 
     // ---- authenticated ------------------------------------------------------
     const deny = this.denied(req);
@@ -216,6 +241,19 @@ export class PiecesApi {
     if (method === "GET" && path === "/v1/waiting") {
       if (deny) return closed();
       return this.getWaiting(res, url);
+    }
+
+    if (method === "POST" && path === "/v1/pieces") {
+      if (deny) return closed();
+      return this.postSeed(res, await readJson(req));
+    }
+    if (method === "POST" && path === "/v1/seen") {
+      if (deny) return closed();
+      const body = (await readJson(req)) as Record<string, unknown>;
+      const fan = str(body.fan_id);
+      if (!fan) return json(res, 400, { error: "fan_id is required" });
+      markSeen(this.repo, fan);
+      return json(res, 200, { status: "seen" });
     }
 
     const extend = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})\/extend$/.exec(path);
@@ -231,6 +269,8 @@ export class PiecesApi {
       if (!full) return json(res, 404, { error: `no piece '${one[1]!}'` });
       return json(res, 200, full);
     }
+
+    if (method === "GET" && this.webRoot && this.serveStatic(path, res)) return;
 
     json(res, 404, { error: `no route for ${method} ${path}` });
   }
@@ -368,6 +408,73 @@ footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);
    * Every entry links to its receipt, which is the difference between saying
    * somebody made this and being able to check.
    */
+  /**
+   * A creator starts something. The only way in over HTTP -- without it a piece
+   * could only be created in-process, which meant the product had no first
+   * step for the one person who has to take it.
+   */
+  private postSeed(res: ServerResponse, raw: unknown): void {
+    const b = raw as Record<string, unknown>;
+    const title = str(b.title, 200);
+    const brief = typeof b.brief === "string" ? b.brief.trim() : "";
+    if (!title) return json(res, 400, { error: "title is required" });
+    /**
+     * The brief is not optional and not decoration. It is the single strongest
+     * lever on whether anybody contributes anything worth building on: a vague
+     * one produces "nice!", a sharp one produces work. Refusing an empty one is
+     * cheaper than a space full of pieces nobody can answer.
+     */
+    if (brief.length < 12) {
+      return json(res, 400, { error: "brief must say what a good addition looks like" });
+    }
+    const piece = seedPiece(this.repo, { title, brief });
+    json(res, 201, { piece, page: `${this.publicUrl}/w/${this.worldSlug()}/p/${piece.piece_id}` });
+  }
+
+  /** One extension, permanently addressable. What a citation points at. */
+  private pageReceipt(res: ServerResponse, eventId: string): void {
+    const e = this.repo.getEvent(eventId);
+    if (!e || (e.type !== "piece_extended" && e.type !== "piece_seeded")) {
+      return html(res, 404, this.page("Not in the log",
+        `<h1>Not in the log</h1><p class="sub">${esc(eventId)}</p>
+<p>Nothing here is generated on demand. If it is not in the append-only log, it did not happen.</p>`));
+    }
+    const p = e.payload as Record<string, unknown>;
+    const pieceId = String(p.piece_id ?? "");
+    const piece = getPiece(this.repo, pieceId);
+    const who = String(p.fan_id ?? "");
+    const name = who ? this.repo.getVisitor(who)?.display_name || who : "the brief";
+    const body = String(p.body ?? p.brief ?? "");
+    html(res, 200, this.page(
+      `${name} on ${piece?.title ?? pieceId}`,
+      `<h1>${esc(name)}</h1>
+<p class="sub"><time>${esc(e.ts)}</time>on <a href="/w/${esc(this.worldSlug())}/p/${esc(pieceId)}">${esc(piece?.title ?? pieceId)}</a></p>
+<p>${esc(body)}</p>
+${typeof p.changed === "string" && p.changed ? `<p class="sub">${esc(p.changed)}</p>` : ""}
+<p class="id">${esc(e.event_id)}</p>
+<footer>This record cannot be edited or deleted -- the database refuses both.</footer>`));
+  }
+
+  /**
+   * The app itself. Path traversal is blocked the same way the ward's static
+   * server blocks it: resolve, then require the result to still be inside root.
+   */
+  private serveStatic(path: string, res: ServerResponse): boolean {
+    if (!this.webRoot) return false;
+    const rel = path === "/" ? "/index.html" : path;
+    const full = resolve(join(this.webRoot, decodeURIComponent(rel)));
+    const base = resolve(this.webRoot);
+    if (full !== base && !full.startsWith(base + sep)) return false;
+    if (!existsSync(full) || !statSync(full).isFile()) return false;
+    const type =
+      { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+        ".css": "text/css; charset=utf-8", ".json": "application/json",
+        ".svg": "image/svg+xml", ".png": "image/png" }[extname(full)] ?? "application/octet-stream";
+    res.writeHead(200, { "content-type": type });
+    createReadStream(full).pipe(res);
+    return true;
+  }
+
   private pagePiece(res: ServerResponse, pieceId: string): void {
     const full = this.lineage(pieceId);
     if (!full) {

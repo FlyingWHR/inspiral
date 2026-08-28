@@ -285,12 +285,27 @@ export function lineage(repo: CanonRepo, pieceId: string): PieceWithLineage | un
  * invents a reason to come back is the exact thing that makes this category
  * feel cheap.
  */
+export const seenKey = (fanId: string): string => `seen:${fanId}`;
+
+/**
+ * Mark everything up to now as read.
+ *
+ * A timestamp rather than a per-item flag: the question is only ever "what has
+ * happened since I last looked", and one meta row answers it without a table
+ * or a migration. It also degrades correctly -- a fan who never acknowledges
+ * simply keeps seeing the list, which is annoying rather than wrong.
+ */
+export function markSeen(repo: CanonRepo, fanId: string, through?: string): void {
+  repo.setMeta(seenKey(fanId), through ?? repo.now());
+}
+
 export function waitingFor(
   repo: CanonRepo,
   fanId: string,
   permalink: (eventId: string) => string,
   limit = 20,
 ): WaitingForYou {
+  const seenThrough = repo.getMeta(seenKey(fanId));
   const mine = new Set(
     repo
       .eventsInvolving(`fan:${fanId}`, 500)
@@ -305,6 +320,7 @@ export function waitingFor(
     const x = eventToExtension(e, repo);
     if (x.fan_id === fanId) continue; // your own work is not news to you
     if (!mine.has(x.parent_event_id)) continue;
+    if (seenThrough && x.ts <= seenThrough) continue; // already read
 
     const parent = repo.getEvent(x.parent_event_id);
     const piece = getPiece(repo, x.piece_id);

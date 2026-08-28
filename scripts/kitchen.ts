@@ -37,6 +37,7 @@ import { startHostRuntime } from "../src/host/index.js";
 import { loadConfig } from "../src/config.js";
 import { systemClock } from "../src/clock.js";
 import { setLogLevel } from "../src/log.js";
+import type { MoveValues, Slot } from "../src/pieces/contract.js";
 
 const argv = process.argv.slice(2);
 const flag = (n: string) => argv.includes(`--${n}`);
@@ -59,88 +60,73 @@ interface Seed {
   title: string;
   brief: string;
   location: string;
+  /**
+   * The palette. Options are the kitchen's, which is what makes this Ramsay's
+   * test kitchen rather than a textarea with a chef's name over it.
+   */
+  schema: Slot[];
   /** Each entry builds on the one before it unless `branchFrom` says otherwise. */
-  takes: { by: string; body: string; branchFrom?: number }[];
+  takes: { by: string; body: string; values: MoveValues; branchFrom?: number }[];
 }
+
+const slot = (key: string, label: string, options: string[], required = true): Slot => ({
+  key, label, options, required,
+});
 
 const KITCHEN: Seed[] = [
   {
-    title: "Five Ingredients",
+    title: "The Standing Dish",
     brief:
-      "Five ordinary things, one dish worth arguing about. Say what you would do and why. " +
-      "Disagreeing with what is already here is the point, not a problem.",
+      "One vegetable, one method, one finish. Take the plate above you and change exactly " +
+      "one of the three. Say why in a line. Do not add a fourth thing.",
     location: "test_kitchen",
+    schema: [
+      slot("main", "Main", ["fennel", "celeriac", "pumpkin", "chicory", "lamb neck"]),
+      slot("method", "Method", ["braise", "raw", "roast", "grill", "cure"]),
+      slot("finish", "Finish", ["brown butter", "anchovy", "yoghurt", "burnt honey", "nothing"]),
+    ],
     takes: [
-      {
-        by: "ada",
-        body:
-          "Fennel, butter, lemon, salt, stale bread. Braise the fennel in the butter for an hour " +
-          "until it collapses, then tear the bread in and let it drink the liquid. Lemon at the " +
-          "very end, off the heat, or it turns metallic. It should taste sweet before it tastes " +
-          "of anything else.",
-      },
-      {
-        by: "maya",
-        body:
-          "Kept the fennel and the bread, dropped the hour. Shave it raw on a mandoline, salt it " +
-          "hard, leave it twenty minutes until it weeps. Toast the bread in the butter instead. " +
-          "You lose the sweetness and you get the crunch back, which is the better trade.",
-      },
-      {
-        by: "tomas",
-        body:
-          "You are both throwing away the fronds. Blend them with the lemon and the butter into a " +
-          "green sauce and spoon it over whichever version you made. Same five things, one more " +
-          "step, and the dish stops being beige.",
-      },
-      {
-        // Branching off Ada rather than the newest: an argument is a tree.
-        by: "wren",
-        branchFrom: 0,
-        body:
-          "The hour is right, the bread is wrong. Braise it exactly as you said and serve it on " +
-          "nothing — no bread, no starch, a bowl and a spoon. The dish is already sweet and soft; " +
-          "adding something to soak it up is apologising for it.",
-      },
+      { by: "ada", values: { main: "fennel", method: "braise", finish: "brown butter" },
+        body: "Braised until it gives up. The butter is the whole point." },
+      { by: "maya", values: { main: "fennel", method: "raw", finish: "brown butter" },
+        body: "It was already sweet. Braising was hiding that." },
+      { by: "tomas", values: { main: "fennel", method: "raw", finish: "burnt honey" },
+        body: "Fennel wants something bitter, not nutty." },
+      { by: "wren", branchFrom: 0, values: { main: "chicory", method: "braise", finish: "anchovy" },
+        body: "Chicory can take the anchovy. Fennel just goes salty." },
     ],
   },
   {
     title: "The Thing You Ruined",
     brief:
-      "One dish you got wrong, and what you would actually change — not 'more practice'. " +
-      "Name the step. Somebody else will tell you it was a different step.",
+      "A dish you got wrong. Name the step you would change, not 'more practice'. " +
+      "Somebody will tell you it was a different step.",
     location: "test_kitchen",
+    schema: [
+      slot("dish", "Dish", ["carbonara", "risotto", "hollandaise", "roast chicken", "bread"]),
+      slot("blame", "The step", ["heat", "timing", "ratio", "the pan", "resting"]),
+    ],
     takes: [
-      {
-        by: "rook",
-        body:
-          "Carbonara, split every time for a year. I blamed the heat. It was the pan: I was using " +
-          "the same one I had rendered the guanciale in, straight off the flame, and no amount of " +
-          "care survives that much residual heat. Move it to a cold bowl and it never splits again.",
-      },
-      {
-        by: "maya",
-        body:
-          "It was not the pan, it was the ratio. One whole egg to two yolks per person and it will " +
-          "hold in a hot pan all day. You fixed it by removing heat because you had too much white " +
-          "in there to survive any.",
-      },
+      { by: "rook", values: { dish: "carbonara", blame: "the pan" },
+        body: "Straight off the flame, so it scrambled. A cold bowl fixed a year of it." },
+      { by: "maya", values: { dish: "carbonara", blame: "ratio" },
+        body: "Too much white to survive any heat. You removed the heat instead." },
     ],
   },
   {
-    title: "Salt, Fat, Acid — and What Is Missing",
+    title: "What Is It Short Of",
     brief:
-      "Take a dish that is technically correct and boring. Say which one it is short of, " +
-      "and prove it with a single change. One ingredient, not a rewrite.",
+      "A dish that is technically correct and boring. Pick what it lacks and the one " +
+      "ingredient that proves it. One change, not a rewrite.",
     location: "the_pass",
+    schema: [
+      slot("dish", "Dish", ["roast chicken", "lentil soup", "mash", "tomato salad"]),
+      slot("short", "Short of", ["acid", "salt", "fat", "bitterness", "texture"]),
+      slot("fix", "One ingredient", ["lemon", "vinegar", "anchovy", "burnt butter", "raw onion"]),
+    ],
     takes: [
-      {
-        by: "tomas",
-        body:
-          "Roast chicken, done properly, dry-brined, rested. Boring. It is short of acid and " +
-          "nobody says so because the skin is good. Squeeze half a lemon into the resting juices " +
-          "and pour that back over. One ingredient. It stops being a photograph of a chicken.",
-      },
+      { by: "tomas", values: { dish: "roast chicken", short: "acid", fix: "lemon" },
+        body: "Into the resting juices, not over the skin. It stops being a photograph." },
     ],
   },
   {
@@ -149,29 +135,27 @@ const KITCHEN: Seed[] = [
       "Something handed down to you. Change exactly one thing and say what it is for. " +
       "You are allowed to be wrong about your own grandmother.",
     location: "the_pass",
+    schema: [
+      slot("dish", "Handed down", ["soda bread", "ragu", "trifle", "dumplings", "pickle"]),
+      slot("change", "Changed", ["the heat", "the timing", "the cut", "an ingredient", "nothing"]),
+    ],
     takes: [
-      {
-        by: "wren",
-        body:
-          "My grandmother's soda bread had a cross cut in the top so the fairies could get out. " +
-          "The cross is not superstition, it is heat: without it the middle stays raw and the " +
-          "crust goes hard. I cut it deeper than she did. Same reason, more of it.",
-      },
-      {
-        by: "ada",
-        body:
-          "Deeper is the wrong axis. Cut it the same depth and turn the oven down forty degrees " +
-          "for the last ten minutes. You are treating a timing problem as a geometry problem, " +
-          "which is what everybody does with inherited recipes.",
-      },
+      { by: "wren", values: { dish: "soda bread", change: "the cut" },
+        body: "The cross is not superstition, it is heat. I cut it deeper." },
+      { by: "ada", values: { dish: "soda bread", change: "the heat" },
+        body: "Deeper is the wrong axis. Drop the oven forty degrees at the end." },
     ],
   },
   {
     title: "Feed the Kitchen for Nothing",
     brief:
       "Staff meal. Whatever is about to turn, no budget, twenty minutes, twelve people. " +
-      "Say what you would actually cook, not what would photograph.",
+      "What you would actually cook, not what would photograph.",
     location: "staff_table",
+    schema: [
+      slot("base", "Base", ["rice", "bread", "potatoes", "pasta", "nothing"]),
+      slot("about_to_turn", "About to turn", ["tomatoes", "cream", "greens", "bones", "cheese ends"]),
+    ],
     takes: [],
   },
 ];
@@ -195,6 +179,7 @@ async function main(): Promise<void> {
       title: seed.title,
       brief: seed.brief,
       location: seed.location,
+      schema: seed.schema,
     });
     console.log(`\n  ${B}${seed.title}${R}  ${D}${seed.location}${R}`);
 
@@ -228,6 +213,7 @@ async function main(): Promise<void> {
         parent_event_id: events[at]!,
         fan_id: take.by,
         body: take.body,
+        values: take.values,
         changed,
         display_name: name,
       });

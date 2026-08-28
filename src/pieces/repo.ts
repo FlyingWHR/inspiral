@@ -210,7 +210,9 @@ export class ExtendError extends Error {
       | "no_piece" | "closed" | "no_parent" | "wrong_piece"
       | "too_short" | "too_long"
       /** A move that does not fill the slots the piece declares. */
-      | "bad_move",
+      | "bad_move"
+      /** A move identical to the one it builds on. */
+      | "no_change",
   ) {
     super(message);
     this.name = "ExtendError";
@@ -265,6 +267,26 @@ export function extendPiece(
   const missing = piece.schema.filter((s) => s.required && !values[s.key]);
   if (missing.length) {
     throw new ExtendError(`pick a ${missing.map((m) => m.label.toLowerCase()).join(" and a ")}`, "bad_move");
+  }
+
+  /**
+   * A MOVE THAT CHANGES NOTHING IS NOT A MOVE, and this has to be refused
+   * here rather than in the form.
+   *
+   * The palette already disables its own button, but a rule enforced only in
+   * one client is not enforced: any API caller, and the world itself, could
+   * post an identical move -- and it would notify the parent's author that
+   * somebody built on their work when nobody had. That is the one thing this
+   * product must never do, so it is checked where every caller passes.
+   *
+   * Only for slotted pieces. On free text an identical body is somebody
+   * repeating themselves, which is rude rather than false.
+   */
+  if (piece.schema.length) {
+    const before = (parent.payload as Record<string, unknown>).values as MoveValues | undefined;
+    if (before && piece.schema.every((sl) => before[sl.key] === values[sl.key])) {
+      throw new ExtendError("change one thing first -- this is what is already there", "no_change");
+    }
   }
 
   repo.ensureVisitor(input.fan_id, input.display_name ?? "");

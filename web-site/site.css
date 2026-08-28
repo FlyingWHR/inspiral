@@ -74,3 +74,14 @@ span.i-chip { cursor: default; }
 
 .foot { padding-top: var(--gap-m); padding-bottom: var(--gap-xl); }
 .foot p { margin: 0; }
+
+/* Attribution, not a badge row. Credit reads as a sentence because that is
+   what it is; a logo wall says "look who we are with" and this says what the
+   Mind actually does here. */
+.built-on {
+  font-family: var(--font-read);
+  color: var(--ink-dim);
+  max-width: 34rem;
+  margin: 0 0 var(--gap-s);
+}
+.built-on a { color: var(--haze); }

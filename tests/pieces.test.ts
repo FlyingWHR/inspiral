@@ -273,3 +273,52 @@ describe("moves", () => {
 
 /** diffMoves is pure; these cases need no database. */
 function repo_noop(): void {}
+
+/**
+ * The palette disables its own button on a no-op, but a rule enforced in one
+ * client is not enforced. An API caller could post an identical move and the
+ * parent's author would be told somebody built on their work when nobody had
+ * -- the one thing this product must never do.
+ */
+describe("a move that changes nothing", () => {
+  const SCHEMA = [
+    { key: "main", label: "Main", options: ["fennel", "chicory"], required: true },
+    { key: "method", label: "Method", options: ["braise", "raw"], required: true },
+  ];
+
+  it("is refused, however the caller reaches it", () => {
+    const repo = world();
+    const p = seedPiece(repo, { title: "Dish", brief: "one thing", schema: SCHEMA });
+    const seed = lineage(repo, p.piece_id)!.seed_event_id;
+    const first = extendPiece(repo, {
+      piece_id: p.piece_id, parent_event_id: seed, fan_id: "ada", body: "as it stands",
+      values: { main: "fennel", method: "braise" },
+    }).extension.event_id;
+
+    expect(() => extendPiece(repo, {
+      piece_id: p.piece_id, parent_event_id: first, fan_id: "maya", body: "identical",
+      values: { main: "fennel", method: "braise" },
+    })).toThrow(/change one thing/);
+
+    // One slot different is enough.
+    const ok = extendPiece(repo, {
+      piece_id: p.piece_id, parent_event_id: first, fan_id: "maya", body: "raw instead",
+      values: { main: "fennel", method: "raw" },
+    });
+    expect(ok.notifies).toBe("ada");
+    repo.close();
+  });
+
+  it("does not apply to free text, where repeating yourself is rude, not false", () => {
+    const repo = world();
+    const p = seedPiece(repo, { title: "Open", brief: "say anything" });
+    const seed = lineage(repo, p.piece_id)!.seed_event_id;
+    const a = extendPiece(repo, {
+      piece_id: p.piece_id, parent_event_id: seed, fan_id: "ada", body: "the same words",
+    }).extension.event_id;
+    expect(() => extendPiece(repo, {
+      piece_id: p.piece_id, parent_event_id: a, fan_id: "maya", body: "the same words",
+    })).not.toThrow();
+    repo.close();
+  });
+});

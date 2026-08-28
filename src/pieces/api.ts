@@ -178,6 +178,8 @@ const STATUS: Record<ExtendError["code"], number> = {
   too_long: 400,
   // A move missing a required slot is the caller holding a stale schema.
   bad_move: 400,
+  // The caller is holding a stale parent, or a client skipped its own check.
+  no_change: 409,
 };
 
 export class PiecesApi {
@@ -619,7 +621,22 @@ export class PiecesApi {
      * line of writing is how a space stays empty.
      */
     const who = identify(this.repo, token, fan);
-    if (!who || !mayActAs(this.repo, who, fan)) {
+    /**
+     * Two different refusals, and they were one.
+     *
+     * `identify` returns null for a malformed id as well as for an absent one,
+     * so "q" -- too short for the id rules -- was answered with "q has been
+     * claimed", which is untrue and sends somebody to sign in as a name nobody
+     * holds. An unusable name and a taken name are different problems and get
+     * different sentences.
+     */
+    if (!who) {
+      return json(res, 400, {
+        error: "a name is 3 to 64 characters, letters, numbers and underscores",
+        code: "bad_name",
+      });
+    }
+    if (!mayActAs(this.repo, who, fan)) {
       return json(res, 403, {
         error: `"${fan}" has been claimed. Sign in as them, or use another name.`,
         code: "claimed",

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identity — Pieces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;600;800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./inspiral.css">
+<script type="module" src="/shared/inspiral-portal.js"></script>
+</head>
+<body>
+<!--
+  EVERY COMPONENT IN THE SYSTEM, ON ONE PAGE. Served at /identity.html.
+
+  This is the reference a designer checks against, and the page where a
+  regression in the identity shows up before it reaches a real screen. The
+  portal module is loaded from /shared/ -- the same bake the 3D world uses, so
+  if this page looks right the piece standing in the voxel ward does too.
+
+  It renders with no server behind it: nothing here fetches.
+-->
+
+<section class="i-hero">
+  <inspiral-portal depth="12" seed="8.8"></inspiral-portal>
+  <div class="i-hero-inner">
+    <span class="i-label">You have not been here before</span>
+    <h1 class="i-title i-title-l">Southgate</h1>
+    <p class="i-body">Twelve pieces are standing here. Some were left this morning, some have been turning for a year. Nothing in this place is finished.</p>
+    <button class="i-btn">Step through</button>
+  </div>
+</section>
+
+<hr class="i-divider">
+
+<section style="display:grid;gap:36px;padding:64px clamp(20px,5vw,80px);max-width:1100px;margin:0 auto">
+  <div class="i-host">
+    <span class="i-host-by">Written by the host</span>
+    <p class="i-host-line">Maya kept your anchovy and butter but skipped your barely-cooked garlic in favour of blitzed parsley stems with lemon zest.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:24px">
+    <button class="i-piece" style="width:100%">
+      <inspiral-portal depth="1" seed="0.2"></inspiral-portal>
+      <span class="i-piece-name">Cinder Council</span>
+      <span class="i-piece-status">You have only walked past</span>
+    </button>
+    <button class="i-piece" style="width:100%">
+      <inspiral-portal depth="4" seed="3.4"></inspiral-portal>
+      <span class="i-piece-name">Salt Harbour Dawn</span>
+      <span class="i-piece-status" data-yours="true">Your work is in this one</span>
+    </button>
+    <button class="i-piece" style="width:100%">
+      <inspiral-portal depth="12" seed="5.9"></inspiral-portal>
+      <span class="i-piece-name">Emberlight Tavern</span>
+      <span class="i-piece-status" data-moved="true">Moved since your last visit</span>
+    </button>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <button class="i-chip" aria-pressed="true">the anchovy butter</button>
+    <button class="i-chip" aria-pressed="false">the barely-cooked garlic</button>
+    <button class="i-chip" aria-pressed="true">the sea-then-pan note</button>
+  </div>
+
+  <textarea class="i-field" rows="3" placeholder="What you changed, in one line."></textarea>
+
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <button class="i-btn">Put it down</button>
+    <button class="i-btn-quiet">Leave it as it is</button>
+    <span class="i-record">fan:maya_r · evt_m8k2p1_0007 · inspiral.place/p/sunday-pasta/6</span>
+  </div>
+</section>
+
+</body>
+</html>

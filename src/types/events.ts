@@ -55,6 +55,15 @@ export const EventType = z.enum([
   "world_created",
   "character_minted", // a sheet was pasted in and became an inhabitant
   "terrain_altered", // a visitor dug out or built onto the world itself
+  // --- pieces: the things people make together ---
+  //
+  // `piece_seeded` is the root of a lineage; `piece_extended` is somebody
+  // building on somebody else. Both are events rather than rows because
+  // attribution IS the product here, and the events table refuses UPDATE and
+  // DELETE at the database level. A lineage that could be edited to take a
+  // name off somebody's work would be worth nothing.
+  "piece_seeded",
+  "piece_extended",
 ]);
 export type EventType = z.infer<typeof EventType>;
 

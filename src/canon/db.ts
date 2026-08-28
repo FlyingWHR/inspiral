@@ -234,9 +234,39 @@ CREATE TABLE IF NOT EXISTS clip_drafts (
 );
 CREATE INDEX IF NOT EXISTS idx_cd_ts   ON clip_drafts(drafted_ts);
 CREATE INDEX IF NOT EXISTS idx_cd_role ON clip_drafts(role, drafted_ts);
+
+-- ---------------------------------------------------------------------------
+-- PIECES -- the things people make together.
+--
+-- A piece is mutable state (title, status, generation, contributors) and so it
+-- is a row. Its LINEAGE is not here: every extension is an event, because
+-- attribution is the product and the events table refuses UPDATE and DELETE at
+-- the database level. A lineage that could be edited to take somebody's name
+-- off their work would be worth nothing.
+--
+-- Its own table rather than reusing the arcs table, which is a near-exact
+-- structural match. Reuse saves a migration and costs permanent confusion --
+-- a table called 'arcs' holding pieces, with a dead 'tension' column, is what
+-- somebody decodes at 3am.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS pieces (
+  piece_id     TEXT PRIMARY KEY,
+  title        TEXT NOT NULL,
+  brief        TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'open',
+  -- Depth, not score. Never rendered as a leaderboard: ranking contribution is
+  -- how a remix community turns into a farm.
+  generation   INTEGER NOT NULL DEFAULT 0,
+  contributors TEXT NOT NULL DEFAULT '[]',
+  -- The event that started it. Every extension chains back to this.
+  seed_event_id TEXT NOT NULL,
+  created_ts   TEXT NOT NULL,
+  updated_ts   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_pieces_status ON pieces(status, updated_ts);
 `;
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 /**
  * Open (and if needed create) the canon database.
@@ -269,6 +299,11 @@ export function openDb(path: string): DB {
       db.exec("ALTER TABLE visitors ADD COLUMN profile TEXT");
     }
   }
+  /**
+   * 2 -> 3 needs no ALTER: `pieces` is a new table and arrives with the
+   * idempotent DDL above. The version bump is here so an older binary reading
+   * this file knows it is looking at something it does not fully understand.
+   */
   if (row < SCHEMA_VERSION) {
     db.pragma(`user_version = ${SCHEMA_VERSION}`);
   }

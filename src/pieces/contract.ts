@@ -348,5 +348,12 @@ export interface ExtendResponse {
 
 /** Bodies are work, not chat. Long enough to say something, short enough to read. */
 export const BODY_MAX = 1200;
+/**
+ * A caption on a piece WITH slots. Much shorter than a free-text body, and
+ * deliberately: the move is the choices, and the line only says why. A field
+ * offering 1200 characters asks for an essay, gets one, and quietly puts the
+ * work back in the prose where it was before slots existed.
+ */
+export const CAPTION_MAX = 220;
 export const BODY_MIN = 8;
 export const CHANGED_MAX = 240;

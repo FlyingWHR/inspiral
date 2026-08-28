@@ -35,6 +35,7 @@ import { log } from "../log.js";
 import {
   BODY_MAX,
   BODY_MIN,
+  CAPTION_MAX,
   type Extension,
   type ExtendResponse,
   type PieceWithLineage,
@@ -42,6 +43,8 @@ import {
 import {
   ExtendError,
   extendPiece,
+  describeDiff,
+  diffMoves,
   getPiece,
   lineage,
   listPieces,
@@ -553,7 +556,10 @@ export class PiecesApi {
       return json(res, 200, full);
     }
 
-    if (method === "GET" && this.webRoot && this.serveStatic(path, res)) return;
+    // `/site` with no trailing slash needs index.html, same as `/`.
+    if (method === "GET" && this.webRoot && this.serveStatic(path === "/site" ? "/site/" : path, res)) {
+      return;
+    }
 
     json(res, 404, { error: `no route for ${method} ${path}` });
   }
@@ -590,9 +596,14 @@ export class PiecesApi {
         error: `body must be at least ${BODY_MIN} characters -- say something`,
       });
     }
-    if (body.length > BODY_MAX) {
+    /**
+     * A slotted piece takes a caption, not a body. The ceiling is the
+     * difference between "say why" and "write it all again in prose".
+     */
+    const cap = getPiece(this.repo, pieceId)?.schema.length ? CAPTION_MAX : BODY_MAX;
+    if (body.length > cap) {
       return json(res, 400, {
-        error: `body must be at most ${BODY_MAX} characters (got ${body.length})`,
+        error: `at most ${cap} characters (got ${body.length})`,
       });
     }
 
@@ -640,6 +651,21 @@ export class PiecesApi {
        */
       const piece = getPiece(this.repo, pieceId);
       const addressee = parentAuthor(this.repo, parent);
+      const values = (b.values ?? {}) as Record<string, string>;
+
+      /**
+       * The diff goes to the host as fact. Computed here rather than in
+       * narrateChange so a caller cannot forget it -- the whole reliability
+       * gain evaporates the moment one path narrates from prose again.
+       */
+      const parentEvent = this.repo.getEvent(parent);
+      const parentValues =
+        ((parentEvent?.payload as Record<string, unknown>)?.values ?? {}) as Record<string, string>;
+      const diff =
+        piece && piece.schema.length
+          ? describeDiff(diffMoves(piece.schema, parentValues, values))
+          : "";
+
       const changed =
         piece && addressee && addressee.fan_id !== fan
           ? await narrateChange(this.host, {
@@ -648,6 +674,7 @@ export class PiecesApi {
               parent_author: addressee.display_name,
               child_body: body,
               child_author: str(b.display_name, 120) ?? fan,
+              ...(diff ? { diff } : {}),
             })
           : undefined;
 
@@ -656,6 +683,7 @@ export class PiecesApi {
         parent_event_id: parent,
         fan_id: fan,
         body,
+        values,
         changed,
         display_name: str(b.display_name, 120) ?? undefined,
       });
@@ -834,13 +862,29 @@ ${typeof p.changed === "string" && p.changed ? `<p class="sub">${esc(p.changed)}
      * that drift -- the precedent set by the look profiles, the sky dome and
      * the grade shader, which are shared for exactly the same reason.
      */
+    /**
+     * Three roots, one server. `/shared/` is the portal bake both surfaces
+     * use; `/site/` is the engine's own page, which explains the thing the
+     * rest of this server IS. Keeping the site here rather than on its own
+     * host means the "walk into the example world" link is a relative one and
+     * cannot rot.
+     */
     const shared = path.startsWith("/shared/");
-    const root = shared ? here("../../web-voxel/scene") : this.webRoot;
+    const site = path === "/site" || path.startsWith("/site/");
+    const root = shared
+      ? here("../../web-voxel/scene")
+      : site
+        ? here("../../web-site")
+        : this.webRoot;
     const rel = shared
       ? path.slice("/shared".length)
-      : path === "/"
-        ? "/index.html"
-        : path;
+      : site
+        // "/site" slices to "", "/site/" slices to "/" -- both are the index,
+        // and only the first was caught by a plain `||`.
+        ? ((r) => (r === "" || r === "/" ? "/index.html" : r))(path.slice("/site".length))
+        : path === "/"
+          ? "/index.html"
+          : path;
     const full = resolve(join(root, decodeURIComponent(rel)));
     const base = resolve(root);
     if (full !== base && !full.startsWith(base + sep)) return false;

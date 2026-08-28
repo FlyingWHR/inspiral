@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inspiral — the engine</title>
+<meta name="description" content="An engine for spaces where an audience builds on each other's work, a Mind names what changed, and the log refuses UPDATE and DELETE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;600;800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- The identity, unchanged. site.css adds layout and nothing else. -->
+<link rel="stylesheet" href="../web-pieces/inspiral.css">
+<link rel="stylesheet" href="./site.css">
+<!-- Relative, not /shared/, so this page also opens straight off disk. Same
+     file the app and the voxel ward load. -->
+<script type="module" src="../web-voxel/scene/inspiral-portal.js"></script>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="head">
+  <span class="wordmark">Inspiral</span>
+  <nav aria-label="Sections">
+    <a href="#how">How it works</a>
+    <a href="#world">The example world</a>
+    <a href="#not">What this is not</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- 1. WHAT THE ENGINE IS -->
+  <section class="i-hero" aria-labelledby="lede">
+    <inspiral-portal depth="12" seed="8.8"></inspiral-portal>
+    <div class="i-hero-inner">
+      <span class="i-label">An engine, and one world running on it</span>
+      <h1 class="i-title i-title-l" id="lede">Give your audience something to build on.</h1>
+      <p class="i-body">
+        Inspiral runs the space where they do it. Every contribution is a change to
+        somebody else's. A Mind writes the line that says what the change was, and the
+        log it goes into refuses <code>UPDATE</code> and <code>DELETE</code>, so nobody
+        can be edited off their own work.
+      </p>
+      <p class="actions">
+        <a class="i-btn" href="http://localhost:8795/">Open the example world</a>
+        <a class="i-btn-quiet" href="../docs/API.md">Read the API</a>
+      </p>
+      <span class="i-record">npm run kitchen &nbsp;·&nbsp; npm run pieces:serve -- --db ./data/kitchen.db</span>
+    </div>
+  </section>
+
+  <hr class="i-divider">
+
+  <!-- 2. HOW IT WORKS -->
+  <section class="wrap" id="how" aria-labelledby="how-h">
+    <h2 class="i-title i-title-m" id="how-h">How it works</h2>
+
+    <article class="step">
+      <h3 class="i-title i-title-s">A move is a set of choices, not an essay.</h3>
+      <p class="i-body">
+        A piece declares slots. Each slot offers a finite list, written by the creator out
+        of their own material, so the palette is the IP. One line of prose survives — the
+        caption, why you did it. Picking is not writing, and a blank textarea is the reason
+        most people never contribute anything.
+      </p>
+      <dl class="slots">
+        <div>
+          <dt class="i-label">Main <span class="req">required</span></dt>
+          <dd>
+            <span class="i-chip" data-picked>fennel</span>
+            <span class="i-chip">leek</span>
+            <span class="i-chip">celeriac</span>
+          </dd>
+        </div>
+        <div>
+          <dt class="i-label">Method <span class="req">required</span></dt>
+          <dd>
+            <span class="i-chip" data-picked>braise</span>
+            <span class="i-chip">raw</span>
+            <span class="i-chip">roast</span>
+          </dd>
+        </div>
+        <div>
+          <dt class="i-label">Finish</dt>
+          <dd>
+            <span class="i-chip" data-picked>lemon</span>
+            <span class="i-chip">vinegar</span>
+            <span class="i-chip">none</span>
+          </dd>
+        </div>
+      </dl>
+      <p class="i-record">Ada's move. A value the schema does not offer is dropped on write.</p>
+    </article>
+
+    <article class="step">
+      <h3 class="i-title i-title-s">You build on somebody by changing one thing.</h3>
+      <p class="i-body">
+        Everything is an extension of something. The creator seeds the piece, the first
+        visitor extends the seed, everyone after extends either. One root, no separate
+        "add" action, no special case for the first move — which is why
+        <em>somebody built on my thing</em> is one exact query rather than a heuristic.
+      </p>
+      <p class="i-body">
+        Maya extends Ada and changes one slot. Because both moves are sets of values, the
+        difference is computed, not inferred:
+      </p>
+      <pre class="i-panel">KEPT Main: fennel, Finish: lemon
+CHANGED Method: braise -&gt; raw</pre>
+    </article>
+
+    <article class="step">
+      <h3 class="i-title i-title-s">The Mind writes one sentence.</h3>
+      <p class="i-body">
+        It is handed that diff and asked to write it well — not handed two texts and asked
+        to spot the difference. It names one thing kept and one thing changed, in the
+        contributors' own words, addressed to the person waiting.
+      </p>
+      <div class="i-host">
+        <span class="i-host-by">Written by the Mind</span>
+        <p class="i-host-line">Maya kept your fennel and bread but changed your hour-long braise into a raw mandoline shave salted hard until it weeps, with the bread toasted in the butter instead.</p>
+      </div>
+      <p class="i-body">
+        That one came from two paragraphs of prose, on a piece with no slots — the weaker
+        path, and still the fallback. If the Mind is unavailable the sentence is absent and
+        the contribution stands. Losing the narration must never lose the work.
+      </p>
+    </article>
+
+    <article class="step">
+      <h3 class="i-title i-title-s">The log refuses <code>UPDATE</code> and <code>DELETE</code>.</h3>
+      <p class="i-body">
+        A piece is a row. An extension is an event, and never a row. Attribution is the
+        product, so it is held by the database rather than by application code:
+      </p>
+      <pre class="i-panel">CREATE TRIGGER IF NOT EXISTS events_no_update
+BEFORE UPDATE ON events
+BEGIN
+  SELECT RAISE(ABORT, 'events is append-only: UPDATE is forbidden');
+END;</pre>
+      <p class="i-body">
+        A takedown is therefore additive: a new event later readers respect. The work
+        disappears from the lineage, the public page, the permalink and the return screen.
+        The history stays intact underneath.
+      </p>
+      <p class="i-record">/w/the-kitchen/e/evt_m8k2p1_0007 &nbsp;·&nbsp; public, no key, permanent</p>
+    </article>
+  </section>
+
+  <hr class="i-divider">
+
+  <!-- 3. THE EXAMPLE WORLD -->
+  <section class="wrap" id="world" aria-labelledby="world-h">
+    <h2 class="i-title i-title-m" id="world-h">The example world</h2>
+    <p class="i-body">
+      A kitchen, because a recipe is the most naturally extendable thing there is:
+      everybody already understands that you can keep somebody's base and change their
+      acid. Disagreement is native to it. Five pieces, and it opens with arguments already
+      in them — nobody extends a blank page.
+    </p>
+
+    <article class="i-card world">
+      <inspiral-portal depth="4" seed="3.4"></inspiral-portal>
+      <div class="world-body">
+        <h3 class="i-title i-title-s">Five Ingredients</h3>
+        <span class="i-label">The brief, in the creator's words</span>
+        <p class="i-work">
+          Five ordinary things, one dish worth arguing about. Say what you would do and
+          why. Disagreeing with what is already here is the point, not a problem.
+        </p>
+        <p class="i-body">
+          Four takes deep. The last one branches off the first instead of the newest,
+          because a lineage is a tree and an argument is allowed to fork.
+        </p>
+        <p class="actions">
+          <a class="i-btn" href="http://localhost:8795/">Open the kitchen</a>
+        </p>
+        <span class="i-record">http://localhost:8795/ in dev</span>
+      </div>
+    </article>
+
+    <p class="i-body">
+      The kitchen's pieces are free text, not slots. Both shapes work and neither replaces
+      the other — a piece with an empty schema takes prose, and the Mind compares the two
+      texts. The palette above is the stronger path and it is not what this world runs on.
+    </p>
+  </section>
+
+  <hr class="i-divider">
+
+  <!-- WHAT THIS IS NOT -->
+  <section class="wrap" id="not" aria-labelledby="not-h">
+    <h2 class="i-title i-title-m" id="not-h">What this is not</h2>
+    <ul class="i-body plain">
+      <li>
+        <strong>Identity is asserted, not authenticated.</strong> A fan id is a string the
+        client supplies. Clear your storage and you are a stranger; copy somebody's id and
+        you are them. There is a claim-and-verify flow that proves you control a delivery
+        address and makes an id yours — it verifies an address, never a person, and nothing
+        with money behind it should rest on it.
+      </li>
+      <li>
+        <strong>The retention thesis is untested.</strong> The whole bet is that being told
+        what somebody changed about your work is what brings you back. Half of returning
+        people get the sentence, half get a generic line: that A/B is runnable and has not
+        been run. Nobody knows whether this works.
+      </li>
+      <li>
+        <strong>Slot palettes are declared in code.</strong> <code>POST /v1/pieces</code>
+        takes a title, a brief and a location. Writing the slots a piece is made of is a
+        function call today, not an endpoint, and no creator-facing tool builds one.
+      </li>
+      <li>
+        <strong>The app is a reference implementation.</strong> It exists to prove the API
+        is enough to build against, not to be looked at.
+      </li>
+    </ul>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p class="i-record">
+    <a href="https://github.com/FlyingWHR/inspiral">github.com/FlyingWHR/inspiral</a>
+    &nbsp;·&nbsp; <a href="../docs/API.md">docs/API.md</a>
+    &nbsp;·&nbsp; <a href="../src/pieces/contract.ts">src/pieces/contract.ts</a>
+  </p>
+</footer>
+
+</body>
+</html>

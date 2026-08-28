@@ -13,6 +13,10 @@
 
 const BODY_MIN = 8;
 const BODY_MAX = 1200;
+// A caption on a slotted piece is a line, not an essay -- see CAPTION_MAX
+// in the contract. Offering 1200 characters is how the work ends up back in
+// the prose that slots were introduced to get it out of.
+const CAPTION_MAX = 220;
 
 const qs = new URLSearchParams(location.search);
 const MOCK = qs.has("mock");
@@ -169,11 +173,12 @@ async function piecePage(pieceId) {
       el("article", {},
         parts.label && el("p", { class: "label", text: parts.label }),
         el("p", { class: "body", text: parts.body }),
+        picks(piece.schema, parts.values),
         parts.who && el("p", { class: "meta" },
           el("span", { class: "who", text: parts.who }),
           when(parts.ts),
         ),
-        open && extendButton(piece.piece_id, id),
+        open && extendButton(piece, id, parts.values ?? {}),
       ),
       branch(id),
     );
@@ -184,7 +189,10 @@ async function piecePage(pieceId) {
     return el("ol", { class: "branch" },
       // display_name, not the id: this page is the public artefact, and a
       // stranger reading it should see a person rather than a database key.
-      list.map((x) => entry(x.event_id, { body: x.body, who: x.display_name || x.fan_id, ts: x.ts })),
+      list.map((x) =>
+        entry(x.event_id, {
+          body: x.body, who: x.display_name || x.fan_id, ts: x.ts, values: x.values,
+        })),
     );
   }
 
@@ -200,7 +208,7 @@ async function piecePage(pieceId) {
 }
 
 /** One open form at a time: opening another closes the first. */
-function extendButton(pieceId, parentEventId) {
+function extendButton(piece, parentEventId, parentValues) {
   const btn = el("button", {
     type: "button",
     "aria-expanded": "false",
@@ -216,24 +224,94 @@ function extendButton(pieceId, parentEventId) {
       if (wasMine) return;
       btn.setAttribute("aria-expanded", "true");
       btn.textContent = "Never mind";
-      const form = extendForm(pieceId, parentEventId);
+      const form = extendForm(piece, parentEventId, parentValues);
       btn.after(form);
-      form.querySelector("textarea").focus();
+      // The first thing you touch is the first thing you change: a chip on a
+      // piece with slots, the empty page on a piece without.
+      (form.querySelector("textarea") ?? form.querySelector(".i-chip"))?.focus();
     },
   });
   return btn;
 }
 
-function extendForm(pieceId, parentEventId) {
+// --- what somebody picked ---------------------------------------------------
+
+/**
+ * The picks, in the piece's own order, on one line. Not a table: the palette
+ * above prints the labels once, and repeating them on every entry in the
+ * lineage turns a chain of moves into a spreadsheet.
+ */
+function picks(schema, values) {
+  if (!schema?.length || !values) return null;
+  const line = schema.map((s) => values[s.key]).filter(Boolean).join(" · ");
+  return line ? el("p", { class: "picks", text: line }) : null;
+}
+
+/**
+ * Same rule as diffMoves() in src/pieces/repo.ts, and it must stay the same:
+ * this is the sentence the visitor reads before posting, and the host writes
+ * from the server's version of it afterwards. A slot the parent never filled
+ * is neither kept nor changed -- it is new, which is what extending the brief
+ * looks like.
+ */
+function diffOf(schema, parent, child) {
+  const d = { kept: [], changed: [], set: [] };
+  for (const s of schema) {
+    const from = parent[s.key];
+    const to = child[s.key];
+    if (!to) continue;
+    if (from === undefined) d.set.push({ label: s.label, to });
+    else if (from === to) d.kept.push({ value: to });
+    else d.changed.push({ from, to });
+  }
+  return d;
+}
+
+const listOf = (xs) => (xs.length < 2 ? xs[0] ?? "" : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
+
+/** The move in plain words, before it is a move. */
+function diffLine(d) {
+  const parts = [];
+  if (d.kept.length) parts.push(`keeping the ${listOf(d.kept.map((k) => k.value))}`);
+  if (d.changed.length) parts.push(`changing ${listOf(d.changed.map((c) => `${c.from} to ${c.to}`))}`);
+  if (d.set.length) parts.push(`setting ${listOf(d.set.map((c) => `${c.label.toLowerCase()} to ${c.to}`))}`);
+  const s = parts.join(", ");
+  return s ? `${s[0].toUpperCase()}${s.slice(1)}.` : "";
+}
+
+/**
+ * THE FORM, and on a piece with slots it is not a form.
+ *
+ * It opens holding the parent's move, because you are building on somebody:
+ * changing one thing should be one tap, not a blank page you have to refill
+ * with their work before you can disagree with it. The caption survives as one
+ * line -- why you did it, which is the part a person actually wants to say.
+ */
+function extendForm(piece, parentEventId, parentValues) {
   const uid = `x${Math.random().toString(36).slice(2, 8)}`;
+  const pieceId = piece.piece_id;
+  const slots = piece.schema ?? [];
   const nameInput = el("input", {
     id: `${uid}-name`, type: "text", value: me.name || me.id, autocomplete: "nickname",
     required: true, maxlength: 60,
   });
-  const area = el("textarea", {
-    id: `${uid}-body`, required: true, maxlength: BODY_MAX, spellcheck: "true",
-  });
+  // A slotted piece takes a caption; the move itself is the chips.
+  const max = slots.length ? CAPTION_MAX : BODY_MAX;
+  const area = slots.length
+    ? el("input", {
+        id: `${uid}-body`, class: "i-field", type: "text", placeholder: "why?",
+        required: true, maxlength: max, spellcheck: "true", autocomplete: "off",
+      })
+    : el("textarea", {
+        id: `${uid}-body`, required: true, maxlength: max, spellcheck: "true",
+      });
+
+  /** What is picked right now. Starts as the parent's move, not as nothing. */
+  const values = {};
+  for (const s of slots) if (parentValues?.[s.key]) values[s.key] = parentValues[s.key];
+
   const count = el("output", { class: "count", for: `${uid}-body` });
+  const diff = el("p", { class: "diff", role: "status" });
   const go = el("button", { type: "submit", class: "go", text: "Build on this", disabled: true });
   const status = el("p", { class: "posted", hidden: true, role: "status" });
 
@@ -242,11 +320,47 @@ function extendForm(pieceId, parentEventId) {
     const short = n < BODY_MIN;
     count.textContent = short
       ? `${BODY_MIN - n} more character${BODY_MIN - n === 1 ? "" : "s"} before this can be posted`
-      : `${BODY_MAX - n} of ${BODY_MAX} left`;
+      : `${max - n} of ${max} left`;
     count.classList.toggle("short", short);
-    go.disabled = short;
+
+    let hold = "";
+    if (slots.length) {
+      const d = diffOf(slots, parentValues ?? {}, values);
+      const missing = slots.filter((s) => s.required && !values[s.key]);
+      // A move that changes nothing is not a move -- and being told that is
+      // worth more than a button that has silently gone grey.
+      if (missing.length) hold = `Pick a ${listOf(missing.map((m) => m.label.toLowerCase()))}.`;
+      else if (!d.changed.length && !d.set.length) hold = "This is exactly what is above you. Change one thing.";
+      diff.textContent = hold || diffLine(d);
+      diff.classList.toggle("hold", Boolean(hold));
+    }
+    go.disabled = short || Boolean(hold);
   };
   area.addEventListener("input", tally);
+
+  /**
+   * One tap. Real buttons in a labelled group, so this works from a keyboard
+   * and announces itself -- a div with a click handler would not.
+   */
+  const rows = slots.map((s) => {
+    const btns = s.options.map((opt) => {
+      const btn = el("button", {
+        type: "button", class: "i-chip", text: opt,
+        "aria-pressed": String(values[s.key] === opt),
+        onclick: () => {
+          values[s.key] = opt;
+          for (const b of btns) b.setAttribute("aria-pressed", String(b === btn));
+          tally();
+        },
+      });
+      return btn;
+    });
+    return el("div", { class: "slot" },
+      el("p", { class: "i-label", id: `${uid}-${s.key}`, text: s.label }),
+      el("div", { class: "chips", role: "group", "aria-labelledby": `${uid}-${s.key}` }, btns),
+    );
+  });
+
   tally();
 
   const form = el("form", {
@@ -269,7 +383,7 @@ function extendForm(pieceId, parentEventId) {
           method: "POST",
           body: JSON.stringify({
             fan_id, parent_event_id: parentEventId, body: area.value.trim(),
-            display_name: name,
+            values, display_name: name,
           }),
         });
         // Honest about the audience: `notifies` is null when you built on the
@@ -291,7 +405,15 @@ function extendForm(pieceId, parentEventId) {
     },
   },
     el("label", { for: `${uid}-name`, text: "You are" }), nameInput,
-    el("label", { for: `${uid}-body`, text: "Change it. Say what you changed and what for.", style: "margin-top:.7rem" }), area,
+    rows.length
+      ? [
+          el("div", { class: "palette" }, rows),
+          diff,
+          el("label", { for: `${uid}-body`, text: "Why?", style: "margin-top:.7rem" }), area,
+        ]
+      : [
+          el("label", { for: `${uid}-body`, text: "Change it. Say what you changed and what for.", style: "margin-top:.7rem" }), area,
+        ],
     el("div", { class: "row" }, count, go),
     status,
   );
@@ -437,15 +559,32 @@ const FIXTURE = {
       piece_id: "one_sauce", title: "One Sauce, Many Hands",
       brief: "A sauce, passed hand to hand. Take what is above you, change exactly one thing, and say what you changed it for. Do not start over, and do not be polite about it.",
       status: "open", generation: 5, contributors: ["wren", "maya", "ash", "juno", "pell"],
-      seed_event_id: "ev_seed_sauce",
+      seed_event_id: "ev_seed_sauce", schema: [],
       created_ts: "2026-08-20T10:00:00Z", updated_ts: "2026-08-26T22:40:00Z",
     },
     {
       piece_id: "six_words_door", title: "Six Words About a Door",
       brief: "Six words. A door. It cannot be a metaphor for anything and it must still hurt. Take somebody's six and write six back.",
       status: "open", generation: 3, contributors: ["rook", "wren"],
-      seed_event_id: "ev_seed_door",
+      seed_event_id: "ev_seed_door", schema: [],
       created_ts: "2026-08-22T08:00:00Z", updated_ts: "2026-08-27T11:20:00Z",
+    },
+    /**
+     * The piece with slots. The two above are free-text and stay that way --
+     * the contract has them coexisting rather than one replacing the other,
+     * and the mock is where you check that both still work.
+     */
+    {
+      piece_id: "standing_dish", title: "The Standing Dish",
+      brief: "One vegetable, one method, one finish. Take the plate above you and change exactly one of the three. Say why in a line. Do not add a fourth thing.",
+      status: "open", generation: 3, contributors: ["maya", "ash", "pell"],
+      seed_event_id: "ev_seed_dish",
+      schema: [
+        { key: "main", label: "Main", options: ["fennel", "celeriac", "pumpkin", "chicory", "lamb neck"], required: true },
+        { key: "method", label: "Method", options: ["braise", "raw", "roast", "grill", "cure"], required: true },
+        { key: "finish", label: "Finish", options: ["brown butter", "anchovy", "yoghurt", "burnt honey", "nothing"], required: false },
+      ],
+      created_ts: "2026-08-23T09:00:00Z", updated_ts: "2026-08-27T19:10:00Z",
     },
   ],
   extensions: [
@@ -494,6 +633,26 @@ const FIXTURE = {
       changed: "Rook answered your six words with six of his own, and put himself on the wrong side of the door.",
       ts: "2026-08-27T11:20:00Z",
     },
+    {
+      event_id: "ev_9", piece_id: "standing_dish", parent_event_id: "ev_seed_dish", fan_id: "maya",
+      body: "Braised until it gives up. The butter is the whole point.",
+      values: { main: "fennel", method: "braise", finish: "brown butter" },
+      ts: "2026-08-23T12:30:00Z",
+    },
+    {
+      event_id: "ev_10", piece_id: "standing_dish", parent_event_id: "ev_9", fan_id: "ash",
+      body: "It was already sweet. Braising was hiding that.",
+      values: { main: "fennel", method: "raw", finish: "brown butter" },
+      changed: "Ash kept your fennel and your butter and stopped cooking it — raw, because the braise was hiding what the fennel already had.",
+      ts: "2026-08-26T17:45:00Z",
+    },
+    {
+      event_id: "ev_11", piece_id: "standing_dish", parent_event_id: "ev_10", fan_id: "pell",
+      body: "Chicory can take the anchovy. Fennel just goes salty.",
+      values: { main: "chicory", method: "raw", finish: "anchovy" },
+      changed: "Pell kept your raw plate and swapped both ends of it — chicory for the fennel, anchovy for the butter.",
+      ts: "2026-08-27T19:10:00Z",
+    },
   ],
 };
 
@@ -518,9 +677,19 @@ async function mockApi(path, init) {
     if (body.body.length > BODY_MAX) throw new Error("too long");
     const parent = DB.extensions.find((x) => x.event_id === body.parent_event_id);
     if (!parent && body.parent_event_id !== piece.seed_event_id) throw new Error("nothing to build on");
+    // Same rule as extendPiece() in src/pieces/repo.ts: only slots this piece
+    // declares, only options it offers, and a required slot is not optional.
+    const values = {};
+    for (const s of piece.schema ?? []) {
+      const v = (body.values ?? {})[s.key];
+      if (s.options.includes(v)) values[s.key] = v;
+    }
+    const missing = (piece.schema ?? []).filter((s) => s.required && !values[s.key]);
+    if (missing.length) throw new Error(`pick a ${missing.map((m) => m.label.toLowerCase()).join(" and a ")}`);
     const ext = {
       event_id: `ev_${DB.extensions.length + 1}_m`, piece_id: piece.piece_id,
       parent_event_id: body.parent_event_id, fan_id: body.fan_id, body: body.body,
+      ...(Object.keys(values).length ? { values } : {}),
       ts: new Date().toISOString(),
     };
     DB.extensions.push(ext);

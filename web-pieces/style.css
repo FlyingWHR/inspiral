@@ -185,6 +185,53 @@ h1 {
 .extend input { font-family: var(--sans); font-size: 0.95rem; }
 .extend textarea { min-height: 9rem; resize: vertical; display: block; }
 
+/* --- the palette --------------------------------------------------------
+   On a piece with slots the form is not a form: it is the parent's move, and
+   you change one chip of it. The rows carry the labels once so the lineage
+   underneath can print bare values. */
+
+.palette { margin-top: 0.9rem; }
+.slot + .slot { margin-top: 0.85rem; }
+.slot .i-label { display: block; margin: 0 0 0.4rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* .i-chip is padded for a mouse. This is a thumb. And a chip is a control,
+   not a link -- the underline every other button on this page wears would
+   read as one. */
+.chips .i-chip { min-height: 40px; text-decoration: none; }
+
+/* The move, in words, before it is a move. Reads as prose because it is the
+   same sentence the host will write afterwards, in a smaller voice. */
+.diff {
+  font: 0.95rem/1.5 var(--serif);
+  color: var(--ink);
+  margin: 0.9rem 0 0;
+  min-height: 1.4em;
+}
+/* Nothing has changed yet, so say so rather than leaving a grey button to
+   explain itself. */
+.diff.hold { color: var(--ink-faint); font-family: var(--sans); font-size: 0.86rem; }
+
+/* One line, not an essay box. The identity's field at caption size. */
+.extend .i-field {
+  font-family: var(--serif);
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: 0.6rem 0.7rem;
+  background: rgba(12, 8, 24, .8);
+  border: 1px solid #2A2140;
+  border-radius: 4px;
+}
+
+/* What somebody picked, under their caption. Mono because it is the record. */
+.picks {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  margin: 0 0 0.5rem;
+}
+
 .extend .row {
   display: flex;
   flex-wrap: wrap;

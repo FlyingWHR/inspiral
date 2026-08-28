@@ -1,0 +1,76 @@
+/* INSPIRAL — the demo site.
+   Loaded AFTER web-pieces/inspiral.css, which owns every colour, face and
+   component on this page. This file is layout, one missing type step, and two
+   static variants of components that already exist. It defines no new colour.
+*/
+
+/* An undefined custom element is inline, so a portal box collapses to nothing
+   when the module has not loaded — which is what a browser does with a
+   file:// module. One line keeps every layout that reserves space for a portal
+   intact whether the animation arrives or not. */
+inspiral-portal { display: block; }
+
+/* The scale stops at l and m upstream; steps and card titles need one below.
+   Same family, same tracking, nothing else new. */
+.i-title-s { font-size: clamp(20px, 2.2vw, 27px); font-weight: 600; letter-spacing: -.025em; line-height: 1.15; }
+
+strong { font-weight: 600; color: var(--ink); }
+code { font-family: var(--font-mono); font-size: .88em; color: var(--ink-dim); }
+
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 12px; top: 12px; z-index: 10; background: var(--acid); color: var(--void); padding: 10px 16px; }
+:focus-visible { outline: 2px solid var(--acid); outline-offset: 3px; }
+
+/* LAYOUT ---------------------------------------------------------------- */
+
+.head {
+  display: flex; flex-wrap: wrap; gap: var(--gap-m);
+  align-items: baseline; justify-content: space-between;
+  padding: 20px clamp(20px, 5vw, 48px);
+}
+.wordmark { font-family: var(--font-ui); font-weight: 800; letter-spacing: -.04em; font-size: 19px; color: var(--ink-bright); }
+.head nav { display: flex; flex-wrap: wrap; gap: var(--gap-m); font-size: 14px; }
+
+.wrap { max-width: 780px; margin: 0 auto; padding: var(--gap-xl) clamp(20px, 5vw, 48px); display: grid; gap: var(--gap-l); }
+.wrap > h2 { margin: 0; }
+.step { display: grid; gap: var(--gap-s); }
+.step h3, .step p, .world-body h3, .world-body p { margin: 0; }
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--gap-s); align-items: center; }
+.i-hero .actions { justify-content: center; }
+a.i-btn, a.i-btn-quiet { display: inline-block; text-decoration: none; }
+a.i-btn { color: var(--void); }
+a.i-btn:hover { color: var(--void); }
+
+pre.i-panel {
+  margin: 0; overflow-x: auto;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7;
+  color: var(--ink-dim); white-space: pre;
+}
+
+/* THE SLOT PALETTE, STATIC ----------------------------------------------
+   Chips that nobody can press. Rendered as spans rather than buttons on
+   purpose: a control that does nothing is worse for a screen reader than a
+   list that admits it is a list. */
+.slots { margin: 0; display: grid; gap: var(--gap-s); }
+.slots > div { display: grid; gap: var(--gap-xs); }
+.slots dd { margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+span.i-chip { cursor: default; }
+.i-chip[data-picked] { border-color: var(--acid); background: rgba(200,255,46,.12); color: var(--acid); }
+.req { color: var(--ink-ghost); opacity: .7; }
+
+/* THE EXAMPLE WORLD CARD */
+.world { grid-template-columns: 120px 1fr; align-items: start; gap: var(--gap-m); }
+.world inspiral-portal { width: 120px; aspect-ratio: 1; }
+.world-body { display: grid; gap: var(--gap-s); }
+
+@media (max-width: 560px) {
+  .world { grid-template-columns: 1fr; justify-items: start; }
+}
+
+/* Lists set as prose, not as bullets in a box. */
+.plain { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--gap-m); }
+.plain li { border-left: 1px solid var(--rule); padding-left: var(--gap-m); }
+
+.foot { padding-top: var(--gap-m); padding-bottom: var(--gap-xl); }
+.foot p { margin: 0; }

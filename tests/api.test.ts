@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MemoryApi } from "../src/api/server.js";
+import { createServer } from "node:http";
 import { CanonRepo } from "../src/canon/repo.js";
 import { seedFrom } from "../src/canon/seed.js";
 import { VirtualClock } from "../src/clock.js";
@@ -8,8 +9,20 @@ import { setLogLevel } from "../src/log.js";
 setLogLevel("silent");
 
 const KEY = "test-key";
-const PORT = 8791;
-const base = `http://localhost:${PORT}`;
+/**
+ * Asked for, not chosen. A hardcoded port fails in beforeAll the moment
+ * anything else on the machine happens to hold it -- which is exactly what
+ * occurred here, to an unrelated Python server -- and the failure reads as
+ * "the API is broken" when nothing is broken at all.
+ */
+async function freePort(): Promise<number> {
+  const s = createServer();
+  await new Promise<void>((r) => s.listen(0, r));
+  const { port } = s.address() as { port: number };
+  await new Promise<void>((r) => s.close(() => r()));
+  return port;
+}
+let base = "";
 const sheet = (id: string, name: string) => ({
   character_id: id, name, faction: name, title: "", brief: "", goals: [], taboos: [],
   voice: { register: "plain", tics: [], max_words: 28 }, mood: "even", home_location: "arena",
@@ -27,7 +40,9 @@ beforeAll(async () => {
     tone: { world_id: "d", register: "", banned_phrases: [], forbidden_topics: [], max_line_words: 32 },
     history: [],
   });
-  api = new MemoryApi({ repo, port: PORT, apiKey: KEY, publicUrl: base });
+  const port = await freePort();
+  base = `http://localhost:${port}`;
+  api = new MemoryApi({ repo, port, apiKey: KEY, publicUrl: base });
   await api.open();
 });
 afterAll(async () => { await api.close(); repo.close(); });

@@ -245,7 +245,27 @@ Never `500` for a caller mistake.
 
 ## Identity
 
-`fan_id` is **asserted, not authenticated** — a durable id the client supplies.
-Clearing storage makes you a stranger; copying an id makes you that person.
-Durable and never recycled beats what came before it, and it is still not a
-login. A host product with real sign-in should pass its verified id through.
+Two states, and both are usable.
+
+**Asserted** — a durable id the client supplies. Read and contribute freely.
+Forcing a login to leave one line of writing is how a space stays empty.
+
+**Verified** — you proved you control an address. The id is then *yours*: a
+stranger asserting it gets `403 {code:"claimed"}`.
+
+| Method | Path | Body |
+|---|---|---|
+| `POST` | `/v1/auth/claim` | `{fan_id, channel, address}` → sends a 6-digit code |
+| `POST` | `/v1/auth/verify` | `{fan_id, code}` → `{token, expires_ts}` |
+| `POST` | `/v1/auth/signout` | `Authorization: Bearer <token>` |
+
+Public routes — claiming an id is how somebody *becomes* known, so it cannot
+sit behind the credential it hands out.
+
+Send the token as `Authorization: Bearer <token>` on writes. Codes expire in 10
+minutes, are single-use, and lock out after 5 wrong attempts. Codes and tokens
+are stored hashed; neither is ever readable back.
+
+**What it is:** proof that whoever holds this session controls the address that
+claimed this id. **What it is not:** anybody's real name, or anything you should
+put money behind.

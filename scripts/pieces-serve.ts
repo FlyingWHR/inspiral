@@ -77,6 +77,7 @@ async function main(): Promise<void> {
     for (const s of STARTERS) seedPiece(repo, s);
   }
 
+  const channels = createChannels(process.env);
   const api = new PiecesApi({
     repo,
     port: PORT,
@@ -84,6 +85,9 @@ async function main(): Promise<void> {
     host,
     publicUrl: process.env.INSPIRAL_PUBLIC_URL ?? `http://localhost:${PORT}`,
     webRoot: resolve("web-pieces"),
+    // The same channels that deliver notifications deliver claim codes: a
+    // person has already said how to reach them.
+    channels,
   });
   await api.open();
 
@@ -119,7 +123,6 @@ async function main(): Promise<void> {
    * unref()'d so it never holds the process open, and re-entrancy guarded --
    * a slow round must not overlap the next one and send twice.
    */
-  const channels = createChannels(process.env);
   let dispatching = false;
   const every = num("notify-every", 60) * 1000;
   const worker = setInterval(() => {

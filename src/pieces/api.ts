@@ -54,6 +54,8 @@ import { LiveHub } from "./live.js";
 import { creatorDigest, renderDigest } from "./digest.js";
 import { enqueue, preferencesFor, setPreference, unsubscribe } from "../notify/dispatch.js";
 import { health, stats } from "../ops/health.js";
+import { AuthError, identify, mayActAs, signOut, startClaim, verifyClaim } from "../auth/index.js";
+import type { NotifyChannel } from "../notify/contract.js";
 import {
   ModerationError,
   extendRate,
@@ -92,6 +94,12 @@ export interface PiecesApiOptions {
    * only that somebody touched it. Runnable, and not the product.
    */
   host?: HostRuntime | undefined;
+  /**
+   * Channels used to deliver a claim code. The same ones that deliver
+   * notifications: a person has already said how to reach them, so proving
+   * they control that address needs no new mechanism.
+   */
+  channels?: NotifyChannel[];
 }
 
 const json = (res: ServerResponse, code: number, body: unknown): void => {
@@ -135,6 +143,12 @@ async function readJson(req: IncomingMessage, limitBytes = 16 * 1024): Promise<u
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
+/** `Authorization: Bearer <token>`, if present. */
+const bearer = (req: IncomingMessage): string | undefined => {
+  const h = req.headers.authorization;
+  return h?.startsWith("Bearer ") ? h.slice(7).trim() : undefined;
+};
+
 const str = (v: unknown, max = 64): string | null => {
   if (typeof v !== "string") return null;
   const t = v.trim();
@@ -165,6 +179,7 @@ export class PiecesApi {
   private readonly apiKey: string | undefined;
   private readonly host: HostRuntime | undefined;
   private readonly webRoot: string | undefined;
+  private readonly channels: NotifyChannel[];
   /**
    * Presence and the live feed. In-memory and lost on restart, deliberately:
    * presence is transient and canon is permanent, and filling an append-only
@@ -179,6 +194,7 @@ export class PiecesApi {
     this.apiKey = opts.apiKey;
     this.host = opts.host;
     this.webRoot = opts.webRoot;
+    this.channels = opts.channels ?? [];
     this.publicUrl = (opts.publicUrl ?? `http://localhost:${opts.port ?? 8792}`).replace(/\/+$/, "");
   }
 
@@ -261,6 +277,39 @@ export class PiecesApi {
      */
     const receipt = /^\/w\/[^/]+\/e\/([A-Za-z0-9_]{1,64})$/.exec(path);
     if (method === "GET" && receipt) return this.pageReceipt(res, receipt[1]!);
+
+    /**
+     * PUBLIC. Claiming an id is how somebody BECOMES known, so it cannot sit
+     * behind the credential it hands out. Rate limiting lives in the code
+     * budget and the single-use rule rather than in the router.
+     */
+    const auth = /^\/v1\/auth\/(claim|verify|signout)$/.exec(path);
+    if (method === "POST" && auth) {
+      const b = (await readJson(req)) as Record<string, unknown>;
+      try {
+        if (auth[1] === "claim") {
+          return json(res, 200, await startClaim(this.repo, this.channels, {
+            fan_id: String(b.fan_id ?? ""),
+            channel: String(b.channel ?? "console"),
+            address: String(b.address ?? ""),
+          }));
+        }
+        if (auth[1] === "verify") {
+          const out = verifyClaim(this.repo, {
+            fan_id: String(b.fan_id ?? ""), code: String(b.code ?? ""),
+          });
+          return json(res, 200, out);
+        }
+        const token = bearer(req) ?? String(b.token ?? "");
+        return json(res, 200, { revoked: signOut(this.repo, { token }) });
+      } catch (e) {
+        if (e instanceof AuthError) {
+          const code = e.code === "too_many" ? 429 : e.code === "no_channel" ? 400 : 400;
+          return json(res, code, { error: e.message, code: e.code });
+        }
+        throw e;
+      }
+    }
 
     /**
      * PUBLIC, and it has to be: a health check behind auth is useless to the
@@ -488,7 +537,7 @@ export class PiecesApi {
     const extend = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})\/extend$/.exec(path);
     if (method === "POST" && extend) {
       if (deny) return closed();
-      return await this.postExtend(res, extend[1]!, await readJson(req));
+      return await this.postExtend(res, extend[1]!, await readJson(req), bearer(req));
     }
 
     const one = /^\/v1\/pieces\/([A-Za-z0-9_]{1,64})$/.exec(path);
@@ -512,7 +561,12 @@ export class PiecesApi {
    * of the only question this product has to get right, free to drift from the
    * first and point the feeling at the wrong person.
    */
-  private async postExtend(res: ServerResponse, pieceId: string, raw: unknown): Promise<void> {
+  private async postExtend(
+    res: ServerResponse,
+    pieceId: string,
+    raw: unknown,
+    token: string | undefined,
+  ): Promise<void> {
     const b = raw as Record<string, unknown>;
     const fan = str(b.fan_id);
     const parent = str(b.parent_event_id);
@@ -534,6 +588,25 @@ export class PiecesApi {
     if (body.length > BODY_MAX) {
       return json(res, 400, {
         error: `body must be at most ${BODY_MAX} characters (got ${body.length})`,
+      });
+    }
+
+    /**
+     * A VERIFIED ID BELONGS TO ONE PERSON.
+     *
+     * Without this check verification would be decoration: a stranger could
+     * still post as "ada" by asserting the id in the body, and Ada's permanent,
+     * public, un-editable attribution would carry somebody else's words. The
+     * one thing this product sells is that a name on a piece of work is true.
+     *
+     * Unclaimed ids stay open to anybody, because forcing a login to leave one
+     * line of writing is how a space stays empty.
+     */
+    const who = identify(this.repo, token, fan);
+    if (!who || !mayActAs(this.repo, who, fan)) {
+      return json(res, 403, {
+        error: `"${fan}" has been claimed. Sign in as them, or use another name.`,
+        code: "claimed",
       });
     }
 

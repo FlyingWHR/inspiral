@@ -296,6 +296,39 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notif_pending ON notifications(sent_ts, fan_id);
 
+-- ---------------------------------------------------------------------------
+-- AUTH -- turning an asserted id into a proven one.
+--
+-- A fan_id was a claim: clear your storage and you were a stranger, copy
+-- somebody else's and you were them. Everything the product does -- attribution,
+-- the return screen, notifications -- rested on a string anybody could type.
+--
+-- No new dependency and no password. A person has already told us how to reach
+-- them, so proving they control that address is enough, and the notification
+-- channels are the delivery mechanism that already exists.
+--
+-- Codes and tokens are stored HASHED. A database that leaks should not hand
+-- over live sessions, and there is never a reason to read either back.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS auth_claims (
+  fan_id     TEXT PRIMARY KEY,
+  code_hash  TEXT NOT NULL,
+  channel    TEXT NOT NULL,
+  address    TEXT NOT NULL,
+  expires_ts TEXT NOT NULL,
+  -- Bounded so a code cannot be brute-forced by repetition.
+  attempts   INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  token_hash   TEXT PRIMARY KEY,
+  fan_id       TEXT NOT NULL,
+  created_ts   TEXT NOT NULL,
+  last_seen_ts TEXT NOT NULL,
+  expires_ts   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_fan ON auth_sessions(fan_id);
+
 -- Where somebody wants to be reached. The address is opaque to everything but
 -- its own channel -- a chat id, a URL, an email -- and the dispatcher never
 -- parses it.
@@ -310,7 +343,7 @@ CREATE TABLE IF NOT EXISTS notify_prefs (
 );
 `;
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 /**
  * Open (and if needed create) the canon database.
@@ -357,6 +390,7 @@ export function openDb(path: string): DB {
     }
   }
   /**
+   * 5 -> 6 adds the two auth tables, also via the idempotent DDL.
    * 4 -> 5 needs no ALTER either: `notifications` and `notify_prefs` are new
    * tables and arrive with the idempotent DDL. Noted because the three
    * migrations above are documented and a silent step reads like an omission.

@@ -376,7 +376,14 @@ export class PiecesApi {
 
     if (method === "GET" && path === "/v1/digest") {
       if (deny) return closed();
-      const hours = Number(url.searchParams.get("hours")) || 24;
+      /**
+       * `Number(x) || 24` swallowed a legitimate 0 and silently reported a
+       * whole day instead of an empty window -- the classic `||` bug, and a
+       * bad one here because "nothing happened" is a real answer this product
+       * is supposed to be able to give.
+       */
+      const raw = Number(url.searchParams.get("hours") ?? NaN);
+      const hours = Number.isFinite(raw) && raw >= 0 ? raw : 24;
       const d = await creatorDigest(this.repo, this.host, { hours });
       if (url.searchParams.get("format") === "text") {
         res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
